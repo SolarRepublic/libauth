@@ -1,5 +1,4 @@
-/* eslint-disable functional/no-expression-statement */
-import test, { Macro } from 'ava';
+import test from 'ava';
 
 import {
   addressContentsToLockingBytecode,
@@ -16,7 +15,7 @@ import {
   lockingBytecodeToAddressContents,
   lockingBytecodeToBase58Address,
   lockingBytecodeToCashAddress,
-} from '../lib';
+} from '../lib.js';
 
 const sha256Promise = instantiateSha256();
 
@@ -148,20 +147,20 @@ test('lockingBytecodeToAddressContents: improperly sized scripts return AddressT
   });
 });
 
-const cashVectors: Macro<[string, string]> = (t, cashAddress, bytecode) => {
-  t.deepEqual(cashAddressToLockingBytecode(cashAddress), {
-    bytecode: hexToBin(bytecode),
-    prefix: 'bitcoincash',
-  });
-  t.deepEqual(
-    lockingBytecodeToCashAddress(hexToBin(bytecode), 'bitcoincash'),
-    cashAddress
-  );
-};
-
-// eslint-disable-next-line functional/immutable-data
-cashVectors.title = (_, cashAddress) =>
-  `cashAddressToLockingBytecode <-> lockingBytecodeToCashAddress: ${cashAddress}`;
+const cashVectors = test.macro<[string, string]>({
+  exec: (t, cashAddress, bytecode) => {
+    t.deepEqual(cashAddressToLockingBytecode(cashAddress), {
+      bytecode: hexToBin(bytecode),
+      prefix: 'bitcoincash',
+    });
+    t.deepEqual(
+      lockingBytecodeToCashAddress(hexToBin(bytecode), 'bitcoincash'),
+      cashAddress
+    );
+  },
+  title: (_, cashAddress) =>
+    `cashAddressToLockingBytecode <-> lockingBytecodeToCashAddress: ${cashAddress}`,
+});
 
 test(
   cashVectors,

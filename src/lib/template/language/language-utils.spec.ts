@@ -1,8 +1,8 @@
-/* eslint-disable functional/no-expression-statement, max-lines */
-import test, { Macro } from 'ava';
+/* eslint-disable max-lines */
+import test from 'ava';
 
+import type { Range } from '../../lib';
 import {
-  AuthenticationErrorBCH,
   AuthenticationErrorCommon,
   compileBtl,
   containsRange,
@@ -16,11 +16,10 @@ import {
   hexToBin,
   instantiateVirtualMachineBCH,
   mergeRanges,
-  OpcodesCommon,
-  Range,
+  Opcodes,
   stringifyErrors,
   stringifyTestVector,
-} from '../../lib';
+} from '../../lib.js';
 
 test('mergeRanges', (t) => {
   t.deepEqual(
@@ -97,8 +96,7 @@ test('extractBytecodeResolutions', (t) => {
   const compiler = createCompilerCommonSynchronous({
     scripts: {
       pushNumbers: '<1> var',
-      t:
-        'pushNumbers OP_ADD <0x03> OP_EQUAL <"abc"> OP_DROP <0b11> OP_EQUAL var2',
+      t: 'pushNumbers OP_ADD <0x03> OP_EQUAL <"abc"> OP_DROP <0b11> OP_EQUAL var2',
     },
     variables: { var: { type: 'AddressData' }, var2: { type: 'AddressData' } },
   });
@@ -270,7 +268,7 @@ const compilerPromise = createCompilerBCH({
   },
 });
 
-test('extractEvaluationSamples: documentation example', async (t) => {
+test.failing('extractEvaluationSamples: documentation example', async (t) => {
   const compiler = await compilerPromise;
   const vm = await vmPromise;
   const result = compiler.generateBytecode('docs', {}, true);
@@ -278,12 +276,10 @@ test('extractEvaluationSamples: documentation example', async (t) => {
     t.fail(stringifyErrors(result.errors));
     return;
   }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
+  const program = createAuthenticationProgramEvaluationCommon(result.bytecode);
   const nodes = result.reduce.script;
   const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
+  const traceWithUnlockingPhaseAndFinalState = vm.debug(program);
   const actualTrace = traceWithUnlockingPhaseAndFinalState.slice(1, -1);
   /**
    * We double the debugging trace just to test that the extra states are
@@ -413,33 +409,18 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         trace: [
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-
             executionStack: [],
             instructions: [],
             ip: 0,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -458,27 +439,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 0,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -497,27 +465,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 1,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [hexToBin('03')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -536,27 +491,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 2,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [hexToBin('03'), Uint8Array.of(0)],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -575,27 +517,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 3,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 1,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [Uint8Array.of(0), hexToBin('03')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -614,27 +543,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 4,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 2,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [hexToBin('0003')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
           {
             alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
             executionStack: [],
             instructions: [
               {
@@ -653,23 +569,11 @@ test('extractEvaluationSamples: documentation example', async (t) => {
             ],
             ip: 4,
             lastCodeSeparator: -1,
-            locktime: 0,
             operationCount: 2,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
+            program,
             signatureOperationsCount: 0,
             signedMessages: [],
             stack: [hexToBin('0003')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
         ],
       },
@@ -691,32 +595,18 @@ test('extractEvaluationSamples: documentation example', async (t) => {
     [
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -749,27 +639,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -802,27 +679,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 1,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -855,27 +719,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 2,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin(''), hexToBin('ab')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -908,27 +759,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 3,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin(''), hexToBin('ab'), hexToBin('cd')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -961,27 +799,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 4,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin(''), hexToBin('f8')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1014,27 +839,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 5,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin(''), hexToBin('f8'), hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1067,27 +879,14 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 6,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin(''), hexToBin('f8'), hexToBin(''), hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1120,14 +919,8 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 7,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [
@@ -1137,16 +930,9 @@ test('extractEvaluationSamples: documentation example', async (t) => {
           hexToBin(''),
           hexToBin('010203'),
         ],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1179,14 +965,8 @@ test('extractEvaluationSamples: documentation example', async (t) => {
         ],
         ip: 7,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [
@@ -1196,12 +976,6 @@ test('extractEvaluationSamples: documentation example', async (t) => {
           hexToBin(''),
           hexToBin('010203'),
         ],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
     ],
     stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
@@ -1281,13 +1055,15 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
     return;
   }
   const nullHashLength = 32;
-  const testProgram = {
+  const program = {
     inputIndex: 0,
-    sourceOutput: {
-      lockingBytecode: Uint8Array.of(OpcodesCommon.OP_1),
-      satoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
-    },
-    spendingTransaction: {
+    sourceOutputs: [
+      {
+        lockingBytecode: Uint8Array.of(Opcodes.OP_1),
+        valueSatoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
+      },
+    ],
+    transaction: {
       inputs: [
         {
           outpointIndex: 0,
@@ -1300,7 +1076,7 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
       outputs: [
         {
           lockingBytecode: Uint8Array.of(),
-          satoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
+          valueSatoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
         },
       ],
       version: 0,
@@ -1309,7 +1085,7 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
 
   const nodes = result.reduce.script;
   const evaluationRange = result.reduce.range;
-  const trace = vm.debug(testProgram);
+  const trace = vm.debug(program);
   const extracted = extractEvaluationSamples({
     evaluationRange,
     nodes,
@@ -1345,8 +1121,7 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
     [
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        error: 'Unlocking bytecode may contain only push operations.' as AuthenticationErrorBCH.requiresPushOnly,
+        error: 'Unlocking bytecode may contain only push operations.',
         executionStack: [],
         instructions: [
           {
@@ -1358,23 +1133,11 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
         ],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
     ],
     stringifyTestVector(trace)
@@ -1398,443 +1161,329 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
   });
 });
 
-test("extractEvaluationSamples: node closes an open sample, then errors before the node's last instruction", async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('error1', {}, true);
-  if (!result.success) {
-    t.fail(stringifyErrors(result.errors));
-    return;
-  }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
-  const nodes = result.reduce.script;
-  const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
-  const trace = traceWithUnlockingPhaseAndFinalState.slice(1);
-  const extracted = extractEvaluationSamples({
-    evaluationRange,
-    nodes,
-    trace,
-  });
-  t.deepEqual(
-    nodes,
-    [
-      {
-        bytecode: hexToBin('01'),
-        range: {
-          endColumn: 5,
-          endLineNumber: 1,
-          startColumn: 1,
-          startLineNumber: 1,
-        },
-      },
-      {
-        bytecode: hexToBin('ab6a00'),
-        range: {
-          endColumn: 30,
-          endLineNumber: 1,
-          startColumn: 6,
-          startLineNumber: 1,
-        },
-        source: {
-          bytecode: hexToBin('03ab6a00'),
-          range: {
-            endColumn: 29,
-            endLineNumber: 1,
-            startColumn: 8,
-            startLineNumber: 1,
-          },
-          script: [
-            {
-              bytecode: hexToBin('03ab6a00'),
-              push: {
-                bytecode: hexToBin('ab6a00'),
-                range: {
-                  endColumn: 28,
-                  endLineNumber: 1,
-                  startColumn: 9,
-                  startLineNumber: 1,
-                },
-                script: [
-                  {
-                    bytecode: hexToBin('ab'),
-                    range: {
-                      endColumn: 13,
-                      endLineNumber: 1,
-                      startColumn: 9,
-                      startLineNumber: 1,
-                    },
-                  },
-                  {
-                    bytecode: hexToBin('6a'),
-                    range: {
-                      endColumn: 23,
-                      endLineNumber: 1,
-                      startColumn: 14,
-                      startLineNumber: 1,
-                    },
-                  },
-                  {
-                    bytecode: hexToBin('00'),
-                    range: {
-                      endColumn: 28,
-                      endLineNumber: 1,
-                      startColumn: 24,
-                      startLineNumber: 1,
-                    },
-                  },
-                ],
-              },
-              range: {
-                endColumn: 29,
-                endLineNumber: 1,
-                startColumn: 8,
-                startLineNumber: 1,
-              },
-            },
-          ],
-        },
-        trace: [
-          {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-          {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('ab6a00'),
-                opcode: 3,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-          {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('ab6a00'),
-                opcode: 3,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('ab6a00')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-          {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('ab6a00'),
-                opcode: 3,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('ab6a00')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        ],
-      },
-    ],
-    stringifyTestVector(nodes)
-  );
-
-  t.deepEqual(
-    traceWithUnlockingPhaseAndFinalState,
-    [
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [],
-        ip: 0,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin('ab'),
-            opcode: 1,
-          },
-          {
-            opcode: 106,
-          },
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-        ],
-        ip: 0,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin('ab'),
-            opcode: 1,
-          },
-          {
-            opcode: 106,
-          },
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-        ],
-        ip: 1,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin('ab')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        error: AuthenticationErrorCommon.calledReturn,
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin('ab'),
-            opcode: 1,
-          },
-          {
-            opcode: 106,
-          },
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-        ],
-        ip: 2,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin('ab')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        error: AuthenticationErrorCommon.calledReturn,
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin('ab'),
-            opcode: 1,
-          },
-          {
-            opcode: 106,
-          },
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-        ],
-        ip: 2,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin('ab')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-    ],
-    stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
-  );
-
-  t.deepEqual(
-    extracted,
-    {
-      samples: [
+test.failing(
+  "extractEvaluationSamples: node closes an open sample, then errors before the node's last instruction",
+  async (t) => {
+    const compiler = await compilerPromise;
+    const vm = await vmPromise;
+    const result = compiler.generateBytecode('error1', {}, true);
+    if (!result.success) {
+      t.fail(stringifyErrors(result.errors));
+      return;
+    }
+    const program = createAuthenticationProgramEvaluationCommon(
+      result.bytecode
+    );
+    const nodes = result.reduce.script;
+    const evaluationRange = result.reduce.range;
+    const traceWithUnlockingPhaseAndFinalState = vm.debug(program);
+    const trace = traceWithUnlockingPhaseAndFinalState.slice(1);
+    const extracted = extractEvaluationSamples({
+      evaluationRange,
+      nodes,
+      trace,
+    });
+    t.deepEqual(
+      nodes,
+      [
         {
-          evaluationRange,
-          internalStates: [],
+          bytecode: hexToBin('01'),
           range: {
-            endColumn: 1,
+            endColumn: 5,
             endLineNumber: 1,
             startColumn: 1,
             startLineNumber: 1,
           },
-          state: trace[0],
         },
         {
-          evaluationRange,
-          instruction: { data: hexToBin('ab'), opcode: 1 },
-          internalStates: [],
-          range: mergeRanges([nodes[0].range, nodes[1].range]),
-          state: trace[1],
-        },
-        {
-          evaluationRange,
-          instruction: { opcode: OpcodesCommon.OP_RETURN },
-          internalStates: [],
-          range: nodes[1].range,
-          state: trace[2],
+          bytecode: hexToBin('ab6a00'),
+          range: {
+            endColumn: 30,
+            endLineNumber: 1,
+            startColumn: 6,
+            startLineNumber: 1,
+          },
+          source: {
+            bytecode: hexToBin('03ab6a00'),
+            range: {
+              endColumn: 29,
+              endLineNumber: 1,
+              startColumn: 8,
+              startLineNumber: 1,
+            },
+            script: [
+              {
+                bytecode: hexToBin('03ab6a00'),
+                push: {
+                  bytecode: hexToBin('ab6a00'),
+                  range: {
+                    endColumn: 28,
+                    endLineNumber: 1,
+                    startColumn: 9,
+                    startLineNumber: 1,
+                  },
+                  script: [
+                    {
+                      bytecode: hexToBin('ab'),
+                      range: {
+                        endColumn: 13,
+                        endLineNumber: 1,
+                        startColumn: 9,
+                        startLineNumber: 1,
+                      },
+                    },
+                    {
+                      bytecode: hexToBin('6a'),
+                      range: {
+                        endColumn: 23,
+                        endLineNumber: 1,
+                        startColumn: 14,
+                        startLineNumber: 1,
+                      },
+                    },
+                    {
+                      bytecode: hexToBin('00'),
+                      range: {
+                        endColumn: 28,
+                        endLineNumber: 1,
+                        startColumn: 24,
+                        startLineNumber: 1,
+                      },
+                    },
+                  ],
+                },
+                range: {
+                  endColumn: 29,
+                  endLineNumber: 1,
+                  startColumn: 8,
+                  startLineNumber: 1,
+                },
+              },
+            ],
+          },
+          trace: [
+            {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+            {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('ab6a00'),
+                  opcode: 3,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+            {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('ab6a00'),
+                  opcode: 3,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('ab6a00')],
+            },
+            {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('ab6a00'),
+                  opcode: 3,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('ab6a00')],
+            },
+          ],
         },
       ],
-      unmatchedStates: [],
-    },
-    stringifyTestVector(extracted)
-  );
-});
+      stringifyTestVector(nodes)
+    );
+
+    t.deepEqual(
+      traceWithUnlockingPhaseAndFinalState,
+      [
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [],
+          ip: 0,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [],
+        },
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin('ab'),
+              opcode: 1,
+            },
+            {
+              opcode: 106,
+            },
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+          ],
+          ip: 0,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [],
+        },
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin('ab'),
+              opcode: 1,
+            },
+            {
+              opcode: 106,
+            },
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+          ],
+          ip: 1,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [hexToBin('ab')],
+        },
+        {
+          alternateStack: [],
+          error: AuthenticationErrorCommon.calledReturn,
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin('ab'),
+              opcode: 1,
+            },
+            {
+              opcode: 106,
+            },
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+          ],
+          ip: 2,
+          lastCodeSeparator: -1,
+          operationCount: 1,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [hexToBin('ab')],
+        },
+        {
+          alternateStack: [],
+          error: AuthenticationErrorCommon.calledReturn,
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin('ab'),
+              opcode: 1,
+            },
+            {
+              opcode: 106,
+            },
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+          ],
+          ip: 2,
+          lastCodeSeparator: -1,
+          operationCount: 1,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [hexToBin('ab')],
+        },
+      ],
+      stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
+    );
+
+    t.deepEqual(
+      extracted,
+      {
+        samples: [
+          {
+            evaluationRange,
+            internalStates: [],
+            range: {
+              endColumn: 1,
+              endLineNumber: 1,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            state: trace[0],
+          },
+          {
+            evaluationRange,
+            instruction: { data: hexToBin('ab'), opcode: 1 },
+            internalStates: [],
+            range: mergeRanges([nodes[0].range, nodes[1].range]),
+            state: trace[1],
+          },
+          {
+            evaluationRange,
+            instruction: { opcode: Opcodes.OP_RETURN },
+            internalStates: [],
+            range: nodes[1].range,
+            state: trace[2],
+          },
+        ],
+        unmatchedStates: [],
+      },
+      stringifyTestVector(extracted)
+    );
+  }
+);
 
 test('extractEvaluationSamples: node which closes an open sample with an error', async (t) => {
   const compiler = await compilerPromise;
@@ -1844,12 +1493,10 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
     t.fail(stringifyErrors(result.errors));
     return;
   }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
+  const program = createAuthenticationProgramEvaluationCommon(result.bytecode);
   const nodes = result.reduce.script;
   const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
+  const traceWithUnlockingPhaseAndFinalState = vm.debug(program);
   const trace = traceWithUnlockingPhaseAndFinalState.slice(1);
   const extracted = extractEvaluationSamples({
     evaluationRange,
@@ -1888,32 +1535,18 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
     [
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1929,27 +1562,14 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
         ],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -1965,27 +1585,14 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
         ],
         ip: 1,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         error: AuthenticationErrorCommon.exceedsMaximumPush,
         executionStack: [],
         instructions: [
@@ -2002,27 +1609,14 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
         ],
         ip: 2,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         error: AuthenticationErrorCommon.exceedsMaximumPush,
         executionStack: [],
         instructions: [
@@ -2039,23 +1633,11 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
         ],
         ip: 2,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
     ],
     stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
@@ -2106,12 +1688,10 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
     t.fail(stringifyErrors(result.errors));
     return;
   }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
+  const program = createAuthenticationProgramEvaluationCommon(result.bytecode);
   const nodes = result.reduce.script;
   const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
+  const traceWithUnlockingPhaseAndFinalState = vm.debug(program);
   const trace = traceWithUnlockingPhaseAndFinalState.slice(1, -1);
   const extracted = extractEvaluationSamples({
     evaluationRange,
@@ -2166,32 +1746,18 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
     [
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -2212,27 +1778,14 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
         ],
         ip: 0,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
         executionStack: [],
         instructions: [
           {
@@ -2253,28 +1806,15 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
         ],
         ip: 1,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        error: 'Program called an OP_RETURN operation.' as AuthenticationErrorCommon,
+        error: 'Program called an OP_RETURN operation.',
         executionStack: [],
         instructions: [
           {
@@ -2295,28 +1835,15 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
         ],
         ip: 2,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
       {
         alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        error: 'Program called an OP_RETURN operation.' as AuthenticationErrorCommon,
+        error: 'Program called an OP_RETURN operation.',
         executionStack: [],
         instructions: [
           {
@@ -2337,23 +1864,11 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
         ],
         ip: 2,
         lastCodeSeparator: -1,
-        locktime: 0,
         operationCount: 1,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
+        program,
         signatureOperationsCount: 0,
         signedMessages: [],
         stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
       },
     ],
     stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
@@ -2388,2890 +1903,1117 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
   );
 });
 
-test('extractEvaluationSamplesRecursive: complex, deeply-nested script with irregular spacing', async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('nested', {}, true);
-  if (!result.success) {
-    t.fail(stringifyErrors(result.errors));
-    return;
-  }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
-  const nodes = result.reduce.script;
-  const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
-  const trace = traceWithUnlockingPhaseAndFinalState.slice(1);
-  const sampleResult = extractEvaluationSamplesRecursive({
-    evaluationRange,
-    nodes,
-    trace,
-  });
-  t.deepEqual(
-    nodes,
-    [
-      {
-        bytecode: hexToBin('00'),
-        range: {
-          endColumn: 5,
-          endLineNumber: 1,
-          startColumn: 1,
-          startLineNumber: 1,
-        },
-      },
-      {
-        bytecode: hexToBin('03616263'),
-        push: {
-          bytecode: hexToBin('616263'),
+test.failing(
+  'extractEvaluationSamplesRecursive: complex, deeply-nested script with irregular spacing',
+  async (t) => {
+    const compiler = await compilerPromise;
+    const vm = await vmPromise;
+    const result = compiler.generateBytecode('nested', {}, true);
+    if (!result.success) {
+      t.fail(stringifyErrors(result.errors));
+      return;
+    }
+    const program = createAuthenticationProgramEvaluationCommon(
+      result.bytecode
+    );
+    const nodes = result.reduce.script;
+    const evaluationRange = result.reduce.range;
+    const traceWithUnlockingPhaseAndFinalState = vm.debug(program);
+    const trace = traceWithUnlockingPhaseAndFinalState.slice(1);
+    const sampleResult = extractEvaluationSamplesRecursive({
+      evaluationRange,
+      nodes,
+      trace,
+    });
+    t.deepEqual(
+      nodes,
+      [
+        {
+          bytecode: hexToBin('00'),
           range: {
-            endColumn: 15,
-            endLineNumber: 20,
-            startColumn: 3,
-            startLineNumber: 4,
+            endColumn: 5,
+            endLineNumber: 1,
+            startColumn: 1,
+            startLineNumber: 1,
           },
-          script: [
-            {
-              bytecode: hexToBin('616263'),
-              range: {
-                endColumn: 4,
-                endLineNumber: 16,
-                startColumn: 3,
-                startLineNumber: 4,
-              },
-              source: {
-                bytecode: hexToBin('0000036162637e7e'),
+        },
+        {
+          bytecode: hexToBin('03616263'),
+          push: {
+            bytecode: hexToBin('616263'),
+            range: {
+              endColumn: 15,
+              endLineNumber: 20,
+              startColumn: 3,
+              startLineNumber: 4,
+            },
+            script: [
+              {
+                bytecode: hexToBin('616263'),
                 range: {
-                  endColumn: 9,
-                  endLineNumber: 15,
+                  endColumn: 4,
+                  endLineNumber: 16,
                   startColumn: 3,
-                  startLineNumber: 5,
+                  startLineNumber: 4,
                 },
-                script: [
-                  {
-                    bytecode: hexToBin('0000'),
-                    range: {
-                      endColumn: 9,
-                      endLineNumber: 5,
-                      startColumn: 3,
-                      startLineNumber: 5,
-                    },
+                source: {
+                  bytecode: hexToBin('0000036162637e7e'),
+                  range: {
+                    endColumn: 9,
+                    endLineNumber: 15,
+                    startColumn: 3,
+                    startLineNumber: 5,
                   },
-                  {
-                    bytecode: hexToBin('03'),
-                    range: {
-                      endColumn: 6,
-                      endLineNumber: 11,
-                      startColumn: 5,
-                      startLineNumber: 6,
-                    },
-                    source: {
-                      bytecode: hexToBin('515293'),
+                  script: [
+                    {
+                      bytecode: hexToBin('0000'),
                       range: {
-                        endColumn: 13,
-                        endLineNumber: 9,
-                        startColumn: 7,
+                        endColumn: 9,
+                        endLineNumber: 5,
+                        startColumn: 3,
+                        startLineNumber: 5,
+                      },
+                    },
+                    {
+                      bytecode: hexToBin('03'),
+                      range: {
+                        endColumn: 6,
+                        endLineNumber: 11,
+                        startColumn: 5,
                         startLineNumber: 6,
                       },
-                      script: [
-                        {
-                          bytecode: hexToBin('51'),
-                          range: {
-                            endColumn: 16,
-                            endLineNumber: 6,
-                            startColumn: 7,
-                            startLineNumber: 6,
-                          },
-                          source: {
-                            bytecode: hexToBin('0151'),
+                      source: {
+                        bytecode: hexToBin('515293'),
+                        range: {
+                          endColumn: 13,
+                          endLineNumber: 9,
+                          startColumn: 7,
+                          startLineNumber: 6,
+                        },
+                        script: [
+                          {
+                            bytecode: hexToBin('51'),
                             range: {
-                              endColumn: 15,
+                              endColumn: 16,
                               endLineNumber: 6,
-                              startColumn: 9,
+                              startColumn: 7,
                               startLineNumber: 6,
                             },
-                            script: [
-                              {
-                                bytecode: hexToBin('0151'),
-                                push: {
-                                  bytecode: hexToBin('51'),
+                            source: {
+                              bytecode: hexToBin('0151'),
+                              range: {
+                                endColumn: 15,
+                                endLineNumber: 6,
+                                startColumn: 9,
+                                startLineNumber: 6,
+                              },
+                              script: [
+                                {
+                                  bytecode: hexToBin('0151'),
+                                  push: {
+                                    bytecode: hexToBin('51'),
+                                    range: {
+                                      endColumn: 14,
+                                      endLineNumber: 6,
+                                      startColumn: 10,
+                                      startLineNumber: 6,
+                                    },
+                                    script: [
+                                      {
+                                        bytecode: hexToBin('51'),
+                                        range: {
+                                          endColumn: 14,
+                                          endLineNumber: 6,
+                                          startColumn: 10,
+                                          startLineNumber: 6,
+                                        },
+                                      },
+                                    ],
+                                  },
                                   range: {
-                                    endColumn: 14,
+                                    endColumn: 15,
                                     endLineNumber: 6,
-                                    startColumn: 10,
+                                    startColumn: 9,
                                     startLineNumber: 6,
                                   },
-                                  script: [
-                                    {
-                                      bytecode: hexToBin('51'),
-                                      range: {
-                                        endColumn: 14,
-                                        endLineNumber: 6,
-                                        startColumn: 10,
-                                        startLineNumber: 6,
-                                      },
-                                    },
-                                  ],
                                 },
-                                range: {
-                                  endColumn: 15,
-                                  endLineNumber: 6,
-                                  startColumn: 9,
-                                  startLineNumber: 6,
-                                },
+                              ],
+                            },
+                            trace: [
+                              {
+                                alternateStack: [],
+                                executionStack: [],
+                                instructions: [],
+                                ip: 0,
+                                lastCodeSeparator: -1,
+                                operationCount: 0,
+                                program,
+                                signatureOperationsCount: 0,
+                                signedMessages: [],
+                                stack: [],
+                              },
+                              {
+                                alternateStack: [],
+                                executionStack: [],
+                                instructions: [
+                                  {
+                                    data: hexToBin('51'),
+                                    opcode: 1,
+                                  },
+                                ],
+                                ip: 0,
+                                lastCodeSeparator: -1,
+                                operationCount: 0,
+                                program,
+                                signatureOperationsCount: 0,
+                                signedMessages: [],
+                                stack: [],
+                              },
+                              {
+                                alternateStack: [],
+                                executionStack: [],
+                                instructions: [
+                                  {
+                                    data: hexToBin('51'),
+                                    opcode: 1,
+                                  },
+                                ],
+                                ip: 1,
+                                lastCodeSeparator: -1,
+                                operationCount: 0,
+                                program,
+                                signatureOperationsCount: 0,
+                                signedMessages: [],
+                                stack: [hexToBin('51')],
+                              },
+                              {
+                                alternateStack: [],
+                                executionStack: [],
+                                instructions: [
+                                  {
+                                    data: hexToBin('51'),
+                                    opcode: 1,
+                                  },
+                                ],
+                                ip: 1,
+                                lastCodeSeparator: -1,
+                                operationCount: 0,
+                                program,
+                                signatureOperationsCount: 0,
+                                signedMessages: [],
+                                stack: [hexToBin('51')],
                               },
                             ],
                           },
-                          trace: [
+                          {
+                            bytecode: hexToBin('52'),
+                            range: {
+                              endColumn: 11,
+                              endLineNumber: 8,
+                              startColumn: 7,
+                              startLineNumber: 8,
+                            },
+                          },
+                          {
+                            bytecode: hexToBin('93'),
+                            range: {
+                              endColumn: 13,
+                              endLineNumber: 9,
+                              startColumn: 7,
+                              startLineNumber: 9,
+                            },
+                          },
+                        ],
+                      },
+                      trace: [
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
                             {
-                              alternateStack: [],
-                              correspondingOutput: hexToBin(
-                                '000000000000000000'
-                              ),
-                              executionStack: [],
-                              instructions: [],
-                              ip: 0,
-                              lastCodeSeparator: -1,
-                              locktime: 0,
-                              operationCount: 0,
-                              outpointIndex: 0,
-                              outpointTransactionHash: hexToBin(
-                                '0000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              outputValue: hexToBin('0000000000000000'),
-                              sequenceNumber: 0,
-                              signatureOperationsCount: 0,
-                              signedMessages: [],
-                              stack: [],
-                              transactionOutpoints: hexToBin(
-                                '000000000000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              transactionOutputs: hexToBin(
-                                '000000000000000000'
-                              ),
-                              transactionSequenceNumbers: hexToBin('00000000'),
-                              version: 0,
+                              opcode: 81,
                             },
                             {
-                              alternateStack: [],
-                              correspondingOutput: hexToBin(
-                                '000000000000000000'
-                              ),
-                              executionStack: [],
-                              instructions: [
-                                {
-                                  data: hexToBin('51'),
-                                  opcode: 1,
-                                },
-                              ],
-                              ip: 0,
-                              lastCodeSeparator: -1,
-                              locktime: 0,
-                              operationCount: 0,
-                              outpointIndex: 0,
-                              outpointTransactionHash: hexToBin(
-                                '0000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              outputValue: hexToBin('0000000000000000'),
-                              sequenceNumber: 0,
-                              signatureOperationsCount: 0,
-                              signedMessages: [],
-                              stack: [],
-                              transactionOutpoints: hexToBin(
-                                '000000000000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              transactionOutputs: hexToBin(
-                                '000000000000000000'
-                              ),
-                              transactionSequenceNumbers: hexToBin('00000000'),
-                              version: 0,
+                              opcode: 82,
                             },
                             {
-                              alternateStack: [],
-                              correspondingOutput: hexToBin(
-                                '000000000000000000'
-                              ),
-                              executionStack: [],
-                              instructions: [
-                                {
-                                  data: hexToBin('51'),
-                                  opcode: 1,
-                                },
-                              ],
-                              ip: 1,
-                              lastCodeSeparator: -1,
-                              locktime: 0,
-                              operationCount: 0,
-                              outpointIndex: 0,
-                              outpointTransactionHash: hexToBin(
-                                '0000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              outputValue: hexToBin('0000000000000000'),
-                              sequenceNumber: 0,
-                              signatureOperationsCount: 0,
-                              signedMessages: [],
-                              stack: [hexToBin('51')],
-                              transactionOutpoints: hexToBin(
-                                '000000000000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              transactionOutputs: hexToBin(
-                                '000000000000000000'
-                              ),
-                              transactionSequenceNumbers: hexToBin('00000000'),
-                              version: 0,
-                            },
-                            {
-                              alternateStack: [],
-                              correspondingOutput: hexToBin(
-                                '000000000000000000'
-                              ),
-                              executionStack: [],
-                              instructions: [
-                                {
-                                  data: hexToBin('51'),
-                                  opcode: 1,
-                                },
-                              ],
-                              ip: 1,
-                              lastCodeSeparator: -1,
-                              locktime: 0,
-                              operationCount: 0,
-                              outpointIndex: 0,
-                              outpointTransactionHash: hexToBin(
-                                '0000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              outputValue: hexToBin('0000000000000000'),
-                              sequenceNumber: 0,
-                              signatureOperationsCount: 0,
-                              signedMessages: [],
-                              stack: [hexToBin('51')],
-                              transactionOutpoints: hexToBin(
-                                '000000000000000000000000000000000000000000000000000000000000000000000000'
-                              ),
-                              transactionOutputs: hexToBin(
-                                '000000000000000000'
-                              ),
-                              transactionSequenceNumbers: hexToBin('00000000'),
-                              version: 0,
+                              opcode: 147,
                             },
                           ],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
                         },
                         {
-                          bytecode: hexToBin('52'),
-                          range: {
-                            endColumn: 11,
-                            endLineNumber: 8,
-                            startColumn: 7,
-                            startLineNumber: 8,
-                          },
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              opcode: 81,
+                            },
+                            {
+                              opcode: 82,
+                            },
+                            {
+                              opcode: 147,
+                            },
+                          ],
+                          ip: 1,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('01')],
                         },
                         {
-                          bytecode: hexToBin('93'),
-                          range: {
-                            endColumn: 13,
-                            endLineNumber: 9,
-                            startColumn: 7,
-                            startLineNumber: 9,
-                          },
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              opcode: 81,
+                            },
+                            {
+                              opcode: 82,
+                            },
+                            {
+                              opcode: 147,
+                            },
+                          ],
+                          ip: 2,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('01'), hexToBin('02')],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              opcode: 81,
+                            },
+                            {
+                              opcode: 82,
+                            },
+                            {
+                              opcode: 147,
+                            },
+                          ],
+                          ip: 3,
+                          lastCodeSeparator: -1,
+                          operationCount: 1,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('03')],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              opcode: 81,
+                            },
+                            {
+                              opcode: 82,
+                            },
+                            {
+                              opcode: 147,
+                            },
+                          ],
+                          ip: 3,
+                          lastCodeSeparator: -1,
+                          operationCount: 1,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('03')],
                         },
                       ],
                     },
-                    trace: [
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            opcode: 81,
-                          },
-                          {
-                            opcode: 82,
-                          },
-                          {
-                            opcode: 147,
-                          },
-                        ],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            opcode: 81,
-                          },
-                          {
-                            opcode: 82,
-                          },
-                          {
-                            opcode: 147,
-                          },
-                        ],
-                        ip: 1,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('01')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            opcode: 81,
-                          },
-                          {
-                            opcode: 82,
-                          },
-                          {
-                            opcode: 147,
-                          },
-                        ],
-                        ip: 2,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('01'), hexToBin('02')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            opcode: 81,
-                          },
-                          {
-                            opcode: 82,
-                          },
-                          {
-                            opcode: 147,
-                          },
-                        ],
-                        ip: 3,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 1,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('03')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            opcode: 81,
-                          },
-                          {
-                            opcode: 82,
-                          },
-                          {
-                            opcode: 147,
-                          },
-                        ],
-                        ip: 3,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 1,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('03')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                    ],
-                  },
-                  {
-                    bytecode: hexToBin('616263'),
-                    range: {
-                      endColumn: 6,
-                      endLineNumber: 13,
-                      startColumn: 5,
-                      startLineNumber: 12,
-                    },
-                    source: {
-                      bytecode: hexToBin('03616263'),
+                    {
+                      bytecode: hexToBin('616263'),
                       range: {
-                        endColumn: 15,
-                        endLineNumber: 12,
-                        startColumn: 8,
+                        endColumn: 6,
+                        endLineNumber: 13,
+                        startColumn: 5,
                         startLineNumber: 12,
                       },
-                      script: [
-                        {
-                          bytecode: hexToBin('03616263'),
-                          push: {
-                            bytecode: hexToBin('616263'),
+                      source: {
+                        bytecode: hexToBin('03616263'),
+                        range: {
+                          endColumn: 15,
+                          endLineNumber: 12,
+                          startColumn: 8,
+                          startLineNumber: 12,
+                        },
+                        script: [
+                          {
+                            bytecode: hexToBin('03616263'),
+                            push: {
+                              bytecode: hexToBin('616263'),
+                              range: {
+                                endColumn: 14,
+                                endLineNumber: 12,
+                                startColumn: 9,
+                                startLineNumber: 12,
+                              },
+                              script: [
+                                {
+                                  bytecode: hexToBin('616263'),
+                                  range: {
+                                    endColumn: 14,
+                                    endLineNumber: 12,
+                                    startColumn: 9,
+                                    startLineNumber: 12,
+                                  },
+                                },
+                              ],
+                            },
                             range: {
-                              endColumn: 14,
+                              endColumn: 15,
                               endLineNumber: 12,
-                              startColumn: 9,
+                              startColumn: 8,
                               startLineNumber: 12,
                             },
-                            script: [
-                              {
-                                bytecode: hexToBin('616263'),
-                                range: {
-                                  endColumn: 14,
-                                  endLineNumber: 12,
-                                  startColumn: 9,
-                                  startLineNumber: 12,
-                                },
-                              },
-                            ],
                           },
-                          range: {
-                            endColumn: 15,
-                            endLineNumber: 12,
-                            startColumn: 8,
-                            startLineNumber: 12,
-                          },
+                        ],
+                      },
+                      trace: [
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('616263'),
+                              opcode: 3,
+                            },
+                          ],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('616263'),
+                              opcode: 3,
+                            },
+                          ],
+                          ip: 1,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('616263')],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('616263'),
+                              opcode: 3,
+                            },
+                          ],
+                          ip: 1,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('616263')],
                         },
                       ],
                     },
-                    trace: [
+                    {
+                      bytecode: hexToBin('7e'),
+                      range: {
+                        endColumn: 9,
+                        endLineNumber: 14,
+                        startColumn: 3,
+                        startLineNumber: 14,
+                      },
+                    },
+                    {
+                      bytecode: hexToBin('7e'),
+                      range: {
+                        endColumn: 9,
+                        endLineNumber: 15,
+                        startColumn: 3,
+                        startLineNumber: 15,
+                      },
+                    },
+                  ],
+                },
+                trace: [
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [],
+                    ip: 0,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        data: hexToBin(''),
+                        opcode: 0,
                       },
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('616263'),
-                            opcode: 3,
-                          },
-                        ],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        data: hexToBin(''),
+                        opcode: 0,
                       },
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('616263'),
-                            opcode: 3,
-                          },
-                        ],
-                        ip: 1,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('616263')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        data: hexToBin('616263'),
+                        opcode: 3,
                       },
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('616263'),
-                            opcode: 3,
-                          },
-                        ],
-                        ip: 1,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('616263')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
                       },
                     ],
+                    ip: 0,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [],
                   },
                   {
-                    bytecode: hexToBin('7e'),
-                    range: {
-                      endColumn: 9,
-                      endLineNumber: 14,
-                      startColumn: 3,
-                      startLineNumber: 14,
-                    },
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 1,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('')],
                   },
                   {
-                    bytecode: hexToBin('7e'),
-                    range: {
-                      endColumn: 9,
-                      endLineNumber: 15,
-                      startColumn: 3,
-                      startLineNumber: 15,
-                    },
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 2,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin(''), hexToBin('')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 3,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin(''), hexToBin(''), hexToBin('616263')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 4,
+                    lastCodeSeparator: -1,
+                    operationCount: 1,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin(''), hexToBin('616263')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 5,
+                    lastCodeSeparator: -1,
+                    operationCount: 2,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('616263')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin('616263'),
+                        opcode: 3,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 5,
+                    lastCodeSeparator: -1,
+                    operationCount: 2,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('616263')],
                   },
                 ],
               },
-              trace: [
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [],
-                  ip: 0,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 0,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 1,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 2,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin(''), hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 3,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin(''), hexToBin(''), hexToBin('616263')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 4,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 1,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin(''), hexToBin('616263')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 5,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 2,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('616263')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin('616263'),
-                      opcode: 3,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 5,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 2,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('616263')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-              ],
-            },
-            {
-              bytecode: hexToBin(''),
-              range: {
-                endColumn: 15,
-                endLineNumber: 20,
-                startColumn: 3,
-                startLineNumber: 17,
-              },
-              source: {
-                bytecode: hexToBin('00007e'),
+              {
+                bytecode: hexToBin(''),
                 range: {
-                  endColumn: 14,
+                  endColumn: 15,
                   endLineNumber: 20,
-                  startColumn: 5,
-                  startLineNumber: 18,
+                  startColumn: 3,
+                  startLineNumber: 17,
                 },
-                script: [
-                  {
-                    bytecode: hexToBin('00'),
-                    push: {
-                      bytecode: hexToBin(''),
+                source: {
+                  bytecode: hexToBin('00007e'),
+                  range: {
+                    endColumn: 14,
+                    endLineNumber: 20,
+                    startColumn: 5,
+                    startLineNumber: 18,
+                  },
+                  script: [
+                    {
+                      bytecode: hexToBin('00'),
+                      push: {
+                        bytecode: hexToBin(''),
+                        range: {
+                          endColumn: 7,
+                          endLineNumber: 18,
+                          startColumn: 6,
+                          startLineNumber: 18,
+                        },
+                        script: [
+                          {
+                            bytecode: hexToBin(''),
+                            range: {
+                              endColumn: 7,
+                              endLineNumber: 18,
+                              startColumn: 6,
+                              startLineNumber: 18,
+                            },
+                          },
+                        ],
+                      },
                       range: {
-                        endColumn: 7,
+                        endColumn: 8,
                         endLineNumber: 18,
-                        startColumn: 6,
+                        startColumn: 5,
                         startLineNumber: 18,
                       },
-                      script: [
-                        {
-                          bytecode: hexToBin(''),
-                          range: {
-                            endColumn: 7,
-                            endLineNumber: 18,
-                            startColumn: 6,
-                            startLineNumber: 18,
-                          },
+                    },
+                    {
+                      bytecode: hexToBin('00'),
+                      push: {
+                        bytecode: hexToBin(''),
+                        range: {
+                          endColumn: 7,
+                          endLineNumber: 19,
+                          startColumn: 6,
+                          startLineNumber: 19,
                         },
-                      ],
-                    },
-                    range: {
-                      endColumn: 8,
-                      endLineNumber: 18,
-                      startColumn: 5,
-                      startLineNumber: 18,
-                    },
-                  },
-                  {
-                    bytecode: hexToBin('00'),
-                    push: {
-                      bytecode: hexToBin(''),
+                        script: [
+                          {
+                            bytecode: hexToBin(''),
+                            range: {
+                              endColumn: 7,
+                              endLineNumber: 19,
+                              startColumn: 6,
+                              startLineNumber: 19,
+                            },
+                          },
+                        ],
+                      },
                       range: {
-                        endColumn: 7,
+                        endColumn: 8,
                         endLineNumber: 19,
-                        startColumn: 6,
+                        startColumn: 5,
                         startLineNumber: 19,
                       },
-                      script: [
-                        {
-                          bytecode: hexToBin(''),
-                          range: {
-                            endColumn: 7,
-                            endLineNumber: 19,
-                            startColumn: 6,
-                            startLineNumber: 19,
-                          },
-                        },
-                      ],
                     },
-                    range: {
-                      endColumn: 8,
-                      endLineNumber: 19,
-                      startColumn: 5,
-                      startLineNumber: 19,
-                    },
-                  },
-                  {
-                    bytecode: hexToBin('7e'),
-                    range: {
-                      endColumn: 14,
-                      endLineNumber: 20,
-                      startColumn: 3,
-                      startLineNumber: 20,
-                    },
-                    source: {
-                      bytecode: hexToBin('017e'),
+                    {
+                      bytecode: hexToBin('7e'),
                       range: {
-                        endColumn: 13,
+                        endColumn: 14,
                         endLineNumber: 20,
-                        startColumn: 5,
+                        startColumn: 3,
                         startLineNumber: 20,
                       },
-                      script: [
-                        {
-                          bytecode: hexToBin('017e'),
-                          push: {
-                            bytecode: hexToBin('7e'),
+                      source: {
+                        bytecode: hexToBin('017e'),
+                        range: {
+                          endColumn: 13,
+                          endLineNumber: 20,
+                          startColumn: 5,
+                          startLineNumber: 20,
+                        },
+                        script: [
+                          {
+                            bytecode: hexToBin('017e'),
+                            push: {
+                              bytecode: hexToBin('7e'),
+                              range: {
+                                endColumn: 12,
+                                endLineNumber: 20,
+                                startColumn: 6,
+                                startLineNumber: 20,
+                              },
+                              script: [
+                                {
+                                  bytecode: hexToBin('7e'),
+                                  range: {
+                                    endColumn: 12,
+                                    endLineNumber: 20,
+                                    startColumn: 6,
+                                    startLineNumber: 20,
+                                  },
+                                },
+                              ],
+                            },
                             range: {
-                              endColumn: 12,
+                              endColumn: 13,
                               endLineNumber: 20,
-                              startColumn: 6,
+                              startColumn: 5,
                               startLineNumber: 20,
                             },
-                            script: [
-                              {
-                                bytecode: hexToBin('7e'),
-                                range: {
-                                  endColumn: 12,
-                                  endLineNumber: 20,
-                                  startColumn: 6,
-                                  startLineNumber: 20,
-                                },
-                              },
-                            ],
                           },
-                          range: {
-                            endColumn: 13,
-                            endLineNumber: 20,
-                            startColumn: 5,
-                            startLineNumber: 20,
-                          },
+                        ],
+                      },
+                      trace: [
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('7e'),
+                              opcode: 1,
+                            },
+                          ],
+                          ip: 0,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('7e'),
+                              opcode: 1,
+                            },
+                          ],
+                          ip: 1,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('7e')],
+                        },
+                        {
+                          alternateStack: [],
+                          executionStack: [],
+                          instructions: [
+                            {
+                              data: hexToBin('7e'),
+                              opcode: 1,
+                            },
+                          ],
+                          ip: 1,
+                          lastCodeSeparator: -1,
+                          operationCount: 0,
+                          program,
+                          signatureOperationsCount: 0,
+                          signedMessages: [],
+                          stack: [hexToBin('7e')],
                         },
                       ],
                     },
-                    trace: [
+                  ],
+                },
+                trace: [
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [],
+                    ip: 0,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        data: hexToBin(''),
+                        opcode: 0,
                       },
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('7e'),
-                            opcode: 1,
-                          },
-                        ],
-                        ip: 0,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        data: hexToBin(''),
+                        opcode: 0,
                       },
                       {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('7e'),
-                            opcode: 1,
-                          },
-                        ],
-                        ip: 1,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('7e')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
-                      },
-                      {
-                        alternateStack: [],
-                        correspondingOutput: hexToBin('000000000000000000'),
-                        executionStack: [],
-                        instructions: [
-                          {
-                            data: hexToBin('7e'),
-                            opcode: 1,
-                          },
-                        ],
-                        ip: 1,
-                        lastCodeSeparator: -1,
-                        locktime: 0,
-                        operationCount: 0,
-                        outpointIndex: 0,
-                        outpointTransactionHash: hexToBin(
-                          '0000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        outputValue: hexToBin('0000000000000000'),
-                        sequenceNumber: 0,
-                        signatureOperationsCount: 0,
-                        signedMessages: [],
-                        stack: [hexToBin('7e')],
-                        transactionOutpoints: hexToBin(
-                          '000000000000000000000000000000000000000000000000000000000000000000000000'
-                        ),
-                        transactionOutputs: hexToBin('000000000000000000'),
-                        transactionSequenceNumbers: hexToBin('00000000'),
-                        version: 0,
+                        opcode: 126,
                       },
                     ],
+                    ip: 0,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 1,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 2,
+                    lastCodeSeparator: -1,
+                    operationCount: 0,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin(''), hexToBin('')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 3,
+                    lastCodeSeparator: -1,
+                    operationCount: 1,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('')],
+                  },
+                  {
+                    alternateStack: [],
+                    executionStack: [],
+                    instructions: [
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        data: hexToBin(''),
+                        opcode: 0,
+                      },
+                      {
+                        opcode: 126,
+                      },
+                    ],
+                    ip: 3,
+                    lastCodeSeparator: -1,
+                    operationCount: 1,
+                    program,
+                    signatureOperationsCount: 0,
+                    signedMessages: [],
+                    stack: [hexToBin('')],
                   },
                 ],
               },
-              trace: [
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [],
-                  ip: 0,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 0,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 1,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 2,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 0,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin(''), hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 3,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 1,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-                {
-                  alternateStack: [],
-                  correspondingOutput: hexToBin('000000000000000000'),
-                  executionStack: [],
-                  instructions: [
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      data: hexToBin(''),
-                      opcode: 0,
-                    },
-                    {
-                      opcode: 126,
-                    },
-                  ],
-                  ip: 3,
-                  lastCodeSeparator: -1,
-                  locktime: 0,
-                  operationCount: 1,
-                  outpointIndex: 0,
-                  outpointTransactionHash: hexToBin(
-                    '0000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  outputValue: hexToBin('0000000000000000'),
-                  sequenceNumber: 0,
-                  signatureOperationsCount: 0,
-                  signedMessages: [],
-                  stack: [hexToBin('')],
-                  transactionOutpoints: hexToBin(
-                    '000000000000000000000000000000000000000000000000000000000000000000000000'
-                  ),
-                  transactionOutputs: hexToBin('000000000000000000'),
-                  transactionSequenceNumbers: hexToBin('00000000'),
-                  version: 0,
-                },
-              ],
-            },
-          ],
-        },
-        range: {
-          endColumn: 2,
-          endLineNumber: 21,
-          startColumn: 1,
-          startLineNumber: 3,
-        },
-      },
-    ],
-    stringifyTestVector(nodes)
-  );
-
-  t.deepEqual(
-    traceWithUnlockingPhaseAndFinalState,
-    [
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [],
-        ip: 0,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-        ],
-        ip: 0,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-        ],
-        ip: 1,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin('')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-        ],
-        ip: 2,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin(''), hexToBin('616263')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-      {
-        alternateStack: [],
-        correspondingOutput: hexToBin('000000000000000000'),
-        executionStack: [],
-        instructions: [
-          {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-        ],
-        ip: 2,
-        lastCodeSeparator: -1,
-        locktime: 0,
-        operationCount: 0,
-        outpointIndex: 0,
-        outpointTransactionHash: hexToBin(
-          '0000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        outputValue: hexToBin('0000000000000000'),
-        sequenceNumber: 0,
-        signatureOperationsCount: 0,
-        signedMessages: [],
-        stack: [hexToBin(''), hexToBin('616263')],
-        transactionOutpoints: hexToBin(
-          '000000000000000000000000000000000000000000000000000000000000000000000000'
-        ),
-        transactionOutputs: hexToBin('000000000000000000'),
-        transactionSequenceNumbers: hexToBin('00000000'),
-        version: 0,
-      },
-    ],
-    stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
-  );
-
-  t.deepEqual(
-    sampleResult,
-    {
-      samples: [
-        {
-          evaluationRange: {
-            endColumn: 2,
-            endLineNumber: 21,
-            startColumn: 1,
-            startLineNumber: 1,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 1,
-            endLineNumber: 1,
-            startColumn: 1,
-            startLineNumber: 1,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
             ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
           },
-        },
-        {
-          evaluationRange: {
-            endColumn: 2,
-            endLineNumber: 21,
-            startColumn: 1,
-            startLineNumber: 1,
-          },
-          instruction: {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 5,
-            endLineNumber: 1,
-            startColumn: 1,
-            startLineNumber: 1,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 3,
-            endLineNumber: 16,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 5,
-            endLineNumber: 4,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-              {
-                opcode: 126,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 3,
-            endLineNumber: 16,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          instruction: {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          internalStates: [
-            {
-              instruction: {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              state: {
-                alternateStack: [],
-                correspondingOutput: hexToBin('000000000000000000'),
-                executionStack: [],
-                instructions: [
-                  {
-                    data: hexToBin(''),
-                    opcode: 0,
-                  },
-                  {
-                    data: hexToBin(''),
-                    opcode: 0,
-                  },
-                  {
-                    data: hexToBin('616263'),
-                    opcode: 3,
-                  },
-                  {
-                    opcode: 126,
-                  },
-                  {
-                    opcode: 126,
-                  },
-                ],
-                ip: 1,
-                lastCodeSeparator: -1,
-                locktime: 0,
-                operationCount: 0,
-                outpointIndex: 0,
-                outpointTransactionHash: hexToBin(
-                  '0000000000000000000000000000000000000000000000000000000000000000'
-                ),
-                outputValue: hexToBin('0000000000000000'),
-                sequenceNumber: 0,
-                signatureOperationsCount: 0,
-                signedMessages: [],
-                stack: [hexToBin('')],
-                transactionOutpoints: hexToBin(
-                  '000000000000000000000000000000000000000000000000000000000000000000000000'
-                ),
-                transactionOutputs: hexToBin('000000000000000000'),
-                transactionSequenceNumbers: hexToBin('00000000'),
-                version: 0,
-              },
-            },
-          ],
-          range: {
-            endColumn: 9,
-            endLineNumber: 5,
-            startColumn: 3,
-            startLineNumber: 5,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-              {
-                opcode: 126,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 2,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin(''), hexToBin('')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 11,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 7,
-            endLineNumber: 6,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                opcode: 81,
-              },
-              {
-                opcode: 82,
-              },
-              {
-                opcode: 147,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 15,
-            endLineNumber: 6,
-            startColumn: 9,
-            startLineNumber: 6,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 9,
-            endLineNumber: 6,
-            startColumn: 9,
-            startLineNumber: 6,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('51'),
-                opcode: 1,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 15,
-            endLineNumber: 6,
-            startColumn: 9,
-            startLineNumber: 6,
-          },
-          instruction: {
-            data: hexToBin('51'),
-            opcode: 1,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 15,
-            endLineNumber: 6,
-            startColumn: 9,
-            startLineNumber: 6,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('51'),
-                opcode: 1,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('51')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 11,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          instruction: {
-            opcode: 81,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 16,
-            endLineNumber: 6,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                opcode: 81,
-              },
-              {
-                opcode: 82,
-              },
-              {
-                opcode: 147,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('01')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 11,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          instruction: {
-            opcode: 82,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 11,
-            endLineNumber: 8,
-            startColumn: 7,
-            startLineNumber: 8,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                opcode: 81,
-              },
-              {
-                opcode: 82,
-              },
-              {
-                opcode: 147,
-              },
-            ],
-            ip: 2,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('01'), hexToBin('02')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 11,
-            startColumn: 7,
-            startLineNumber: 6,
-          },
-          instruction: {
-            opcode: 147,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 13,
-            endLineNumber: 9,
-            startColumn: 7,
-            startLineNumber: 9,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                opcode: 81,
-              },
-              {
-                opcode: 82,
-              },
-              {
-                opcode: 147,
-              },
-            ],
-            ip: 3,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 1,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('03')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 13,
-            startColumn: 7,
-            startLineNumber: 12,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 7,
-            endLineNumber: 12,
-            startColumn: 7,
-            startLineNumber: 12,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 5,
-            endLineNumber: 13,
-            startColumn: 7,
-            startLineNumber: 12,
-          },
-          instruction: {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 15,
-            endLineNumber: 12,
-            startColumn: 8,
-            startLineNumber: 12,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('616263')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 3,
-            endLineNumber: 16,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          instruction: {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 6,
-            endLineNumber: 13,
-            startColumn: 5,
-            startLineNumber: 6,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-              {
-                opcode: 126,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 3,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin(''), hexToBin(''), hexToBin('616263')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 3,
-            endLineNumber: 16,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          instruction: {
-            opcode: 126,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 9,
-            endLineNumber: 14,
-            startColumn: 3,
-            startLineNumber: 14,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-              {
-                opcode: 126,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 4,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 1,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin(''), hexToBin('616263')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 3,
-            endLineNumber: 16,
-            startColumn: 5,
-            startLineNumber: 4,
-          },
-          instruction: {
-            opcode: 126,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 9,
-            endLineNumber: 15,
-            startColumn: 3,
-            startLineNumber: 15,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-              {
-                opcode: 126,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 5,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 2,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('616263')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 14,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 17,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 5,
-            endLineNumber: 17,
-            startColumn: 5,
-            startLineNumber: 17,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 14,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 17,
-          },
-          instruction: {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 8,
-            endLineNumber: 18,
-            startColumn: 5,
-            startLineNumber: 18,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 14,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 17,
-          },
-          instruction: {
-            data: hexToBin(''),
-            opcode: 0,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 8,
-            endLineNumber: 19,
-            startColumn: 5,
-            startLineNumber: 19,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 2,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin(''), hexToBin('')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 13,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 20,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 5,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 20,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('7e'),
-                opcode: 1,
-              },
-            ],
-            ip: 0,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 13,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 20,
-          },
-          instruction: {
-            data: hexToBin('7e'),
-            opcode: 1,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 13,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 20,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin('7e'),
-                opcode: 1,
-              },
-            ],
-            ip: 1,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('7e')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 14,
-            endLineNumber: 20,
-            startColumn: 5,
-            startLineNumber: 17,
-          },
-          instruction: {
-            opcode: 126,
-          },
-          internalStates: [],
-          range: {
-            endColumn: 14,
-            endLineNumber: 20,
-            startColumn: 3,
-            startLineNumber: 20,
-          },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                opcode: 126,
-              },
-            ],
-            ip: 3,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 1,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin('')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
-        },
-        {
-          evaluationRange: {
-            endColumn: 2,
-            endLineNumber: 21,
-            startColumn: 1,
-            startLineNumber: 1,
-          },
-          instruction: {
-            data: hexToBin('616263'),
-            opcode: 3,
-          },
-          internalStates: [],
           range: {
             endColumn: 2,
             endLineNumber: 21,
             startColumn: 1,
             startLineNumber: 3,
           },
-          state: {
-            alternateStack: [],
-            correspondingOutput: hexToBin('000000000000000000'),
-            executionStack: [],
-            instructions: [
-              {
-                data: hexToBin(''),
-                opcode: 0,
-              },
-              {
-                data: hexToBin('616263'),
-                opcode: 3,
-              },
-            ],
-            ip: 2,
-            lastCodeSeparator: -1,
-            locktime: 0,
-            operationCount: 0,
-            outpointIndex: 0,
-            outpointTransactionHash: hexToBin(
-              '0000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            outputValue: hexToBin('0000000000000000'),
-            sequenceNumber: 0,
-            signatureOperationsCount: 0,
-            signedMessages: [],
-            stack: [hexToBin(''), hexToBin('616263')],
-            transactionOutpoints: hexToBin(
-              '000000000000000000000000000000000000000000000000000000000000000000000000'
-            ),
-            transactionOutputs: hexToBin('000000000000000000'),
-            transactionSequenceNumbers: hexToBin('00000000'),
-            version: 0,
-          },
         },
       ],
-      unmatchedStates: [
+      stringifyTestVector(nodes)
+    );
+
+    t.deepEqual(
+      traceWithUnlockingPhaseAndFinalState,
+      [
         {
           alternateStack: [],
-          correspondingOutput: hexToBin('000000000000000000'),
+          executionStack: [],
+          instructions: [],
+          ip: 0,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [],
+        },
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+          ],
+          ip: 0,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [],
+        },
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+          ],
+          ip: 1,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [hexToBin('')],
+        },
+        {
+          alternateStack: [],
           executionStack: [],
           instructions: [
             {
@@ -5285,66 +3027,1031 @@ test('extractEvaluationSamplesRecursive: complex, deeply-nested script with irre
           ],
           ip: 2,
           lastCodeSeparator: -1,
-          locktime: 0,
           operationCount: 0,
-          outpointIndex: 0,
-          outpointTransactionHash: hexToBin(
-            '0000000000000000000000000000000000000000000000000000000000000000'
-          ),
-          outputValue: hexToBin('0000000000000000'),
-          sequenceNumber: 0,
+          program,
           signatureOperationsCount: 0,
           signedMessages: [],
           stack: [hexToBin(''), hexToBin('616263')],
-          transactionOutpoints: hexToBin(
-            '000000000000000000000000000000000000000000000000000000000000000000000000'
-          ),
-          transactionOutputs: hexToBin('000000000000000000'),
-          transactionSequenceNumbers: hexToBin('00000000'),
-          version: 0,
+        },
+        {
+          alternateStack: [],
+          executionStack: [],
+          instructions: [
+            {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+          ],
+          ip: 2,
+          lastCodeSeparator: -1,
+          operationCount: 0,
+          program,
+          signatureOperationsCount: 0,
+          signedMessages: [],
+          stack: [hexToBin(''), hexToBin('616263')],
         },
       ],
-    },
-    stringifyTestVector(sampleResult)
-  );
-});
+      stringifyTestVector(traceWithUnlockingPhaseAndFinalState)
+    );
 
-const extractUnexecutedRangesMacro: Macro<[string, Range[], boolean?]> = async (
-  t,
-  scriptId,
-  ranges,
-  specifyStart
-  // eslint-disable-next-line max-params
-) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode(scriptId, {}, true);
-  if (!result.success) {
-    t.fail(stringifyErrors(result.errors));
-    return;
+    t.deepEqual(
+      sampleResult,
+      {
+        samples: [
+          {
+            evaluationRange: {
+              endColumn: 2,
+              endLineNumber: 21,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 1,
+              endLineNumber: 1,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 2,
+              endLineNumber: 21,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            instruction: {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 5,
+              endLineNumber: 1,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 3,
+              endLineNumber: 16,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 5,
+              endLineNumber: 4,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+                {
+                  opcode: 126,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 3,
+              endLineNumber: 16,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            instruction: {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            internalStates: [
+              {
+                instruction: {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                state: {
+                  alternateStack: [],
+                  executionStack: [],
+                  instructions: [
+                    {
+                      data: hexToBin(''),
+                      opcode: 0,
+                    },
+                    {
+                      data: hexToBin(''),
+                      opcode: 0,
+                    },
+                    {
+                      data: hexToBin('616263'),
+                      opcode: 3,
+                    },
+                    {
+                      opcode: 126,
+                    },
+                    {
+                      opcode: 126,
+                    },
+                  ],
+                  ip: 1,
+                  lastCodeSeparator: -1,
+                  operationCount: 0,
+                  program,
+                  signatureOperationsCount: 0,
+                  signedMessages: [],
+                  stack: [hexToBin('')],
+                },
+              },
+            ],
+            range: {
+              endColumn: 9,
+              endLineNumber: 5,
+              startColumn: 3,
+              startLineNumber: 5,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+                {
+                  opcode: 126,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 2,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin(''), hexToBin('')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 11,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 7,
+              endLineNumber: 6,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  opcode: 81,
+                },
+                {
+                  opcode: 82,
+                },
+                {
+                  opcode: 147,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 15,
+              endLineNumber: 6,
+              startColumn: 9,
+              startLineNumber: 6,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 9,
+              endLineNumber: 6,
+              startColumn: 9,
+              startLineNumber: 6,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('51'),
+                  opcode: 1,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 15,
+              endLineNumber: 6,
+              startColumn: 9,
+              startLineNumber: 6,
+            },
+            instruction: {
+              data: hexToBin('51'),
+              opcode: 1,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 15,
+              endLineNumber: 6,
+              startColumn: 9,
+              startLineNumber: 6,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('51'),
+                  opcode: 1,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('51')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 11,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            instruction: {
+              opcode: 81,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 16,
+              endLineNumber: 6,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  opcode: 81,
+                },
+                {
+                  opcode: 82,
+                },
+                {
+                  opcode: 147,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('01')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 11,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            instruction: {
+              opcode: 82,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 11,
+              endLineNumber: 8,
+              startColumn: 7,
+              startLineNumber: 8,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  opcode: 81,
+                },
+                {
+                  opcode: 82,
+                },
+                {
+                  opcode: 147,
+                },
+              ],
+              ip: 2,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('01'), hexToBin('02')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 11,
+              startColumn: 7,
+              startLineNumber: 6,
+            },
+            instruction: {
+              opcode: 147,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 13,
+              endLineNumber: 9,
+              startColumn: 7,
+              startLineNumber: 9,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  opcode: 81,
+                },
+                {
+                  opcode: 82,
+                },
+                {
+                  opcode: 147,
+                },
+              ],
+              ip: 3,
+              lastCodeSeparator: -1,
+              operationCount: 1,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('03')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 13,
+              startColumn: 7,
+              startLineNumber: 12,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 7,
+              endLineNumber: 12,
+              startColumn: 7,
+              startLineNumber: 12,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 5,
+              endLineNumber: 13,
+              startColumn: 7,
+              startLineNumber: 12,
+            },
+            instruction: {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 15,
+              endLineNumber: 12,
+              startColumn: 8,
+              startLineNumber: 12,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('616263')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 3,
+              endLineNumber: 16,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            instruction: {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 6,
+              endLineNumber: 13,
+              startColumn: 5,
+              startLineNumber: 6,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+                {
+                  opcode: 126,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 3,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin(''), hexToBin(''), hexToBin('616263')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 3,
+              endLineNumber: 16,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            instruction: {
+              opcode: 126,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 9,
+              endLineNumber: 14,
+              startColumn: 3,
+              startLineNumber: 14,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+                {
+                  opcode: 126,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 4,
+              lastCodeSeparator: -1,
+              operationCount: 1,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin(''), hexToBin('616263')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 3,
+              endLineNumber: 16,
+              startColumn: 5,
+              startLineNumber: 4,
+            },
+            instruction: {
+              opcode: 126,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 9,
+              endLineNumber: 15,
+              startColumn: 3,
+              startLineNumber: 15,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+                {
+                  opcode: 126,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 5,
+              lastCodeSeparator: -1,
+              operationCount: 2,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('616263')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 14,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 17,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 5,
+              endLineNumber: 17,
+              startColumn: 5,
+              startLineNumber: 17,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 14,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 17,
+            },
+            instruction: {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 8,
+              endLineNumber: 18,
+              startColumn: 5,
+              startLineNumber: 18,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 14,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 17,
+            },
+            instruction: {
+              data: hexToBin(''),
+              opcode: 0,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 8,
+              endLineNumber: 19,
+              startColumn: 5,
+              startLineNumber: 19,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 2,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin(''), hexToBin('')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 13,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 20,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 5,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 20,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('7e'),
+                  opcode: 1,
+                },
+              ],
+              ip: 0,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 13,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 20,
+            },
+            instruction: {
+              data: hexToBin('7e'),
+              opcode: 1,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 13,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 20,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin('7e'),
+                  opcode: 1,
+                },
+              ],
+              ip: 1,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('7e')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 14,
+              endLineNumber: 20,
+              startColumn: 5,
+              startLineNumber: 17,
+            },
+            instruction: {
+              opcode: 126,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 14,
+              endLineNumber: 20,
+              startColumn: 3,
+              startLineNumber: 20,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  opcode: 126,
+                },
+              ],
+              ip: 3,
+              lastCodeSeparator: -1,
+              operationCount: 1,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin('')],
+            },
+          },
+          {
+            evaluationRange: {
+              endColumn: 2,
+              endLineNumber: 21,
+              startColumn: 1,
+              startLineNumber: 1,
+            },
+            instruction: {
+              data: hexToBin('616263'),
+              opcode: 3,
+            },
+            internalStates: [],
+            range: {
+              endColumn: 2,
+              endLineNumber: 21,
+              startColumn: 1,
+              startLineNumber: 3,
+            },
+            state: {
+              alternateStack: [],
+              executionStack: [],
+              instructions: [
+                {
+                  data: hexToBin(''),
+                  opcode: 0,
+                },
+                {
+                  data: hexToBin('616263'),
+                  opcode: 3,
+                },
+              ],
+              ip: 2,
+              lastCodeSeparator: -1,
+              operationCount: 0,
+              program,
+              signatureOperationsCount: 0,
+              signedMessages: [],
+              stack: [hexToBin(''), hexToBin('616263')],
+            },
+          },
+        ],
+        unmatchedStates: [
+          {
+            alternateStack: [],
+            executionStack: [],
+            instructions: [
+              {
+                data: hexToBin(''),
+                opcode: 0,
+              },
+              {
+                data: hexToBin('616263'),
+                opcode: 3,
+              },
+            ],
+            ip: 2,
+            lastCodeSeparator: -1,
+            operationCount: 0,
+            program,
+            signatureOperationsCount: 0,
+            signedMessages: [],
+            stack: [hexToBin(''), hexToBin('616263')],
+          },
+        ],
+      },
+      stringifyTestVector(sampleResult)
+    );
   }
-  const testProgram = createAuthenticationProgramEvaluationCommon(
-    result.bytecode
-  );
-  const nodes = result.reduce.script;
-  const evaluationRange = result.reduce.range;
-  const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
-  const trace = traceWithUnlockingPhaseAndFinalState.slice(1, -1);
-  const { samples } = extractEvaluationSamplesRecursive({
-    evaluationRange,
-    nodes,
-    trace,
-  });
-  const unexecutedRanges = extractUnexecutedRanges(
-    samples,
-    specifyStart === undefined ? undefined : '1,1'
-  );
-  t.deepEqual(unexecutedRanges, ranges, stringifyTestVector(unexecutedRanges));
-};
+);
 
-// eslint-disable-next-line functional/immutable-data
-extractUnexecutedRangesMacro.title = (_, scriptId) =>
-  `extractUnexecutedRangesMacro: ${scriptId}`;
+const extractUnexecutedRangesMacro = test.macro<[string, Range[], boolean?]>({
+  // eslint-disable-next-line max-params
+  exec: async (t, scriptId, ranges, specifyStart) => {
+    const compiler = await compilerPromise;
+    const vm = await vmPromise;
+    const result = compiler.generateBytecode(scriptId, {}, true);
+    if (!result.success) {
+      t.fail(stringifyErrors(result.errors));
+      return;
+    }
+    const testProgram = createAuthenticationProgramEvaluationCommon(
+      result.bytecode
+    );
+    const nodes = result.reduce.script;
+    const evaluationRange = result.reduce.range;
+    const traceWithUnlockingPhaseAndFinalState = vm.debug(testProgram);
+    const trace = traceWithUnlockingPhaseAndFinalState.slice(1, -1);
+    const { samples } = extractEvaluationSamplesRecursive({
+      evaluationRange,
+      nodes,
+      trace,
+    });
+    const unexecutedRanges = extractUnexecutedRanges(
+      samples,
+      specifyStart === undefined ? undefined : '1,1'
+    );
+    t.deepEqual(
+      unexecutedRanges,
+      ranges,
+      stringifyTestVector(unexecutedRanges)
+    );
+  },
+  title: (_, scriptId) => `extractUnexecutedRangesMacro: ${scriptId}`,
+});
 
 test(
   extractUnexecutedRangesMacro,

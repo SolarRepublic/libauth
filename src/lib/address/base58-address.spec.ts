@@ -1,4 +1,3 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
 
@@ -13,10 +12,12 @@ import {
   hexToBin,
   instantiateSha256,
   lockingBytecodeToBase58Address,
-} from '../lib';
+} from '../lib.js';
 
-import * as keyIoInvalid from './fixtures/key_io_invalid.json';
-import * as keyIoValid from './fixtures/key_io_valid.json';
+// eslint-disable-next-line import/no-restricted-paths, import/no-internal-modules
+import keyIoInvalid from './fixtures/key_io_invalid.json' assert { type: 'json' };
+// eslint-disable-next-line import/no-restricted-paths, import/no-internal-modules
+import keyIoValid from './fixtures/key_io_valid.json' assert { type: 'json' };
 
 const sha256Promise = instantiateSha256();
 
@@ -191,7 +192,7 @@ test('Base58Address Valid Vectors (from C++ implementation – includes WIF vect
       {
         isCompressed?: boolean;
         isPrivkey: boolean;
-        chain: 'main' | 'test' | 'regtest';
+        chain: 'main' | 'regtest' | 'test';
       }
     ];
 

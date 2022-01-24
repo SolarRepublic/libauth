@@ -1,22 +1,19 @@
-import { CompilationData, Compiler } from '../template/compiler-types';
-import {
+import type {
+  AnyCompilerConfiguration,
+  CompilationContextBCH,
+  CompilationData,
   CompilationError,
   CompilationResultParseError,
   CompilationResultReduceError,
   CompilationResultResolveError,
-} from '../template/language/language-types';
+  Compiler,
+} from '../lib';
 import {
   allErrorsAreRecoverable,
   extractResolvedVariableBytecodeMap,
-} from '../template/language/language-utils';
+} from '../lib.js';
 
-import {
-  encodeOutpoints,
-  encodeOutput,
-  encodeOutputsForSigning,
-  encodeSequenceNumbersForSigning,
-} from './transaction-serialization';
-import {
+import type {
   BytecodeGenerationCompletionInput,
   BytecodeGenerationCompletionOutput,
   BytecodeGenerationErrorBase,
@@ -26,11 +23,10 @@ import {
   InputTemplate,
   Output,
   OutputTemplate,
-  TransactionContextCommon,
   TransactionGenerationAttempt,
   TransactionGenerationError,
   TransactionTemplateFixed,
-} from './transaction-types';
+} from './transaction';
 
 const returnFailedCompilationDirective = <
   Type extends 'locking' | 'unlocking'
@@ -42,30 +38,32 @@ const returnFailedCompilationDirective = <
   index: number;
   result:
     | CompilationResultParseError
-    | CompilationResultResolveError
-    | CompilationResultReduceError<unknown>;
+    | CompilationResultReduceError<unknown>
+    | CompilationResultResolveError;
   type: Type;
-}) => {
-  return {
-    errors: result.errors.map((error) => ({
-      ...error,
-      error: `Failed compilation of ${type} directive at index "${index}": ${error.error}`,
-    })),
-    index,
-    ...(result.errorType === 'parse' ? {} : { resolved: result.resolve }),
-    type,
-  };
-};
+}) => ({
+  errors: result.errors.map((error) => ({
+    ...error,
+    error: `Failed compilation of ${type} directive at index "${index}": ${error.error}`,
+  })),
+  index,
+  ...(result.errorType === 'parse' ? {} : { resolved: result.resolve }),
+  type,
+});
 
 export const compileOutputTemplate = <
-  CompilerType extends Compiler<TransactionContextCommon, unknown, unknown>
+  CompilerType extends Compiler<
+    unknown,
+    AnyCompilerConfiguration<unknown>,
+    unknown
+  >
 >({
   outputTemplate,
   index,
 }: {
   outputTemplate: OutputTemplate<CompilerType>;
   index: number;
-}): Output | BytecodeGenerationErrorLocking => {
+}): BytecodeGenerationErrorLocking | Output => {
   if ('script' in outputTemplate.lockingBytecode) {
     const directive = outputTemplate.lockingBytecode;
     const data = directive.data === undefined ? {} : directive.data;
@@ -77,62 +75,60 @@ export const compileOutputTemplate = <
     return result.success
       ? {
           lockingBytecode: result.bytecode,
-          satoshis: outputTemplate.satoshis,
+          valueSatoshis: outputTemplate.valueSatoshis,
         }
       : returnFailedCompilationDirective({ index, result, type: 'locking' });
   }
   return {
     lockingBytecode: outputTemplate.lockingBytecode.slice(),
-    satoshis: outputTemplate.satoshis,
+    valueSatoshis: outputTemplate.valueSatoshis,
   };
 };
 
 export const compileInputTemplate = <
-  CompilerType extends Compiler<TransactionContextCommon, unknown, unknown>
+  CompilerType extends Compiler<
+    CompilationContext,
+    AnyCompilerConfiguration<CompilationContext>,
+    unknown
+  >,
+  CompilationContext extends CompilationContextBCH = CompilationContextBCH
 >({
   inputTemplate,
   index,
-  outputs,
   template,
-  transactionOutpoints,
-  transactionSequenceNumbers,
 }: {
   inputTemplate: InputTemplate<CompilerType>;
   index: number;
   outputs: Output[];
   template: Readonly<TransactionTemplateFixed<CompilerType>>;
-  transactionOutpoints: Uint8Array;
-  transactionSequenceNumbers: Uint8Array;
-}): Input | BytecodeGenerationErrorUnlocking => {
+}): BytecodeGenerationErrorUnlocking | Input => {
   if ('script' in inputTemplate.unlockingBytecode) {
     const directive = inputTemplate.unlockingBytecode;
-    const correspondingOutput = outputs[index] as Output | undefined;
     const result = directive.compiler.generateBytecode(
       directive.script,
       {
         ...directive.data,
-        transactionContext: {
-          correspondingOutput:
-            correspondingOutput === undefined
-              ? undefined
-              : encodeOutput(correspondingOutput),
-          locktime: template.locktime,
-          outpointIndex: inputTemplate.outpointIndex,
-          outpointTransactionHash: inputTemplate.outpointTransactionHash.slice(),
-          outputValue: directive.satoshis,
-          sequenceNumber: inputTemplate.sequenceNumber,
-          transactionOutpoints: transactionOutpoints.slice(),
-          transactionOutputs: encodeOutputsForSigning(outputs),
-          transactionSequenceNumbers: transactionSequenceNumbers.slice(),
-          version: template.version,
-        },
+        /**
+         * TODO: skipped during refactor – fix when migrating to PST format/workflow
+         */
+        compilationContext: {
+          inputIndex: index,
+          sourceOutputs: [],
+          transaction: {
+            inputs: [],
+            locktime: template.locktime,
+            outputs: [],
+            version: template.version,
+          },
+        } as unknown as CompilationContext,
       },
       true
     );
     return result.success
       ? {
           outpointIndex: inputTemplate.outpointIndex,
-          outpointTransactionHash: inputTemplate.outpointTransactionHash.slice(),
+          outpointTransactionHash:
+            inputTemplate.outpointTransactionHash.slice(),
           sequenceNumber: inputTemplate.sequenceNumber,
           unlockingBytecode: result.bytecode,
         }
@@ -152,7 +148,7 @@ export const compileInputTemplate = <
  *
  * Returns either a `Transaction` or an array of compilation errors.
  *
- * For each `CompilationDirective`, the `transactionContext` property will be
+ * For each `CompilationDirective`, the `compilationContext` property will be
  * automatically provided to the compiler. All other necessary `CompilationData`
  * properties must be specified in the `TransactionTemplate`.
  *
@@ -160,7 +156,8 @@ export const compileInputTemplate = <
  * `Transaction`
  */
 export const generateTransaction = <
-  CompilerType extends Compiler<TransactionContextCommon, unknown, unknown>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  CompilerType extends Compiler<any, AnyCompilerConfiguration<any>, any>
 >(
   template: Readonly<TransactionTemplateFixed<CompilerType>>
 ): TransactionGenerationAttempt => {
@@ -195,23 +192,12 @@ export const generateTransaction = <
   }
   const outputs = outputResults as Output[];
 
-  const inputSerializationElements = template.inputs.map((inputTemplate) => ({
-    outpointIndex: inputTemplate.outpointIndex,
-    outpointTransactionHash: inputTemplate.outpointTransactionHash.slice(),
-    sequenceNumber: inputTemplate.sequenceNumber,
-  }));
-  const transactionOutpoints = encodeOutpoints(inputSerializationElements);
-  const transactionSequenceNumbers = encodeSequenceNumbersForSigning(
-    inputSerializationElements
-  );
   const inputResults = template.inputs.map((inputTemplate, index) =>
     compileInputTemplate({
       index,
       inputTemplate,
       outputs,
       template,
-      transactionOutpoints,
-      transactionSequenceNumbers,
     })
   );
 
@@ -289,9 +275,9 @@ export const extractResolvedVariables = (
 export const extractMissingVariables = (
   transactionGenerationError: TransactionGenerationError
 ) => {
-  const allErrors = (transactionGenerationError.errors as BytecodeGenerationErrorBase[]).reduce<
-    CompilationError[]
-  >((all, error) => [...all, ...error.errors], []);
+  const allErrors = (
+    transactionGenerationError.errors as BytecodeGenerationErrorBase[]
+  ).reduce<CompilationError[]>((all, error) => [...all, ...error.errors], []);
 
   if (!allErrorsAreRecoverable(allErrors)) {
     return false;
@@ -333,23 +319,21 @@ export const extractMissingVariables = (
  * The first compilation must use only trusted compilation data
  */
 export const safelyExtendCompilationData = <
-  TransactionContext = TransactionContextCommon
+  CompilationContext = CompilationContextBCH
 >(
   transactionGenerationError: TransactionGenerationError,
-  trustedCompilationData: CompilationData<TransactionContext>,
+  trustedCompilationData: CompilationData<CompilationContext>,
   untrustedResolutions: {
     [providedByEntityId: string]: ReturnType<typeof extractResolvedVariables>;
   }
-): false | CompilationData<TransactionContext> => {
+): CompilationData<CompilationContext> | false => {
   const missing = extractMissingVariables(transactionGenerationError);
   if (missing === false) return false;
   const selectedResolutions = Object.entries(missing).reduce<{
     [fullIdentifier: string]: Uint8Array;
   }>((all, [identifier, entityId]) => {
     const entityResolution = untrustedResolutions[entityId] as
-      | {
-          [fullIdentifier: string]: Uint8Array;
-        }
+      | { [fullIdentifier: string]: Uint8Array }
       | undefined;
     if (entityResolution === undefined) {
       return all;

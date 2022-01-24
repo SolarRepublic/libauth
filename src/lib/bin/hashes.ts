@@ -19,7 +19,7 @@ export const instantiateRustWasm = async (
   updateExportName: string,
   finalExportName: string
 ): Promise<HashFunction> => {
-  const wasm = ((
+  const wasm = (
     await WebAssembly.instantiate(webassemblyBytes, {
       [expectedImportModuleName]: {
         /**
@@ -42,7 +42,7 @@ export const instantiateRustWasm = async (
         },
       },
     })
-  ).instance.exports as unknown) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  ).instance.exports as unknown as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   let cachedUint8Memory: Uint8Array | undefined; // eslint-disable-line @typescript-eslint/init-declarations
   let cachedUint32Memory: Uint32Array | undefined; // eslint-disable-line @typescript-eslint/init-declarations
@@ -52,7 +52,8 @@ export const instantiateRustWasm = async (
     if (cachedGlobalArgumentPtr === undefined) {
       cachedGlobalArgumentPtr = wasm.__wbindgen_global_argument_ptr();
     }
-    return cachedGlobalArgumentPtr;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return cachedGlobalArgumentPtr!;
   };
   /**
    * Must be hoisted for `__wbindgen_throw`.
@@ -63,6 +64,7 @@ export const instantiateRustWasm = async (
       cachedUint8Memory === undefined ||
       cachedUint8Memory.buffer !== wasm.memory.buffer
     ) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       cachedUint8Memory = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8Memory;
@@ -72,6 +74,7 @@ export const instantiateRustWasm = async (
       cachedUint32Memory === undefined ||
       cachedUint32Memory.buffer !== wasm.memory.buffer
     ) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       cachedUint32Memory = new Uint32Array(wasm.memory.buffer);
     }
     return cachedUint32Memory;
@@ -92,8 +95,8 @@ export const instantiateRustWasm = async (
     try {
       wasm[hashExportName](retPtr, ptr0, len0);
       const mem = getUint32Memory();
-      const ptr = mem[(retPtr as number) / 4];
-      const len = mem[(retPtr as number) / 4 + 1];
+      const ptr = mem[retPtr / 4];
+      const len = mem[retPtr / 4 + 1];
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;
@@ -106,8 +109,8 @@ export const instantiateRustWasm = async (
     const retPtr = globalArgumentPtr();
     wasm[initExportName](retPtr);
     const mem = getUint32Memory();
-    const ptr = mem[(retPtr as number) / 4];
-    const len = mem[(retPtr as number) / 4 + 1];
+    const ptr = mem[retPtr / 4];
+    const len = mem[retPtr / 4 + 1];
     const realRet = getArrayU8FromWasm(ptr, len).slice();
     wasm.__wbindgen_free(ptr, len);
     return realRet;
@@ -120,8 +123,8 @@ export const instantiateRustWasm = async (
     try {
       wasm[updateExportName](retPtr, ptr0, len0, ptr1, len1);
       const mem = getUint32Memory();
-      const ptr = mem[(retPtr as number) / 4];
-      const len = mem[(retPtr as number) / 4 + 1];
+      const ptr = mem[retPtr / 4];
+      const len = mem[retPtr / 4 + 1];
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;
@@ -138,8 +141,8 @@ export const instantiateRustWasm = async (
     try {
       wasm[finalExportName](retPtr, ptr0, len0);
       const mem = getUint32Memory();
-      const ptr = mem[(retPtr as number) / 4];
-      const len = mem[(retPtr as number) / 4 + 1];
+      const ptr = mem[retPtr / 4];
+      const len = mem[retPtr / 4 + 1];
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;

@@ -293,7 +293,7 @@ export const numberToBinInt32TwosCompliment = (value: number) => {
 export const binToNumberUintLE = (bin: Uint8Array, bytes = bin.length) => {
   const base = 2;
   const bitsInAByte = 8;
-  // eslint-disable-next-line functional/no-conditional-statement
+
   if (bin.length !== bytes) {
     // eslint-disable-next-line functional/no-throw-statement
     throw new TypeError(`Bin length must be ${bytes}.`);
@@ -346,7 +346,7 @@ export const binToNumberUint32LE = (bin: Uint8Array) => {
 export const binToBigIntUintBE = (bin: Uint8Array, bytes = bin.length) => {
   const bitsInAByte = 8;
   const shift = BigInt(bitsInAByte);
-  // eslint-disable-next-line functional/no-conditional-statement
+
   if (bin.length !== bytes) {
     // eslint-disable-next-line functional/no-throw-statement
     throw new TypeError(`Bin length must be ${bytes}.`);
@@ -401,7 +401,7 @@ export const bigIntToBinUint256BEClamped = (value: bigint) => {
  */
 export const binToBigIntUintLE = (bin: Uint8Array, bytes = bin.length) => {
   const bitsInAByte = 8;
-  // eslint-disable-next-line functional/no-conditional-statement
+
   if (bin.length !== bytes) {
     // eslint-disable-next-line functional/no-throw-statement
     throw new TypeError(`Bin length must be ${bytes}.`);

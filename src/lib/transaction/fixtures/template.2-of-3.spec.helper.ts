@@ -1,8 +1,8 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
-import {
+import type {
   AuthenticationTemplate,
   AuthenticationTemplateEntity,
-} from '../../template/template-types';
+} from '../../lib';
 
 const createSigner = (
   name: string,

@@ -1,5 +1,5 @@
-import { HashFunction, instantiateRustWasm, sha1Base64Bytes } from '../bin/bin';
-import { base64ToBin } from '../format/format';
+import type { HashFunction } from '../lib';
+import { base64ToBin, instantiateRustWasm, sha1Base64Bytes } from '../lib.js';
 
 export interface Sha1 extends HashFunction {
   /**

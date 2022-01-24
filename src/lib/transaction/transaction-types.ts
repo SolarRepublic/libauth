@@ -1,79 +1,4 @@
-import { CompilationData } from '../template/compiler-types';
-import {
-  CompilationError,
-  ResolvedScript,
-} from '../template/language/language-types';
-
-/**
- * The partial transaction context which is shared between all of the inputs in
- * a transaction.
- */
-export interface TransactionContextSharedCommon {
-  /**
-   * A time or block height at which the transaction is considered valid (and
-   * can be added to the block chain). This allows signers to create time-locked
-   * transactions which may only become valid in the future.
-   */
-  readonly locktime: number;
-  /**
-   * A.K.A. the serialization for `hashPrevouts`
-   *
-   * The signing serialization of all input outpoints. (See BIP143 or Bitcoin
-   * Cash's Replay Protected Sighash spec for details.)
-   */
-  readonly transactionOutpoints: Uint8Array;
-  /*
-   * A.K.A. the serialization for `hashOutputs` with `SIGHASH_ALL`
-   *
-   * The signing serialization of output amounts and locking scripts. (See
-   * BIP143 or Bitcoin Cash's Replay Protected Sighash spec for details.)
-   */
-  readonly transactionOutputs: Uint8Array;
-  /*
-   * A.K.A. the serialization for `hashSequence`
-   *
-   * The signing serialization of all input sequence numbers. (See BIP143 or
-   * Bitcoin Cash's Replay Protected Sighash spec for details.)
-   */
-  readonly transactionSequenceNumbers: Uint8Array;
-  readonly version: number;
-}
-
-/**
- * The complete transaction context in which a single transaction input exists.
- */
-export interface TransactionContextCommon
-  extends TransactionContextSharedCommon {
-  /*
-   * A.K.A. the serialization for `hashOutputs` with `SIGHASH_SINGLE`
-   *
-   * The signing serialization of the output at the same index as this input. If
-   * this input's index is larger than the total number of outputs (such that
-   * there is no corresponding output), this should be `undefined`. (See BIP143
-   * or Bitcoin Cash's Replay Protected Sighash spec for details.)
-   */
-  readonly correspondingOutput?: Uint8Array;
-  /**
-   * The index (within the previous transaction) of the outpoint being spent by
-   * this input.
-   */
-  readonly outpointIndex: number;
-  /**
-   * The hash/ID of the transaction from which the outpoint being spent by this
-   * input originated.
-   */
-  readonly outpointTransactionHash: Uint8Array;
-  /**
-   * The 8-byte `Uint64LE`-encoded value of the outpoint in satoshis (see
-   * `bigIntToBinUint64LE`).
-   */
-  readonly outputValue: Uint8Array;
-  /**
-   * The `sequenceNumber` associated with the input being validated. See
-   * `Input.sequenceNumber` for details.
-   */
-  readonly sequenceNumber: number;
-}
+import type { CompilationData, CompilationError, ResolvedScript } from '../lib';
 
 /**
  * Data type representing a Transaction Input.
@@ -99,7 +24,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
    * An "outpoint" is a reference (A.K.A. "pointer") to a specific output in a
    * previous transaction.
    *
-   * Encoded raw bitcoin transactions serialize this value in little-endian byte
+   * Encoded raw bitcoin transactions encode this value in little-endian byte
    * order. However, it is more common to use big-endian byte order when
    * displaying transaction hashes. (In part because the SHA-256 specification
    * defines its output as big-endian, so this byte order is output by most
@@ -186,7 +111,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
  *
  * @typeParam Bytecode - the type of `lockingBytecode` - this can be configured
  * to allow for defining compilation directives
- * @typeParam Amount - the type of `satoshis`
+ * @typeParam Amount - the type of `valueSatoshis`
  */
 export interface Output<Bytecode = Uint8Array, Amount = Uint8Array> {
   /**
@@ -211,37 +136,37 @@ export interface Output<Bytecode = Uint8Array, Amount = Uint8Array> {
    *
    * However, because the encoded output format for version 1 and 2 transactions
    * (used in both transaction encoding and signing serialization) uses a 64-bit
-   * unsigned, little-endian integer to serialize `satoshis`, this property is
+   * unsigned, little-endian integer to encode `valueSatoshis`, this property is
    * encoded in the same format, allowing it to cover the full possible range.
    *
    * This is useful for encoding values using schemes for fractional satoshis
    * (for which no finalized specification yet exists) or for encoding
-   * intentionally excessive values. For example, `invalidSatoshis`
+   * intentionally excessive values. For example, `excessiveSatoshis`
    * (`0xffffffffffffffff` - the maximum uint64 value) is a clearly impossible
-   * `satoshis` value for version 1 and 2 transactions. As such, this value can
-   * safely by used by transaction signing and verification implementations to
-   * ensure that an otherwise properly-signed transaction can never be included
-   * n the blockchain, e.g. for transaction size estimation or off-chain Bitauth
-   * signatures.
+   * `valueSatoshis` value for version 1 and 2 transactions. As such, this value
+   * can safely be used by transaction signing and verification implementations
+   * to ensure that an otherwise properly-signed transaction can never be
+   * included in the blockchain, e.g. for transaction size estimation or
+   * off-chain Bitauth signatures.
    *
    * To convert this value to and from a `BigInt` use `bigIntToBinUint64LE` and
    * `binToBigIntUint64LE`, respectively.
    */
-  readonly satoshis: Amount;
+  readonly valueSatoshis: Amount;
 }
 
 /**
  * The maximum uint64 value – an impossibly large, intentionally invalid value
- * for `satoshis`. See `Transaction.satoshis` for details.
+ * for `valueSatoshis`. See `Transaction.valueSatoshis` for details.
  */
 // prettier-ignore
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-export const invalidSatoshis = Uint8Array.from([255, 255, 255, 255, 255, 255, 255, 255]);
+export const excessiveSatoshis = Uint8Array.from([255, 255, 255, 255, 255, 255, 255, 255]);
 
 /**
  * Data type representing a transaction.
  */
-export interface Transaction<InputType = Input, OutputType = Output> {
+export interface TransactionCommon<InputType = Input, OutputType = Output> {
   /**
    * An array of inputs included in this transaction.
    *
@@ -330,7 +255,7 @@ export interface CompilationDirectiveUnlocking<
    * The `satoshis` value of the `Output` being spent by this input. Required
    * for use in signing serializations.
    */
-  satoshis: Output['satoshis'];
+  valueSatoshis: Output['valueSatoshis'];
 }
 
 export interface CompilationDirectiveUnlockingEstimate<
@@ -357,10 +282,10 @@ export type InputTemplate<
   RequireEstimate = false,
   CompilationDataType = CompilationData<never>
 > = Input<
+  | Uint8Array
   | (RequireEstimate extends true
       ? CompilationDirectiveUnlockingEstimate<CompilerType, CompilationDataType>
       : CompilationDirectiveUnlocking<CompilerType, CompilationDataType>)
-  | Uint8Array
 >;
 
 /**
@@ -368,9 +293,9 @@ export type InputTemplate<
  * `lockingBytecode` property. During compilation, the final `lockingBytecode`
  * will be generated from this directive.
  *
- * If `EnableFeeEstimation` is `true`, the `satoshis` value may also be
+ * If `EnableFeeEstimation` is `true`, the `valueSatoshis` value may also be
  * `undefined` (as estimated transactions always set output values to
- * `invalidSatoshis`).
+ * `excessiveSatoshis`).
  */
 export type OutputTemplate<
   CompilerType,
@@ -384,18 +309,18 @@ export type OutputTemplate<
 /**
  * A `Transaction` which may optionally use compilation directives in place of
  * `lockingBytecode` and `unlockingBytecode` instances. During transaction
- * generation, these directives will be generated from these directives.
+ * generation, VM bytecode will be generated from these directives.
  *
  *  If `EnableFeeEstimation` is `true`, all input directives must include an
- * `estimate` scenario ID, and the `satoshis` value of each output may also be
- * `undefined` (as estimated transactions always set output values to
- * `invalidSatoshis`).
+ * `estimate` scenario ID, and the `valueSatoshis` value of each output may also
+ * be `undefined` (as estimated transactions always set output values to
+ * `excessiveSatoshis`).
  */
 export type TransactionTemplate<
   CompilerType,
   EnableFeeEstimation = false,
   CompilationDataType = CompilationData<never>
-> = Transaction<
+> = TransactionCommon<
   InputTemplate<CompilerType, EnableFeeEstimation, CompilationDataType>,
   OutputTemplate<CompilerType, EnableFeeEstimation, CompilationDataType>
 >;
@@ -406,16 +331,15 @@ export type TransactionTemplate<
  * size given a transaction template (and from it, the required transaction
  * fee), see `estimateTransaction`.
  */
-export type TransactionTemplateFixed<CompilerType> = TransactionTemplate<
-  CompilerType
->;
+export type TransactionTemplateFixed<CompilerType> =
+  TransactionTemplate<CompilerType>;
 
 /**
  * A transaction template which enables fee estimation. The template must
- * include an `inputSatoshis` value (the total satoshi value of all
+ * include a `totalInputValueSatoshis` value (the total satoshi value of all
  * transaction inputs); all unlocking compilation directives must provide an
  * `estimate` scenario ID which is used to estimate the size of the resulting
- * unlocking bytecode; and the `satoshis` value of outputs is optional (all
+ * unlocking bytecode; and the `valueSatoshis` value of outputs is optional (all
  * satoshi values will be set to `impossibleSatoshis` in the estimated
  * transaction).
  */
@@ -426,9 +350,9 @@ export type TransactionTemplateEstimated<CompilerType> = TransactionTemplate<
   /**
    * The total satoshi value of all transaction inputs. This is required when
    * using fee estimation, and is used to calculate the appropriate value of
-   * change outputs (outputs with `satoshis` set to `undefined`).
+   * change outputs (outputs with `valueSatoshis` set to `undefined`).
    */
-  inputSatoshis: number;
+  totalInputValueSatoshis: number;
 };
 
 /**
@@ -476,7 +400,7 @@ export interface BytecodeGenerationCompletionBase {
    * `lockingBytecode`). If `input`, the bytecode was generated for the input at
    * `index` (an `unlockingBytecode`).
    */
-  type: 'output' | 'input';
+  type: 'input' | 'output';
   /**
    * The index of the input or output for which this bytecode was generated.
    */
@@ -511,25 +435,15 @@ export interface BytecodeGenerationCompletionOutput
  * final inputs contain compilation directives.
  */
 export type BytecodeGenerationCompletion =
-  | BytecodeGenerationCompletionOutput
-  | BytecodeGenerationCompletionInput;
+  | BytecodeGenerationCompletionInput
+  | BytecodeGenerationCompletionOutput;
 
 export interface TransactionGenerationSuccess {
   success: true;
-  transaction: Transaction;
+  transaction: TransactionCommon;
 }
 
 export type TransactionGenerationError =
-  | {
-      success: false;
-      completions: BytecodeGenerationCompletionOutput[];
-      errors: BytecodeGenerationErrorLocking[];
-      /**
-       * Error(s) occurred at the `output` stage of compilation, so the `input`
-       * stage never began.
-       */
-      stage: 'outputs';
-    }
   | {
       success: false;
       completions: BytecodeGenerationCompletionInput[];
@@ -539,8 +453,18 @@ export type TransactionGenerationError =
        * `output` stage completed successfully.
        */
       stage: 'inputs';
+    }
+  | {
+      success: false;
+      completions: BytecodeGenerationCompletionOutput[];
+      errors: BytecodeGenerationErrorLocking[];
+      /**
+       * Error(s) occurred at the `output` stage of compilation, so the `input`
+       * stage never began.
+       */
+      stage: 'outputs';
     };
 
 export type TransactionGenerationAttempt =
-  | TransactionGenerationSuccess
-  | TransactionGenerationError;
+  | TransactionGenerationError
+  | TransactionGenerationSuccess;

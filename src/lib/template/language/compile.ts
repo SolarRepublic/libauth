@@ -1,17 +1,22 @@
-import { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
-import {
+import type {
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
-} from '../../vm/vm-types';
-import { createCompilerCommonSynchronous } from '../compiler';
-import { CompilationData, CompilationEnvironment } from '../compiler-types';
+  AuthenticationVirtualMachine,
+  CompilationContextBCH,
+  CompilationContextCommon,
+} from '../../lib';
+import type { CompilationData, CompilerConfiguration } from '../template';
+import { createCompilerCommonSynchronous } from '../template.js';
 
-import { CompilationResult, CompilationResultSuccess } from './language-types';
-import { getResolutionErrors } from './language-utils';
-import { parseScript } from './parse';
-import { reduceScript } from './reduce';
-import { createIdentifierResolver, resolveScriptSegment } from './resolve';
+import type {
+  CompilationResult,
+  CompilationResultSuccess,
+} from './language-types';
+import { getResolutionErrors } from './language-utils.js';
+import { parseScript } from './parse.js';
+import { reduceScript } from './reduce.js';
+import { createIdentifierResolver, resolveScriptSegment } from './resolve.js';
 
 /**
  * A text-formatting method to pretty-print the list of expected inputs
@@ -49,18 +54,18 @@ export const describeExpectedInput = (expectedArray: string[]) => {
  * recommended API for direct compilation.
  */
 export const compileScriptContents = <
-  ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack,
-  TransactionContext = unknown
+  ProgramState extends AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateStack,
+  CompilationContext = unknown
 >({
   data,
-  environment,
+  configuration,
   script,
 }: {
   script: string;
-  data: CompilationData<TransactionContext>;
-  environment: CompilationEnvironment<TransactionContext>;
+  data: CompilationData<CompilationContext>;
+  configuration: CompilerConfiguration<CompilationContext>;
 }): CompilationResult<ProgramState> => {
   const parseResult = parseScript(script);
   if (!parseResult.status) {
@@ -80,7 +85,7 @@ export const compileScriptContents = <
       success: false,
     };
   }
-  const resolver = createIdentifierResolver({ data, environment });
+  const resolver = createIdentifierResolver({ configuration, data });
   const resolvedScript = resolveScriptSegment(parseResult.value, resolver);
   const resolutionErrors = getResolutionErrors(resolvedScript);
   if (resolutionErrors.length !== 0) {
@@ -92,10 +97,10 @@ export const compileScriptContents = <
       success: false,
     };
   }
-  const reduction = reduceScript<ProgramState, unknown>(
+  const reduction = reduceScript<ProgramState, unknown, unknown>(
     resolvedScript,
-    environment.vm,
-    environment.createAuthenticationProgram
+    configuration.vm,
+    configuration.createAuthenticationProgram
   );
   return {
     ...(reduction.errors === undefined
@@ -119,28 +124,28 @@ const emptyRange = () => ({
  * recommended API for direct compilation.
  */
 export const compileScriptRaw = <
-  ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum,
-  TransactionContext = unknown
+  ProgramState extends AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack,
+  CompilationContext = unknown
 >({
   data,
-  environment,
+  configuration,
   scriptId,
 }: {
-  data: CompilationData<TransactionContext>;
-  environment: CompilationEnvironment<TransactionContext>;
+  data: CompilationData<CompilationContext>;
+  configuration: CompilerConfiguration<CompilationContext>;
   scriptId: string;
 }): CompilationResult<ProgramState> => {
-  const script = environment.scripts[scriptId] as string | undefined;
+  const script = configuration.scripts[scriptId] as string | undefined;
   if (script === undefined) {
     return {
       errorType: 'parse',
       errors: [
         {
-          error: `No script with an ID of "${scriptId}" was provided in the compilation environment.`,
+          error: `No script with an ID of "${scriptId}" was provided in the compiler configuration.`,
           range: emptyRange(),
         },
       ],
@@ -148,12 +153,12 @@ export const compileScriptRaw = <
     };
   }
 
-  if (environment.sourceScriptIds?.includes(scriptId) === true) {
+  if (configuration.sourceScriptIds?.includes(scriptId) === true) {
     return {
       errorType: 'parse',
       errors: [
         {
-          error: `A circular dependency was encountered: script "${scriptId}" relies on itself to be generated. (Source scripts: ${environment.sourceScriptIds.join(
+          error: `A circular dependency was encountered: script "${scriptId}" relies on itself to be generated. (Source scripts: ${configuration.sourceScriptIds.join(
             ' → '
           )})`,
           range: emptyRange(),
@@ -163,24 +168,32 @@ export const compileScriptRaw = <
     };
   }
   const sourceScriptIds =
-    environment.sourceScriptIds === undefined
+    configuration.sourceScriptIds === undefined
       ? [scriptId]
-      : [...environment.sourceScriptIds, scriptId];
+      : [...configuration.sourceScriptIds, scriptId];
 
-  return compileScriptContents<ProgramState, TransactionContext>({
+  return compileScriptContents<ProgramState, CompilationContext>({
+    configuration: { ...configuration, sourceScriptIds },
     data,
-    environment: { ...environment, sourceScriptIds },
     script,
   });
 };
 
-export const compileScriptP2shLocking = <AuthenticationProgram, ProgramState>({
+export const compileScriptP2shLocking = <
+  ResolvedTransaction,
+  AuthenticationProgram,
+  ProgramState
+>({
   lockingBytecode,
   vm,
 }: {
   lockingBytecode: Uint8Array;
   vm:
-    | AuthenticationVirtualMachine<AuthenticationProgram, ProgramState>
+    | AuthenticationVirtualMachine<
+        ResolvedTransaction,
+        AuthenticationProgram,
+        ProgramState
+      >
     | undefined;
 }) => {
   const compiler = createCompilerCommonSynchronous({
@@ -218,39 +231,37 @@ export const compileScriptP2shUnlocking = <ProgramState>({
 
 /**
  * Parse, resolve, and reduce the selected script using the provided `data` and
- * `environment`.
+ * `configuration`.
  *
- * Note, locktime validation only occurs if `transactionContext` is provided in
- * the environment.
+ * Note, locktime validation only occurs if `compilationContext` is provided in
+ * the configuration.
  */
 // eslint-disable-next-line complexity
 export const compileScript = <
-  ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum,
-  TransactionContext extends { locktime: number; sequenceNumber: number } = {
-    locktime: number;
-    sequenceNumber: number;
-  }
+  ProgramState extends AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack,
+  CompilationContext extends CompilationContextCommon = CompilationContextBCH
 >(
   scriptId: string,
-  data: CompilationData<TransactionContext>,
-  environment: CompilationEnvironment<TransactionContext>
+  data: CompilationData<CompilationContext>,
+  configuration: CompilerConfiguration<CompilationContext>
 ): CompilationResult<ProgramState> => {
   const locktimeDisablingSequenceNumber = 0xffffffff;
   const lockTimeTypeBecomesTimestamp = 500000000;
-  if (data.transactionContext?.locktime !== undefined) {
+  if (data.compilationContext?.transaction.locktime !== undefined) {
     if (
-      environment.unlockingScriptTimeLockTypes?.[scriptId] === 'height' &&
-      data.transactionContext.locktime >= lockTimeTypeBecomesTimestamp
+      configuration.unlockingScriptTimeLockTypes?.[scriptId] === 'height' &&
+      data.compilationContext.transaction.locktime >=
+        lockTimeTypeBecomesTimestamp
     ) {
       return {
         errorType: 'parse',
         errors: [
           {
-            error: `The script "${scriptId}" requires a height-based locktime (less than 500,000,000), but this transaction uses a timestamp-based locktime ("${data.transactionContext.locktime}").`,
+            error: `The script "${scriptId}" requires a height-based locktime (less than 500,000,000), but this transaction uses a timestamp-based locktime ("${data.compilationContext.transaction.locktime}").`,
             range: emptyRange(),
           },
         ],
@@ -258,14 +269,15 @@ export const compileScript = <
       };
     }
     if (
-      environment.unlockingScriptTimeLockTypes?.[scriptId] === 'timestamp' &&
-      data.transactionContext.locktime < lockTimeTypeBecomesTimestamp
+      configuration.unlockingScriptTimeLockTypes?.[scriptId] === 'timestamp' &&
+      data.compilationContext.transaction.locktime <
+        lockTimeTypeBecomesTimestamp
     ) {
       return {
         errorType: 'parse',
         errors: [
           {
-            error: `The script "${scriptId}" requires a timestamp-based locktime (greater than or equal to 500,000,000), but this transaction uses a height-based locktime ("${data.transactionContext.locktime}").`,
+            error: `The script "${scriptId}" requires a timestamp-based locktime (greater than or equal to 500,000,000), but this transaction uses a height-based locktime ("${data.compilationContext.transaction.locktime}").`,
             range: emptyRange(),
           },
         ],
@@ -275,9 +287,13 @@ export const compileScript = <
   }
 
   if (
-    data.transactionContext?.sequenceNumber !== undefined &&
-    environment.unlockingScriptTimeLockTypes?.[scriptId] !== undefined &&
-    data.transactionContext.sequenceNumber === locktimeDisablingSequenceNumber
+    data.compilationContext?.transaction.inputs[
+      data.compilationContext.inputIndex
+    ].sequenceNumber !== undefined &&
+    configuration.unlockingScriptTimeLockTypes?.[scriptId] !== undefined &&
+    data.compilationContext.transaction.inputs[
+      data.compilationContext.inputIndex
+    ].sequenceNumber === locktimeDisablingSequenceNumber
   ) {
     return {
       errorType: 'parse',
@@ -291,9 +307,9 @@ export const compileScript = <
     };
   }
 
-  const rawResult = compileScriptRaw<ProgramState, TransactionContext>({
+  const rawResult = compileScriptRaw<ProgramState, CompilationContext>({
+    configuration,
     data,
-    environment,
     scriptId,
   });
 
@@ -301,20 +317,24 @@ export const compileScript = <
     return rawResult;
   }
 
-  const unlocks = environment.unlockingScripts?.[scriptId];
+  const unlocks = configuration.unlockingScripts?.[scriptId];
   const unlockingScriptType =
     unlocks === undefined
       ? undefined
-      : environment.lockingScriptTypes?.[unlocks];
+      : configuration.lockingScriptTypes?.[unlocks];
   const isP2shUnlockingScript = unlockingScriptType === 'p2sh';
 
-  const lockingScriptType = environment.lockingScriptTypes?.[scriptId];
+  const lockingScriptType = configuration.lockingScriptTypes?.[scriptId];
   const isP2shLockingScript = lockingScriptType === 'p2sh';
 
   if (isP2shLockingScript) {
-    const transformedResult = compileScriptP2shLocking<unknown, ProgramState>({
+    const transformedResult = compileScriptP2shLocking<
+      unknown,
+      unknown,
+      ProgramState
+    >({
       lockingBytecode: rawResult.bytecode,
-      vm: environment.vm,
+      vm: configuration.vm,
     });
     if (!transformedResult.success) {
       return transformedResult;
@@ -329,11 +349,12 @@ export const compileScript = <
   if (isP2shUnlockingScript) {
     const lockingBytecodeResult = compileScriptRaw<
       ProgramState,
-      TransactionContext
+      CompilationContext
     >({
+      configuration,
       data,
-      environment,
-      scriptId: unlocks as string,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      scriptId: unlocks!,
     });
     if (!lockingBytecodeResult.success) {
       return lockingBytecodeResult;

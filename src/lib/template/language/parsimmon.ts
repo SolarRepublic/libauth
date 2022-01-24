@@ -2,7 +2,7 @@
  * This file is derived from https://github.com/jneen/parsimmon and
  * https://github.com/DefinitelyTyped/DefinitelyTyped.
  */
-/* eslint-disable prefer-destructuring, @typescript-eslint/unified-signatures, functional/no-method-signature, functional/no-throw-statement, functional/no-conditional-statement, @typescript-eslint/no-this-alias, consistent-this, @typescript-eslint/ban-ts-comment, prefer-spread, @typescript-eslint/restrict-template-expressions, func-names, @typescript-eslint/init-declarations, new-cap, @typescript-eslint/require-array-sort-compare, guard-for-in, no-plusplus, functional/no-let, functional/no-loop-statement, @typescript-eslint/prefer-for-of, @typescript-eslint/restrict-plus-operands, functional/immutable-data, @typescript-eslint/no-use-before-define, @typescript-eslint/strict-boolean-expressions, no-param-reassign, functional/no-expression-statement, functional/no-this-expression, @typescript-eslint/no-explicit-any, func-style, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/naming-convention, @typescript-eslint/method-signature-style */
+/* eslint-disable prefer-destructuring, @typescript-eslint/unified-signatures, functional/no-method-signature, functional/no-throw-statement, functional/no-conditional-statement, @typescript-eslint/no-this-alias, consistent-this, @typescript-eslint/ban-ts-comment, prefer-spread, @typescript-eslint/restrict-template-expressions, func-names, @typescript-eslint/init-declarations, new-cap, @typescript-eslint/require-array-sort-compare, guard-for-in, no-plusplus, functional/no-let, functional/no-loop-statement, @typescript-eslint/prefer-for-of, @typescript-eslint/restrict-plus-operands, functional/immutable-data, @typescript-eslint/no-use-before-define, @typescript-eslint/strict-boolean-expressions, no-param-reassign, functional/no-expression-statement, functional/no-this-expression, @typescript-eslint/no-explicit-any, func-style, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/naming-convention, @typescript-eslint/method-signature-style, @typescript-eslint/no-confusing-void-expression, prefer-arrow-callback, functional/no-return-void, @typescript-eslint/no-unsafe-argument */
 // cspell: ignore accum
 
 interface Index {
@@ -24,7 +24,7 @@ interface Node<Name extends string, T> extends Mark<T> {
   name: Name;
 }
 
-type Result<T> = Success<T> | Failure;
+type Result<T> = Failure | Success<T>;
 
 interface Success<T> {
   status: true;
@@ -57,7 +57,7 @@ interface Parser<T> {
   many(): Parser<T[]>;
   mark(): Parser<Mark<T>>;
   node<Name extends string>(name: Name): Parser<Node<Name, T>>;
-  desc(description: string | string[]): Parser<T>;
+  desc(description: string[] | string): Parser<T>;
   sepBy<U>(separator: Parser<U>): Parser<T[]>;
 }
 
@@ -329,18 +329,19 @@ _.skip = function (next: any) {
 };
 
 _.node = function (name: any) {
-  return seqMap(index, this, index, function (
-    start: any,
-    value: any,
-    end: any
-  ) {
-    return {
-      end,
-      name,
-      start,
-      value,
-    };
-  });
+  return seqMap(
+    index,
+    this,
+    index,
+    function (start: any, value: any, end: any) {
+      return {
+        end,
+        name,
+        start,
+        value,
+      };
+    }
+  );
 };
 
 _.sepBy = function (separator: any) {

@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers, max-lines */
+/* eslint-disable max-lines */
 import test from 'ava';
 
 import {
@@ -8,7 +8,7 @@ import {
   describeExpectedInput,
   hexToBin,
   stringifyTestVector,
-} from '../../lib';
+} from '../../lib.js';
 
 test('compileScript: unprovided ID', (t) => {
   t.deepEqual(compileScript('test', {}, { scripts: { typo: '1' } }), {
@@ -16,7 +16,7 @@ test('compileScript: unprovided ID', (t) => {
     errors: [
       {
         error:
-          'No script with an ID of "test" was provided in the compilation environment.',
+          'No script with an ID of "test" was provided in the compiler configuration.',
         range: {
           endColumn: 0,
           endLineNumber: 0,
@@ -139,8 +139,8 @@ test('compileScript: empty string', (t) => {
 test('compileScriptContents: empty string', (t) => {
   t.deepEqual(
     compileScriptContents({
+      configuration: { scripts: {} },
       data: {},
-      environment: { scripts: {} },
       script: '',
     }),
     {

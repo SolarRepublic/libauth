@@ -1,17 +1,17 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/naming-convention */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  hexToBin,
 } from '../../lib';
+import { hexToBin } from '../../lib.js';
 
 import {
   expectCompilationResult,
   hdPrivateKey,
   privkey,
-} from './compiler-bch.e2e.spec.helper';
+} from './compiler-bch.e2e.spec.helper.js';
 
 test(
   '[BCH compiler] data signatures – use a private key',
@@ -155,7 +155,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.data_signature.another" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.data_signature.another" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 30,
           endLineNumber: 1,
@@ -180,7 +180,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.data_signature.another" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.data_signature.another" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 30,
           endLineNumber: 1,
@@ -205,7 +205,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.data_signature.another" – the "sha256" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.data_signature.another" – the "sha256" property was not provided in the compiler configuration.',
         range: {
           endColumn: 30,
           endLineNumber: 1,
@@ -264,7 +264,7 @@ test(
   '[BCH compiler] data signatures – HD private key derivation error',
   expectCompilationResult,
   '<owner.data_signature.another> <another>',
-  { hdKeys: { addressIndex: 0, hdPrivateKeys: { ownerEntityId: 'xbad' } } },
+  { hdKeys: { addressIndex: 0, hdPrivateKeys: { ownerEntityId: 'xBad' } } },
   {
     errorType: 'resolve',
     errors: [

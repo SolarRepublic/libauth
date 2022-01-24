@@ -1,4 +1,3 @@
-export * from './generate-transaction';
-export * from './transaction-serialization';
-export * from './transaction-types';
-export * from './verify-transaction';
+export * from './generate-transaction.js';
+export * from './transaction-encoding.js';
+export * from './transaction-types.js';

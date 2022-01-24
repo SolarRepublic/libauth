@@ -1,4 +1,4 @@
-import { Sha256 } from '../crypto/sha256';
+import type { Sha256 } from '../lib';
 import {
   bigIntToBitcoinVarInt,
   binToHex,
@@ -6,9 +6,9 @@ import {
   flattenBinArray,
   numberToBinUint32LE,
   readBitcoinVarInt,
-} from '../format/format';
+} from '../lib.js';
 
-import { Input, Output, Transaction } from './transaction-types';
+import type { Input, Output, TransactionCommon } from './transaction';
 
 /**
  * @param bin - the raw transaction from which to read the input
@@ -25,10 +25,8 @@ export const readTransactionInput = (bin: Uint8Array, offset: number) => {
   const outpointIndex = binToNumberUint32LE(
     bin.subarray(offsetAfterTxHash, offsetAfterOutpointIndex)
   );
-  const {
-    nextOffset: offsetAfterBytecodeLength,
-    value: bytecodeLength,
-  } = readBitcoinVarInt(bin, offsetAfterOutpointIndex);
+  const { nextOffset: offsetAfterBytecodeLength, value: bytecodeLength } =
+    readBitcoinVarInt(bin, offsetAfterOutpointIndex);
   const offsetAfterBytecode =
     offsetAfterBytecodeLength + Number(bytecodeLength);
   const unlockingBytecode = bin.slice(
@@ -87,7 +85,7 @@ export const encodeInputs = (inputs: readonly Input[]) =>
 export const readTransactionOutput = (bin: Uint8Array, offset: number) => {
   const uint64Bytes = 8;
   const offsetAfterSatoshis = offset + uint64Bytes;
-  const satoshis = bin.slice(offset, offsetAfterSatoshis);
+  const valueSatoshis = bin.slice(offset, offsetAfterSatoshis);
   const { nextOffset: offsetAfterScriptLength, value } = readBitcoinVarInt(
     bin,
     offsetAfterSatoshis
@@ -103,7 +101,7 @@ export const readTransactionOutput = (bin: Uint8Array, offset: number) => {
     nextOffset,
     output: {
       lockingBytecode,
-      satoshis,
+      valueSatoshis,
     },
   };
 };
@@ -115,7 +113,7 @@ export const readTransactionOutput = (bin: Uint8Array, offset: number) => {
  */
 export const encodeOutput = (output: Output) =>
   flattenBinArray([
-    output.satoshis,
+    output.valueSatoshis,
     bigIntToBitcoinVarInt(BigInt(output.lockingBytecode.length)),
     output.lockingBytecode,
   ]);
@@ -143,14 +141,14 @@ export const encodeOutputsForTransaction = (outputs: readonly Output[]) =>
  *
  * @param bin - the raw message to decode
  */
-export const decodeTransactionUnsafe = (bin: Uint8Array): Transaction => {
+export const decodeTransactionUnsafeCommon = (
+  bin: Uint8Array
+): TransactionCommon => {
   const uint32Bytes = 4;
   const version = binToNumberUint32LE(bin.subarray(0, uint32Bytes));
   const offsetAfterVersion = uint32Bytes;
-  const {
-    nextOffset: offsetAfterInputCount,
-    value: inputCount,
-  } = readBitcoinVarInt(bin, offsetAfterVersion);
+  const { nextOffset: offsetAfterInputCount, value: inputCount } =
+    readBitcoinVarInt(bin, offsetAfterVersion);
   // eslint-disable-next-line functional/no-let
   let cursor = offsetAfterInputCount;
   const inputs = [];
@@ -162,10 +160,8 @@ export const decodeTransactionUnsafe = (bin: Uint8Array): Transaction => {
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
     inputs.push(input);
   }
-  const {
-    nextOffset: offsetAfterOutputCount,
-    value: outputCount,
-  } = readBitcoinVarInt(bin, cursor);
+  const { nextOffset: offsetAfterOutputCount, value: outputCount } =
+    readBitcoinVarInt(bin, cursor);
   // eslint-disable-next-line functional/no-expression-statement
   cursor = offsetAfterOutputCount;
   const outputs = [];
@@ -197,10 +193,10 @@ export enum TransactionDecodingError {
  *
  * @param bin - the raw message to decode
  */
-export const decodeTransaction = (bin: Uint8Array) => {
+export const decodeTransactionCommon = (bin: Uint8Array) => {
   // eslint-disable-next-line functional/no-try-statement
   try {
-    return decodeTransactionUnsafe(bin);
+    return decodeTransactionUnsafeCommon(bin);
   } catch {
     return TransactionDecodingError.invalidFormat;
   }
@@ -211,13 +207,44 @@ export const decodeTransaction = (bin: Uint8Array) => {
  * serialization is also used when computing the transaction's hash (A.K.A.
  * "transaction ID" or "TXID").
  */
-export const encodeTransaction = (tx: Transaction) =>
+export const encodeTransactionCommon = (tx: TransactionCommon) =>
   flattenBinArray([
     numberToBinUint32LE(tx.version),
     encodeInputs(tx.inputs),
     encodeOutputsForTransaction(tx.outputs),
     numberToBinUint32LE(tx.locktime),
   ]);
+
+export const cloneTransactionInputsCommon = <
+  Transaction extends TransactionCommon
+>(
+  inputs: Readonly<Transaction>['inputs']
+) =>
+  inputs.map((input) => ({
+    outpointIndex: input.outpointIndex,
+    outpointTransactionHash: input.outpointTransactionHash.slice(),
+    sequenceNumber: input.sequenceNumber,
+    unlockingBytecode: input.unlockingBytecode.slice(),
+  }));
+
+export const cloneTransactionOutputsCommon = <
+  Transaction extends TransactionCommon
+>(
+  outputs: Readonly<Transaction>['outputs']
+) =>
+  outputs.map((output) => ({
+    lockingBytecode: output.lockingBytecode.slice(),
+    valueSatoshis: output.valueSatoshis.slice(),
+  }));
+
+export const cloneTransactionCommon = <Transaction extends TransactionCommon>(
+  transaction: Readonly<Transaction>
+) => ({
+  inputs: cloneTransactionInputsCommon(transaction.inputs),
+  locktime: transaction.locktime,
+  outputs: cloneTransactionOutputsCommon(transaction.outputs),
+  version: transaction.version,
+});
 
 /**
  * Compute a transaction hash (A.K.A. "transaction ID" or "TXID") from an

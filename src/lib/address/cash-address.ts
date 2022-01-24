@@ -1,11 +1,11 @@
-import { Immutable } from '../format/format';
+import type { Immutable } from '../lib';
 
 import {
   decodeBech32,
   encodeBech32,
   isBech32CharacterSet,
   regroupBits,
-} from './bech32';
+} from './address.js';
 
 export enum CashAddressNetworkPrefix {
   mainnet = 'bitcoincash',
@@ -176,7 +176,7 @@ const bech32GeneratorRemainingBytes = [0xf2bc8e61, 0xb76d99e2, 0x3e5fb3c4, 0x2ea
  * A.K.A. `PolyMod`
  *
  * @remarks
- * Notes from Bitcoin ABC:
+ * Notes from C++ implementation:
  * This function will compute what 8 5-bit values to XOR into the last 8 input
  * values, in order to make the checksum 0. These 8 values are packed together
  * in a single 40-bit integer. The higher bits correspond to earlier values.

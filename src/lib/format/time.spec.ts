@@ -1,4 +1,3 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
 
@@ -13,7 +12,7 @@ import {
   minimumLocktimeDate,
   minimumLocktimeTimestamp,
   parseLocktimeBin,
-} from '../lib';
+} from '../lib.js';
 
 test('dateToLocktime', (t) => {
   t.deepEqual(dateToLocktime(new Date('2019-10-13')), 1570924800);
@@ -57,9 +56,11 @@ testProp(
       Math.round(date.getTime() / 1000) * 1000
     );
     t.deepEqual(
-      (parseLocktimeBin(
-        dateToLocktimeBin(withSecondResolution) as Uint8Array
-      ) as Date).getTime(),
+      (
+        parseLocktimeBin(
+          dateToLocktimeBin(withSecondResolution) as Uint8Array
+        ) as Date
+      ).getTime(),
       withSecondResolution.getTime()
     );
   }

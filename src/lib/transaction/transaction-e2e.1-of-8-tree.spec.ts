@@ -1,13 +1,13 @@
-/* eslint-disable functional/no-expression-statement, camelcase, @typescript-eslint/naming-convention */
+/* eslint-disable camelcase, @typescript-eslint/naming-convention */
 
 import test from 'ava';
 
+import type { CompilationData } from '../lib';
 import {
   authenticationTemplateToCompilerBCH,
-  CompilationData,
   stringify,
   validateAuthenticationTemplate,
-} from '../lib';
+} from '../lib.js';
 
 import {
   hdPublicKey0H,
@@ -19,7 +19,7 @@ import {
   hdPublicKey6H,
   hdPublicKey7H,
   oneOfEightTreeJson,
-} from './transaction-e2e.spec.helper';
+} from './transaction-e2e.spec.helper.js';
 
 test('transaction e2e tests: 1-of-8 Tree Signature (fails)', async (t) => {
   const template = validateAuthenticationTemplate(oneOfEightTreeJson);

@@ -1,4 +1,3 @@
-/* eslint-disable functional/no-expression-statement */
 import { randomBytes } from 'crypto';
 
 import test from 'ava';
@@ -9,7 +8,7 @@ import {
   hexToBin,
   instantiateSecp256k1,
   validateSecp256k1PrivateKey,
-} from '../lib';
+} from '../lib.js';
 
 const privateKeyLength = 32;
 const maximumUint8Value = 255;
@@ -59,7 +58,7 @@ test('validateSecp256k1PrivateKey', (t) => {
 });
 
 const secp256k1OrderNFFBytes = 15;
-// eslint-disable-next-line functional/immutable-data
+
 const almostInvalid = Array(secp256k1OrderNFFBytes).fill(
   maximumUint8Value
 ) as number[];
@@ -91,9 +90,8 @@ test('generatePrivateKey: tries until success', (t) => {
   // eslint-disable-next-line functional/no-let
   let calls = 0;
   const entropy = [
-    // eslint-disable-next-line functional/immutable-data
     Uint8Array.from(Array(privateKeyLength).fill(maximumUint8Value)),
-    // eslint-disable-next-line functional/immutable-data
+
     Uint8Array.from(Array(privateKeyLength).fill(1)),
   ];
   const mockEntropy = () => {

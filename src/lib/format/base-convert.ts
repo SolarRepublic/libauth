@@ -5,7 +5,7 @@ export enum BaseConversionError {
 }
 
 export interface BaseConverter {
-  decode: (source: string) => Uint8Array | BaseConversionError.unknownCharacter;
+  decode: (source: string) => BaseConversionError.unknownCharacter | Uint8Array;
   encode: (input: Uint8Array) => string;
 }
 

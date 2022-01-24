@@ -1,20 +1,19 @@
+export type PartialExactOptional<T> = {
+  [P in keyof T]?: T[P] | undefined;
+};
+
 type ImmutablePrimitive =
-  | undefined
-  | null
-  | boolean
-  | string
-  | number
   // eslint-disable-next-line @typescript-eslint/ban-types
-  | Function;
+  Function | boolean | number | string | null | undefined;
 type ImmutableArray<T> = readonly Immutable<T>[];
 type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
 type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
 type ImmutableObject<T> = {
   readonly [K in keyof T]: Immutable<T[K]>;
 };
-type ImmutableUint8Array = Readonly<ArrayLike<number>> &
+type ImmutableUint8Array = ImmutableObject<Uint8Array> &
   Iterable<number> &
-  ImmutableObject<Uint8Array>;
+  Readonly<ArrayLike<number>>;
 
 /**
  * A deep-readonly utility type. Can be removed when a built-in alternative is
@@ -40,3 +39,5 @@ export type Immutable<T> = T extends ImmutablePrimitive
  * const functionRequiringIt = (bin: Immutable<Uint8Array>) => bin;
  * const canAcceptNonMutable = functionRequiringIt(Uint8Array.of());
  */
+
+// TODO: use or remove

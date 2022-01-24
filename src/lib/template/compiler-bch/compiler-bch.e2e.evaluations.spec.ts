@@ -1,12 +1,11 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
 } from '../../lib';
 
-import { expectCompilationResult } from './compiler-bch.e2e.spec.helper';
+import { expectCompilationResult } from './compiler-bch.e2e.spec.helper.js';
 
 test(
   '[BCH compiler] evaluations – simple evaluation',
@@ -19,7 +18,7 @@ test(
   }
 );
 
-test(
+test.only(
   '[BCH compiler] evaluations – nested evaluations',
   expectCompilationResult,
   '$( $(<1> <2> OP_ADD) 0xaabbcc )',

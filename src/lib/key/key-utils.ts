@@ -5,7 +5,7 @@
  * Private keys are 256-bit numbers encoded as a 32-byte, big-endian Uint8Array.
  * Nearly every 256-bit number is a valid secp256k1 private key. Specifically,
  * any 256-bit number greater than `0x01` and less than
- * `0xFFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFE BAAE DCE6 AF48 A03B BFD2 5E8C D036 4140`
+ * `0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140`
  * is a valid private key. This range is part of the definition of the
  * secp256k1 elliptic curve parameters.
  *

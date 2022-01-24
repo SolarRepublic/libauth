@@ -1,7 +1,7 @@
-/* eslint-disable functional/no-expression-statement, max-lines */
+/* eslint-disable max-lines */
 import test from 'ava';
 
-import { parseScript, stringifyTestVector } from '../../lib';
+import { parseScript, stringifyTestVector } from '../../lib.js';
 
 test('parseScript: empty string', (t) => {
   t.deepEqual(parseScript(''), {

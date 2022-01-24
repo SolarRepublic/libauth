@@ -1,4 +1,4 @@
-import { splitEvery } from './hex';
+import { splitEvery } from './format.js';
 
 const binaryByteWidth = 8;
 const binary = 2;

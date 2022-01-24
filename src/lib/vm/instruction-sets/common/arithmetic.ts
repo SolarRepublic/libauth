@@ -1,359 +1,237 @@
-import {
-  AuthenticationProgramStateCommon,
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateStack,
-} from '../../vm-types';
+} from '../../vm';
 
 import {
   combineOperations,
-  pushToStack,
   useOneScriptNumber,
   useThreeScriptNumbers,
   useTwoScriptNumbers,
-} from './combinators';
-import { opVerify } from './flow-control';
-import { OpcodesCommon } from './opcodes';
-import { bigIntToScriptNumber, booleanToScriptNumber } from './types';
+} from './combinators.js';
+import {
+  applyError,
+  AuthenticationErrorCommon,
+  bigIntToScriptNumber,
+  booleanToScriptNumber,
+  pushToStack,
+} from './common.js';
+import { opVerify } from './flow-control.js';
 
 export const op1Add = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value + BigInt(1))),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToScriptNumber(value + BigInt(1)))
   );
 
 export const op1Sub = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value - BigInt(1))),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToScriptNumber(value - BigInt(1)))
   );
 
 export const opNegate = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(-value)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToScriptNumber(-value))
   );
 
 export const opAbs = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value < 0 ? -value : value)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToScriptNumber(value < 0 ? -value : value))
   );
 
 export const opNot = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(
-        nextState,
-        value === BigInt(0)
-          ? bigIntToScriptNumber(BigInt(1))
-          : bigIntToScriptNumber(BigInt(0))
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(
+      nextState,
+      value === BigInt(0)
+        ? bigIntToScriptNumber(BigInt(1))
+        : bigIntToScriptNumber(BigInt(0))
+    )
   );
 
 export const op0NotEqual = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [value]) =>
-      pushToStack(
-        nextState,
-        value === BigInt(0)
-          ? bigIntToScriptNumber(BigInt(0))
-          : bigIntToScriptNumber(BigInt(1))
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useOneScriptNumber(state, (nextState, [value]) =>
+    pushToStack(
+      nextState,
+      value === BigInt(0)
+        ? bigIntToScriptNumber(BigInt(0))
+        : bigIntToScriptNumber(BigInt(1))
+    )
   );
 
 export const opAdd = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, bigIntToScriptNumber(firstValue + secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, bigIntToScriptNumber(firstValue + secondValue))
   );
 
 export const opSub = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, bigIntToScriptNumber(firstValue - secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, bigIntToScriptNumber(firstValue - secondValue))
   );
 
 export const opBoolAnd = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(
-        nextState,
-        booleanToScriptNumber(
-          firstValue !== BigInt(0) && secondValue !== BigInt(0)
-        )
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(
+      nextState,
+      booleanToScriptNumber(
+        firstValue !== BigInt(0) && secondValue !== BigInt(0)
+      )
+    )
   );
 
 export const opBoolOr = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(
-        nextState,
-        booleanToScriptNumber(
-          firstValue !== BigInt(0) || secondValue !== BigInt(0)
-        )
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(
+      nextState,
+      booleanToScriptNumber(
+        firstValue !== BigInt(0) || secondValue !== BigInt(0)
+      )
+    )
   );
 
 export const opNumEqual = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue === secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue === secondValue))
   );
 
-export const opNumEqualVerify = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->(flags: {
-  requireMinimalEncoding: boolean;
-}) =>
-  combineOperations(
-    opNumEqual<State, Errors>(flags),
-    opVerify<State, Errors>()
-  );
+export const opNumEqualVerify = combineOperations(opNumEqual, opVerify);
 
 export const opNumNotEqual = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue !== secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue !== secondValue))
   );
 
 export const opLessThan = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue < secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue < secondValue))
   );
 
 export const opLessThanOrEqual = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue <= secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue <= secondValue))
   );
 
 export const opGreaterThan = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue > secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue > secondValue))
   );
 
 export const opGreaterThanOrEqual = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue >= secondValue)),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToScriptNumber(firstValue >= secondValue))
   );
 
 export const opMin = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(
-        nextState,
-        bigIntToScriptNumber(
-          firstValue < secondValue ? firstValue : secondValue
-        )
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(
+      nextState,
+      bigIntToScriptNumber(firstValue < secondValue ? firstValue : secondValue)
+    )
   );
 
 export const opMax = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue]) =>
-      pushToStack(
-        nextState,
-        bigIntToScriptNumber(
-          firstValue > secondValue ? firstValue : secondValue
-        )
-      ),
-    { requireMinimalEncoding }
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(
+      nextState,
+      bigIntToScriptNumber(firstValue > secondValue ? firstValue : secondValue)
+    )
   );
 
 export const opWithin = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
->({
-  requireMinimalEncoding,
-}: {
-  requireMinimalEncoding: boolean;
-}) => (state: State) =>
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
   useThreeScriptNumbers(
     state,
     (nextState, [firstValue, secondValue, thirdValue]) =>
@@ -362,37 +240,29 @@ export const opWithin = <
         booleanToScriptNumber(
           secondValue <= firstValue && firstValue < thirdValue
         )
-      ),
-    { requireMinimalEncoding }
+      )
   );
 
-export const arithmeticOperations = <
-  Opcodes,
-  State extends AuthenticationProgramStateCommon<Opcodes, Errors>,
-  Errors
->(flags: {
-  requireMinimalEncoding: boolean;
-}) => ({
-  [OpcodesCommon.OP_1ADD]: op1Add<State, Errors>(flags),
-  [OpcodesCommon.OP_1SUB]: op1Sub<State, Errors>(flags),
-  [OpcodesCommon.OP_NEGATE]: opNegate<State, Errors>(flags),
-  [OpcodesCommon.OP_ABS]: opAbs<State, Errors>(flags),
-  [OpcodesCommon.OP_NOT]: opNot<State, Errors>(flags),
-  [OpcodesCommon.OP_0NOTEQUAL]: op0NotEqual<State, Errors>(flags),
-  [OpcodesCommon.OP_ADD]: opAdd<State, Errors>(flags),
-  [OpcodesCommon.OP_SUB]: opSub<State, Errors>(flags),
-  [OpcodesCommon.OP_BOOLAND]: opBoolAnd<State, Errors>(flags),
-  [OpcodesCommon.OP_BOOLOR]: opBoolOr<State, Errors>(flags),
-  [OpcodesCommon.OP_NUMEQUAL]: opNumEqual<State, Errors>(flags),
-  [OpcodesCommon.OP_NUMEQUALVERIFY]: opNumEqualVerify<State, Errors>(flags),
-  [OpcodesCommon.OP_NUMNOTEQUAL]: opNumNotEqual<State, Errors>(flags),
-  [OpcodesCommon.OP_LESSTHAN]: opLessThan<State, Errors>(flags),
-  [OpcodesCommon.OP_LESSTHANOREQUAL]: opLessThanOrEqual<State, Errors>(flags),
-  [OpcodesCommon.OP_GREATERTHAN]: opGreaterThan<State, Errors>(flags),
-  [OpcodesCommon.OP_GREATERTHANOREQUAL]: opGreaterThanOrEqual<State, Errors>(
-    flags
-  ),
-  [OpcodesCommon.OP_MIN]: opMin<State, Errors>(flags),
-  [OpcodesCommon.OP_MAX]: opMax<State, Errors>(flags),
-  [OpcodesCommon.OP_WITHIN]: opWithin<State, Errors>(flags),
-});
+export const opDiv = <
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [a, b]) =>
+    b === BigInt(0)
+      ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
+      : pushToStack(nextState, bigIntToScriptNumber(a / b))
+  );
+
+export const opMod = <
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
+>(
+  state: State
+) =>
+  useTwoScriptNumbers(state, (nextState, [a, b]) =>
+    b === BigInt(0)
+      ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
+      : pushToStack(nextState, bigIntToScriptNumber(a % b))
+  );

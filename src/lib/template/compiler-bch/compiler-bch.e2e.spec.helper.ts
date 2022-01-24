@@ -1,28 +1,28 @@
 /* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
-import { Macro } from 'ava';
+import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
+  CompilationContextBCH,
   CompilationData,
-  CompilationEnvironment,
-  CompilationEnvironmentBCH,
+  CompilerConfiguration,
+  CompilerConfigurationBCH,
+} from '../../lib';
+import {
   compilerOperationsBCH,
   createAuthenticationProgramEvaluationCommon,
+  createCompilationContextCommonTesting,
   createCompiler,
-  createTransactionContextCommonTesting,
   generateBytecodeMap,
   instantiateRipemd160,
   instantiateSecp256k1,
   instantiateSha256,
   instantiateSha512,
   instantiateVirtualMachineBCH,
-  instructionSetBCHCurrentStrict,
-  OpcodesBCH,
+  OpcodesBCH2022,
   stringifyTestVector,
-  TransactionContextBCH,
-  TransactionContextCommon,
-} from '../../lib';
+} from '../../lib.js';
 
 /**
  * `m`
@@ -45,73 +45,76 @@ const ripemd160Promise = instantiateRipemd160();
 const sha256Promise = instantiateSha256();
 const sha512Promise = instantiateSha512();
 const secp256k1Promise = instantiateSecp256k1();
-const vmPromise = instantiateVirtualMachineBCH(instructionSetBCHCurrentStrict);
+const vmPromise = instantiateVirtualMachineBCH();
 
 /**
  * Uses `createCompiler` rather than `createCompilerBCH` for performance.
  */
-export const expectCompilationResult: Macro<[
-  string,
-  CompilationData,
-  BytecodeGenerationResult<AuthenticationProgramStateBCH>,
-  CompilationEnvironment['variables']?,
-  Partial<CompilationEnvironment<TransactionContextCommon>>?
-]> = async (
-  t,
-  testScript,
-  otherData,
-  expectedResult,
-  variables,
-  environmentOverrides
-  // eslint-disable-next-line max-params
-) => {
-  const ripemd160 = await ripemd160Promise;
-  const sha256 = await sha256Promise;
-  const sha512 = await sha512Promise;
-  const secp256k1 = await secp256k1Promise;
-  const vm = await vmPromise;
-
-  const compiler = createCompiler<
-    TransactionContextBCH,
-    CompilationEnvironmentBCH,
-    OpcodesBCH,
-    AuthenticationProgramStateBCH
-  >({
-    createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
-    entityOwnership: {
-      one: 'ownerEntityOne',
-      owner: 'ownerEntityId',
-      two: 'ownerEntityTwo',
-    },
-    opcodes: generateBytecodeMap(OpcodesBCH),
-    operations: compilerOperationsBCH,
-    ripemd160,
-    scripts: {
-      another: '0xabcdef',
-      broken: 'does_not_exist',
-      lock: '',
-      test: testScript,
-    },
-    secp256k1,
-    sha256,
-    sha512,
-    unlockingScripts: {
-      test: 'lock',
-    },
-    variables,
-    vm,
-    ...environmentOverrides,
-  });
-
-  const resultUnlock = compiler.generateBytecode('test', {
-    transactionContext: createTransactionContextCommonTesting(),
-    ...otherData,
-  });
-  t.deepEqual(
-    resultUnlock,
+export const expectCompilationResult = test.macro<
+  [
+    string,
+    CompilationData,
+    BytecodeGenerationResult<AuthenticationProgramStateBCH>,
+    CompilerConfiguration['variables']?,
+    Partial<CompilerConfiguration<CompilationContextBCH>>?
+  ]
+>(
+  async (
+    t,
+    testScript,
+    otherData,
     expectedResult,
-    `– \nResult: ${stringifyTestVector(
-      resultUnlock
-    )}\n\nExpected:\n ${stringifyTestVector(expectedResult)}\n`
-  );
-};
+    variables,
+    configurationOverrides
+    // eslint-disable-next-line max-params
+  ) => {
+    const ripemd160 = await ripemd160Promise;
+    const sha256 = await sha256Promise;
+    const sha512 = await sha512Promise;
+    const secp256k1 = await secp256k1Promise;
+    const vm = await vmPromise;
+
+    const compiler = createCompiler<
+      CompilationContextBCH,
+      CompilerConfigurationBCH,
+      AuthenticationProgramStateBCH
+    >({
+      createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
+      entityOwnership: {
+        one: 'ownerEntityOne',
+        owner: 'ownerEntityId',
+        two: 'ownerEntityTwo',
+      },
+      opcodes: generateBytecodeMap(OpcodesBCH2022),
+      operations: compilerOperationsBCH,
+      ripemd160,
+      scripts: {
+        another: '0xabcdef',
+        broken: 'does_not_exist',
+        lock: '',
+        test: testScript,
+      },
+      secp256k1,
+      sha256,
+      sha512,
+      unlockingScripts: {
+        test: 'lock',
+      },
+      variables,
+      vm,
+      ...configurationOverrides,
+    });
+
+    const resultUnlock = compiler.generateBytecode('test', {
+      compilationContext: createCompilationContextCommonTesting(),
+      ...otherData,
+    });
+    t.deepEqual(
+      resultUnlock,
+      expectedResult,
+      `– \nResult: ${stringifyTestVector(
+        resultUnlock
+      )}\n\nExpected:\n ${stringifyTestVector(expectedResult)}\n`
+    );
+  }
+);

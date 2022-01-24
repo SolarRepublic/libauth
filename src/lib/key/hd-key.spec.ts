@@ -1,9 +1,15 @@
-/* eslint-disable functional/no-expression-statement */
-
-import test, { Macro } from 'ava';
+import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
-import * as bitcoreLibCash from 'bitcore-lib-cash';
+import bitcoreLibCash from 'bitcore-lib-cash';
 
+import type {
+  HdKeyParameters,
+  HdPrivateNode,
+  HdPrivateNodeInvalid,
+  HdPrivateNodeKnownParent,
+  HdPrivateNodeValid,
+  HdPublicNode,
+} from '../lib';
 import {
   crackHdPrivateNodeFromHdPublicNodeAndChildPrivateNode,
   decodeHdKey,
@@ -19,19 +25,13 @@ import {
   encodeHdPrivateKey,
   encodeHdPublicKey,
   HdKeyDecodingError,
-  HdKeyParameters,
   HdKeyVersion,
   HdNodeCrackingError,
   HdNodeDerivationError,
-  HdPrivateNode,
-  HdPrivateNodeInvalid,
-  HdPrivateNodeKnownParent,
-  HdPrivateNodeValid,
-  HdPublicNode,
   hexToBin,
   instantiateBIP32Crypto,
   validateSecp256k1PrivateKey,
-} from '../lib';
+} from '../lib.js';
 
 const seed = Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
@@ -96,9 +96,10 @@ test('[crypto] deriveHdPrivateNodeFromSeed', async (t) => {
 
 test('[crypto] deriveHdPrivateNodeIdentifier', async (t) => {
   const crypto = await instantiateBIP32Crypto();
-  const { node } = decodeHdPrivateKey(crypto, xprv) as HdKeyParameters<
-    HdPrivateNodeValid
-  >;
+  const { node } = decodeHdPrivateKey(
+    crypto,
+    xprv
+  ) as HdKeyParameters<HdPrivateNodeValid>;
   t.deepEqual(
     deriveHdPrivateNodeIdentifier(crypto, node),
     hexToBin('15c918d389673c6cd0660050f268a843361e1111')
@@ -107,9 +108,10 @@ test('[crypto] deriveHdPrivateNodeIdentifier', async (t) => {
 
 test('[crypto] deriveHdPublicNodeIdentifier', async (t) => {
   const crypto = await instantiateBIP32Crypto();
-  const { node } = decodeHdPublicKey(crypto, xpub) as HdKeyParameters<
-    HdPublicNode
-  >;
+  const { node } = decodeHdPublicKey(
+    crypto,
+    xpub
+  ) as HdKeyParameters<HdPublicNode>;
   t.deepEqual(
     deriveHdPublicNodeIdentifier(crypto, node),
     hexToBin('15c918d389673c6cd0660050f268a843361e1111')
@@ -427,9 +429,10 @@ test('[crypto] deriveHdPrivateNodeChild', async (t) => {
 
 test('[crypto] deriveHdPrivateNodeChild: errors', async (t) => {
   const crypto = await instantiateBIP32Crypto();
-  const { node } = decodeHdPrivateKey(crypto, xprv) as HdKeyParameters<
-    HdPrivateNodeValid
-  >;
+  const { node } = decodeHdPrivateKey(
+    crypto,
+    xprv
+  ) as HdKeyParameters<HdPrivateNodeValid>;
 
   const max = 0xffffffff;
   t.deepEqual(
@@ -440,9 +443,10 @@ test('[crypto] deriveHdPrivateNodeChild: errors', async (t) => {
 
 test('[crypto] deriveHdPublicNodeChild', async (t) => {
   const crypto = await instantiateBIP32Crypto();
-  const { node } = decodeHdPrivateKey(crypto, xprv) as HdKeyParameters<
-    HdPrivateNodeValid
-  >;
+  const { node } = decodeHdPrivateKey(
+    crypto,
+    xprv
+  ) as HdKeyParameters<HdPrivateNodeValid>;
 
   const parentPublic = deriveHdPublicNode(crypto, node);
 
@@ -464,9 +468,10 @@ test('[crypto] deriveHdPublicNodeChild', async (t) => {
 
 test('[crypto] deriveHdPublicNodeChild: errors', async (t) => {
   const crypto = await instantiateBIP32Crypto();
-  const { node } = decodeHdPublicKey(crypto, xpub) as HdKeyParameters<
-    HdPublicNode
-  >;
+  const { node } = decodeHdPublicKey(
+    crypto,
+    xpub
+  ) as HdKeyParameters<HdPublicNode>;
   const hardened0 = 0x80000000;
   t.deepEqual(
     deriveHdPublicNodeChild(crypto, node, hardened0),
@@ -490,10 +495,12 @@ test('[crypto] deriveHdPath', async (t) => {
     publicNode
   );
   t.deepEqual(deriveHdPath(crypto, privateNode, "m/0'/1"), {
-    ...(decodeHdPrivateKey(
-      crypto,
-      'xprv9w8PdihBAeR4xgGYWWqBnmDTrpWEW1QjuYAUkR7A6X48q1iQVgN433aSFxQGgtureVz7cCyi5zfuMTtBF3AkanjtvNs9m8u2JobxNfphSi3'
-    ) as HdKeyParameters<HdPrivateNodeValid>).node,
+    ...(
+      decodeHdPrivateKey(
+        crypto,
+        'xprv9w8PdihBAeR4xgGYWWqBnmDTrpWEW1QjuYAUkR7A6X48q1iQVgN433aSFxQGgtureVz7cCyi5zfuMTtBF3AkanjtvNs9m8u2JobxNfphSi3'
+      ) as HdKeyParameters<HdPrivateNodeValid>
+    ).node,
     parentIdentifier: hexToBin('2f2bc501c943dd7f17904b612c090dd88270cc59'),
   });
   t.deepEqual(
@@ -603,77 +610,71 @@ test('[crypto] crackHdPrivateNodeFromHdPublicNodeAndChildPrivateNode', async (t)
   );
 });
 
-// eslint-disable-next-line complexity
-const bip32Vector: Macro<[string, string, string, string]> = async (
-  t,
-  seedHex,
-  path,
-  hdPrivateKey,
-  hdPublicKey
-  // eslint-disable-next-line max-params
-) => {
-  const crypto = await instantiateBIP32Crypto();
+const bip32Vector = test.macro<[string, string, string, string]>({
+  // eslint-disable-next-line complexity, max-params
+  exec: async (t, seedHex, path, hdPrivateKey, hdPublicKey) => {
+    const crypto = await instantiateBIP32Crypto();
 
-  const master = deriveHdPrivateNodeFromSeed(crypto, hexToBin(seedHex));
+    const master = deriveHdPrivateNodeFromSeed(crypto, hexToBin(seedHex));
 
-  if (!master.valid) {
-    t.log(seedHex, master.invalidPrivateKey);
-    t.fail('Astronomically rare hash found!');
-    return;
-  }
+    if (!master.valid) {
+      t.log(seedHex, master.invalidPrivateKey);
+      t.fail('Astronomically rare hash found!');
+      return;
+    }
 
-  const childNode = deriveHdPath(crypto, master, path);
+    const childNode = deriveHdPath(crypto, master, path);
 
-  if (typeof childNode === 'string') {
-    t.fail(childNode);
-    return;
-  }
+    if (typeof childNode === 'string') {
+      t.fail(childNode);
+      return;
+    }
 
-  const vectorXprv = encodeHdPrivateKey(crypto, {
-    network: 'mainnet',
-    node: childNode,
-  });
-  t.deepEqual(vectorXprv, hdPrivateKey);
+    const vectorXprv = encodeHdPrivateKey(crypto, {
+      network: 'mainnet',
+      node: childNode,
+    });
+    t.deepEqual(vectorXprv, hdPrivateKey);
 
-  const decodedPrivate = decodeHdPrivateKey(crypto, hdPrivateKey);
-  if (typeof decodedPrivate === 'string') {
-    t.fail(decodedPrivate);
-    return;
-  }
-  t.deepEqual(
-    childNode.parentIdentifier?.slice(0, fingerprintLength),
-    path === 'm' ? undefined : decodedPrivate.node.parentFingerprint
-  );
-  t.deepEqual(childNode, {
-    ...decodedPrivate.node,
-    ...(path === 'm' ? {} : { parentIdentifier: childNode.parentIdentifier }),
-  });
+    const decodedPrivate = decodeHdPrivateKey(crypto, hdPrivateKey);
+    if (typeof decodedPrivate === 'string') {
+      t.fail(decodedPrivate);
+      return;
+    }
+    t.deepEqual(
+      childNode.parentIdentifier?.slice(0, fingerprintLength),
+      path === 'm' ? undefined : decodedPrivate.node.parentFingerprint
+    );
+    t.deepEqual(childNode, {
+      ...decodedPrivate.node,
+      ...(path === 'm' ? {} : { parentIdentifier: childNode.parentIdentifier }),
+    });
 
-  const decodedPublic = decodeHdPublicKey(crypto, hdPublicKey);
-  if (typeof decodedPublic === 'string') {
-    t.fail(decodedPublic);
-    return;
-  }
-  const publicNode = deriveHdPublicNode(crypto, childNode);
-  t.deepEqual(
-    publicNode.parentIdentifier?.slice(0, fingerprintLength),
-    path === 'm' ? undefined : decodedPublic.node.parentFingerprint
-  );
-  t.deepEqual(publicNode, {
-    ...decodedPublic.node,
-    ...(path === 'm' ? {} : { parentIdentifier: publicNode.parentIdentifier }),
-  });
+    const decodedPublic = decodeHdPublicKey(crypto, hdPublicKey);
+    if (typeof decodedPublic === 'string') {
+      t.fail(decodedPublic);
+      return;
+    }
+    const publicNode = deriveHdPublicNode(crypto, childNode);
+    t.deepEqual(
+      publicNode.parentIdentifier?.slice(0, fingerprintLength),
+      path === 'm' ? undefined : decodedPublic.node.parentFingerprint
+    );
+    t.deepEqual(publicNode, {
+      ...decodedPublic.node,
+      ...(path === 'm'
+        ? {}
+        : { parentIdentifier: publicNode.parentIdentifier }),
+    });
 
-  const vectorXpub = encodeHdPublicKey(crypto, {
-    network: 'mainnet',
-    node: publicNode,
-  });
-  t.deepEqual(vectorXpub, hdPublicKey);
-};
-
-// eslint-disable-next-line functional/immutable-data
-bip32Vector.title = (title, _, path) =>
-  `[crypto] BIP32 Vector – ${title ?? ''}: ${path}`;
+    const vectorXpub = encodeHdPublicKey(crypto, {
+      network: 'mainnet',
+      node: publicNode,
+    });
+    t.deepEqual(vectorXpub, hdPublicKey);
+  },
+  title: (title, _, path) => `[crypto] BIP32 Vector – ${title ?? ''}: ${path}`,
+});
 
 test(
   '#1.1',
@@ -818,9 +819,9 @@ testProp(
   [fcBip32Path()],
   async (t, path: string) => {
     const crypto = await instantiateBIP32Crypto();
-    const privateNode = (decodeHdPrivateKey(crypto, xprv) as HdKeyParameters<
-      HdPrivateNodeValid
-    >).node;
+    const privateNode = (
+      decodeHdPrivateKey(crypto, xprv) as HdKeyParameters<HdPrivateNodeValid>
+    ).node;
     const node = deriveHdPath(crypto, privateNode, path) as HdPrivateNodeValid;
     const publicNode = deriveHdPublicNode(crypto, node);
 
@@ -923,9 +924,10 @@ testProp(
       encoded,
       encodeHdPrivateKey(
         crypto,
-        decodeHdPrivateKey(crypto, encoded) as HdKeyParameters<
-          HdPrivateNodeValid
-        >
+        decodeHdPrivateKey(
+          crypto,
+          encoded
+        ) as HdKeyParameters<HdPrivateNodeValid>
       )
     );
   }
@@ -978,11 +980,12 @@ testProp(
       childIndexes
     ) as HdPrivateNodeValid;
 
-    const crackedParentNode = crackHdPrivateNodeFromHdPublicNodeAndChildPrivateNode(
-      crypto,
-      parentPublicNode,
-      nonHardenedChildNode
-    ) as HdPrivateNodeValid;
+    const crackedParentNode =
+      crackHdPrivateNodeFromHdPublicNodeAndChildPrivateNode(
+        crypto,
+        parentPublicNode,
+        nonHardenedChildNode
+      ) as HdPrivateNodeValid;
     const crackedXprv = encodeHdPrivateKey(crypto, {
       network: 'mainnet',
       node: crackedParentNode,

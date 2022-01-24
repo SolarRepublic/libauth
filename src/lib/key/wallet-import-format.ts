@@ -1,9 +1,9 @@
+import type { Sha256 } from '../lib';
 import {
   Base58AddressFormatVersion,
   decodeBase58AddressFormat,
   encodeBase58AddressFormat,
-} from '../address/address';
-import { Sha256 } from '../crypto/crypto';
+} from '../lib.js';
 
 export enum WalletImportFormatError {
   incorrectLength = 'The WIF private key payload is not the correct length.',
@@ -13,7 +13,7 @@ export enum WalletImportFormatError {
  * The network and address format in which a WIF-encoded private key is expected
  * to be used.
  *
- * WIF-encoding is generally used to serialize private keys for Pay to Public
+ * WIF-encoding is generally used to encode private keys for Pay to Public
  * Key (P2PKH) addresses – each WIF-encoded private key specifies the
  * compression of the public key to use in the P2PKH address:
  *
@@ -25,10 +25,10 @@ export enum WalletImportFormatError {
  * (65 bytes beginning with `0x04`) on the specified network.
  */
 export type WalletImportFormatType =
-  | 'mainnet'
-  | 'testnet'
   | 'mainnet-uncompressed'
-  | 'testnet-uncompressed';
+  | 'mainnet'
+  | 'testnet-uncompressed'
+  | 'testnet';
 
 /**
  * Encode a private key using Wallet Import Format (WIF).

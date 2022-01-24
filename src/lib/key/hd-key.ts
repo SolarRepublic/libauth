@@ -1,14 +1,4 @@
-import {
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha256,
-  instantiateSha512,
-  Ripemd160,
-  Secp256k1,
-  Sha256,
-  Sha512,
-} from '../crypto/crypto';
-import { hmacSha512 } from '../crypto/hmac';
+import type { Ripemd160, Secp256k1, Sha256, Sha512 } from '../lib';
 import {
   base58ToBin,
   BaseConversionError,
@@ -16,11 +6,15 @@ import {
   binToBase58,
   binToBigIntUint256BE,
   flattenBinArray,
+  hmacSha512,
+  instantiateRipemd160,
+  instantiateSecp256k1,
+  instantiateSha256,
+  instantiateSha512,
   numberToBinUint32BE,
-} from '../format/format';
-import { utf8ToBin } from '../format/utf8';
+} from '../lib.js';
 
-import { validateSecp256k1PrivateKey } from './key-utils';
+import { validateSecp256k1PrivateKey } from './key.js';
 
 /**
  * The networks which can be referenced by an HD public or private key.
@@ -63,12 +57,12 @@ interface HdNodeBase {
   /**
    * The first 4 bytes of the parent node's identifier. This is used to quickly
    * identify the parent node in data structures, but collisions can occur. To
-   * resolve collisions, use the full parent identifer. (See
+   * resolve collisions, use the full parent identifier. (See
    * `deriveHdPublicNodeIdentifier` for details.)
    */
   parentFingerprint: Uint8Array;
   /**
-   * The full identifer of the parent node. This can be used to resolve
+   * The full identifier of the parent node. This can be used to resolve
    * collisions where two possible parent nodes share a `parentFingerprint`.
    * Since the full `parentIdentifier` is not encoded in BIP32 HD keys, it
    * might be unknown.
@@ -114,7 +108,7 @@ export interface HdPrivateNodeInvalid extends HdNodeBase {
 
 /**
  * A valid HD private node for which the parent node is known (and
- * `parentIdentifer` is guaranteed to be defined).
+ * `parentIdentifier` is guaranteed to be defined).
  */
 export interface HdPrivateNodeKnownParent extends HdPrivateNodeValid {
   parentIdentifier: Uint8Array;
@@ -127,7 +121,7 @@ export interface HdPrivateNodeKnownParent extends HdPrivateNodeValid {
  * Note, HD nodes are network-independent. A network is required only when
  * encoding the node as an HD key or using a derived public key in an address.
  */
-export type HdPrivateNode = HdPrivateNodeValid | HdPrivateNodeInvalid;
+export type HdPrivateNode = HdPrivateNodeInvalid | HdPrivateNodeValid;
 
 /**
  * A public node in a Hierarchical Deterministic (HD) key tree.
@@ -143,7 +137,7 @@ export interface HdPublicNode extends HdNodeBase {
 }
 
 /**
- * An HD public node for which the parent node is known (and `parentIdentifer`
+ * An HD public node for which the parent node is known (and `parentIdentifier`
  * is guaranteed to be defined).
  */
 export interface HdPublicNodeKnownParent extends HdPublicNode {
@@ -169,8 +163,14 @@ export const instantiateBIP32Crypto = async () => {
   ]);
   return { ripemd160, secp256k1, sha256, sha512 };
 };
-
-const bip32HmacSha512Key = utf8ToBin('Bitcoin seed');
+/**
+ * The HMAC SHA-512 key used by BIP32, "Bitcoin seed"
+ * (`utf8ToBin('Bitcoin seed')`)
+ */
+const bip32HmacSha512Key = Uint8Array.from([
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  66, 105, 116, 99, 111, 105, 110, 32, 115, 101, 101, 100,
+]);
 const halfHmacSha512Length = 32;
 /**
  * Derive an `HdPrivateNode` from the provided seed following the BIP32
@@ -197,16 +197,18 @@ export const deriveHdPrivateNodeFromSeed = <
   const childIndex = 0;
   const parentFingerprint = Uint8Array.from([0, 0, 0, 0]);
   const valid = assumeValidity ?? validateSecp256k1PrivateKey(privateKey);
-  return (valid
-    ? { chainCode, childIndex, depth, parentFingerprint, privateKey, valid }
-    : {
-        chainCode,
-        childIndex,
-        depth,
-        invalidPrivateKey: privateKey,
-        parentFingerprint,
-        valid,
-      }) as AssumedValidity extends true
+  return (
+    valid
+      ? { chainCode, childIndex, depth, parentFingerprint, privateKey, valid }
+      : {
+          chainCode,
+          childIndex,
+          depth,
+          invalidPrivateKey: privateKey,
+          parentFingerprint,
+          valid,
+        }
+  ) as AssumedValidity extends true
     ? HdPrivateNodeValid
     : AssumedValidity extends false
     ? HdPrivateNodeInvalid
@@ -388,9 +390,7 @@ export const decodeHdKey = (
             parentFingerprint,
             valid: false,
           } as HdPrivateNodeInvalid),
-      version: version as
-        | HdKeyVersion.mainnetPrivateKey
-        | HdKeyVersion.testnetPrivateKey,
+      version,
     };
   }
 
@@ -410,9 +410,7 @@ export const decodeHdKey = (
       parentFingerprint,
       publicKey: keyData,
     } as HdPublicNode,
-    version: version as
-      | HdKeyVersion.mainnetPublicKey
-      | HdKeyVersion.testnetPublicKey,
+    version,
   };
 };
 
@@ -575,8 +573,8 @@ export const deriveHdPublicNode = <
     };
   },
   node: PrivateNode
-) => {
-  return {
+) =>
+  ({
     chainCode: node.chainCode,
     childIndex: node.childIndex,
     depth: node.depth,
@@ -587,8 +585,7 @@ export const deriveHdPublicNode = <
     publicKey: crypto.secp256k1.derivePublicKeyCompressed(node.privateKey),
   } as PrivateNode extends HdPrivateNodeKnownParent
     ? HdPublicNodeKnownParent
-    : HdPublicNode;
-};
+    : HdPublicNode);
 
 /**
  * An error in the derivation of child HD public or private nodes.
@@ -639,9 +636,9 @@ export const deriveHdPrivateNodeChild = (
   node: HdPrivateNodeValid,
   index: number
 ):
-  | HdPrivateNodeKnownParent
   | HdNodeDerivationError.childIndexExceedsMaximum
-  | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm => {
+  | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm
+  | HdPrivateNodeKnownParent => {
   const maximumIndex = 0xffffffff;
   if (index > maximumIndex) {
     return HdNodeDerivationError.childIndexExceedsMaximum;
@@ -729,9 +726,9 @@ export const deriveHdPublicNodeChild = (
   node: HdPublicNode,
   index: number
 ):
-  | HdPublicNodeKnownParent
   | HdNodeDerivationError.hardenedDerivationRequiresPrivateNode
-  | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm => {
+  | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm
+  | HdPublicNodeKnownParent => {
   const hardenedIndexOffset = 0x80000000;
   if (index >= hardenedIndexOffset) {
     return HdNodeDerivationError.hardenedDerivationRequiresPrivateNode;
@@ -774,16 +771,16 @@ export const deriveHdPublicNodeChild = (
 type PrivateResults<NodeType> = NodeType extends HdPrivateNodeKnownParent
   ? HdPrivateNodeKnownParent
   :
-      | HdPrivateNodeValid
       | HdNodeDerivationError.childIndexExceedsMaximum
-      | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm;
+      | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm
+      | HdPrivateNodeValid;
 
 type PublicResults<NodeType> = NodeType extends HdPublicNodeKnownParent
   ? HdPublicNodeKnownParent
   :
-      | HdPublicNode
       | HdNodeDerivationError.hardenedDerivationRequiresPrivateNode
-      | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm;
+      | HdNodeDerivationError.nextChildIndexRequiresHardenedAlgorithm
+      | HdPublicNode;
 
 /**
  * This type is a little complex because resulting HD nodes may not have a known
@@ -881,21 +878,23 @@ export const deriveHdPath = <
         : parseInt(index, base)
     );
 
-  return (isPrivateDerivation
-    ? indexes.reduce(
-        (result, nextIndex) =>
-          typeof result === 'string'
-            ? result
-            : deriveHdPrivateNodeChild(crypto, result, nextIndex),
-        node as PrivateResults<HdPrivateNodeValid> // eslint-disable-line @typescript-eslint/prefer-reduce-type-parameter
-      )
-    : indexes.reduce(
-        (result, nextIndex) =>
-          typeof result === 'string'
-            ? result
-            : deriveHdPublicNodeChild(crypto, result, nextIndex),
-        node as PublicResults<HdPublicNode> // eslint-disable-line @typescript-eslint/prefer-reduce-type-parameter
-      )) as ReductionResults<NodeType>;
+  return (
+    isPrivateDerivation
+      ? indexes.reduce(
+          (result, nextIndex) =>
+            typeof result === 'string'
+              ? result
+              : deriveHdPrivateNodeChild(crypto, result, nextIndex),
+          node as PrivateResults<HdPrivateNodeValid> // eslint-disable-line @typescript-eslint/prefer-reduce-type-parameter
+        )
+      : indexes.reduce(
+          (result, nextIndex) =>
+            typeof result === 'string'
+              ? result
+              : deriveHdPublicNodeChild(crypto, result, nextIndex),
+          node as PublicResults<HdPublicNode> // eslint-disable-line @typescript-eslint/prefer-reduce-type-parameter
+        )
+  ) as ReductionResults<NodeType>;
 };
 
 export enum HdNodeCrackingError {

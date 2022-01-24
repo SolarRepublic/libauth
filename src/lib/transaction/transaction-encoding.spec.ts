@@ -1,18 +1,17 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 
+import type { TransactionCommon } from '../lib';
 import {
   bigIntToBinUint64LE,
-  decodeTransaction,
-  encodeTransaction,
+  decodeTransactionCommon,
+  encodeTransactionCommon,
   getTransactionHash,
   getTransactionHashBE,
   getTransactionHashLE,
   hexToBin,
   instantiateSha256,
-  Transaction,
   TransactionDecodingError,
-} from '../lib';
+} from '../lib.js';
 
 const sha256Promise = instantiateSha256();
 
@@ -78,7 +77,7 @@ test('decodeTransaction', (t) => {
   const tx = hexToBin(
     '3eb87070042d16f9469b0080a3c1fe8de0feae345200beef8b1e0d7c62501ae0df899dca1e03000000066a0065525365ffffffffd14a9a335e8babddd89b5d0b6a0f41dd6b18848050a0fc48ce32d892e11817fd030000000863acac00535200527ff62cf3ad30d9064e180eaed5e6303950121a8086b5266b55156e4f7612f2c7ebf223e0020000000100ffffffff6273ca3aceb55931160fa7a3064682b4790ee016b4a5c0c0d101fd449dff88ba01000000055351ac526aa3b8223d0421f25b0400000000026552f92db70500000000075253516a656a53c4a908010000000000b5192901000000000652525251516aa148ca38'
   );
-  t.deepEqual(decodeTransaction(tx), {
+  t.deepEqual(decodeTransactionCommon(tx), {
     inputs: [
       {
         outpointIndex: 3,
@@ -117,19 +116,19 @@ test('decodeTransaction', (t) => {
     outputs: [
       {
         lockingBytecode: hexToBin('6552'),
-        satoshis: bigIntToBinUint64LE(BigInt(73134625)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(73134625)),
       },
       {
         lockingBytecode: hexToBin('5253516a656a53'),
-        satoshis: bigIntToBinUint64LE(BigInt(95890937)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(95890937)),
       },
       {
         lockingBytecode: hexToBin(''),
-        satoshis: bigIntToBinUint64LE(BigInt(17344964)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(17344964)),
       },
       {
         lockingBytecode: hexToBin('52525251516a'),
-        satoshis: bigIntToBinUint64LE(BigInt(19470773)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(19470773)),
       },
     ],
     version: 1886435390,
@@ -176,25 +175,25 @@ test('encodeTransaction', (t) => {
     outputs: [
       {
         lockingBytecode: hexToBin('6552'),
-        satoshis: bigIntToBinUint64LE(BigInt(73134625)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(73134625)),
       },
       {
         lockingBytecode: hexToBin('5253516a656a53'),
-        satoshis: bigIntToBinUint64LE(BigInt(95890937)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(95890937)),
       },
       {
         lockingBytecode: hexToBin(''),
-        satoshis: bigIntToBinUint64LE(BigInt(17344964)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(17344964)),
       },
       {
         lockingBytecode: hexToBin('52525251516a'),
-        satoshis: bigIntToBinUint64LE(BigInt(19470773)),
+        valueSatoshis: bigIntToBinUint64LE(BigInt(19470773)),
       },
     ],
     version: 1886435390,
   };
   t.deepEqual(
-    encodeTransaction(tx),
+    encodeTransactionCommon(tx),
     hexToBin(
       '3eb87070042d16f9469b0080a3c1fe8de0feae345200beef8b1e0d7c62501ae0df899dca1e03000000066a0065525365ffffffffd14a9a335e8babddd89b5d0b6a0f41dd6b18848050a0fc48ce32d892e11817fd030000000863acac00535200527ff62cf3ad30d9064e180eaed5e6303950121a8086b5266b55156e4f7612f2c7ebf223e0020000000100ffffffff6273ca3aceb55931160fa7a3064682b4790ee016b4a5c0c0d101fd449dff88ba01000000055351ac526aa3b8223d0421f25b0400000000026552f92db70500000000075253516a656a53c4a908010000000000b5192901000000000652525251516aa148ca38'
     )
@@ -206,13 +205,15 @@ test('decode and encode transaction', (t) => {
     '3eb87070042d16f9469b0080a3c1fe8de0feae345200beef8b1e0d7c62501ae0df899dca1e03000000066a0065525365ffffffffd14a9a335e8babddd89b5d0b6a0f41dd6b18848050a0fc48ce32d892e11817fd030000000863acac00535200527ff62cf3ad30d9064e180eaed5e6303950121a8086b5266b55156e4f7612f2c7ebf223e0020000000100ffffffff6273ca3aceb55931160fa7a3064682b4790ee016b4a5c0c0d101fd449dff88ba01000000055351ac526aa3b8223d0421f25b0400000000026552f92db70500000000075253516a656a53c4a908010000000000b5192901000000000652525251516aa148ca38';
   t.deepEqual(
     hexToBin(tx),
-    encodeTransaction(decodeTransaction(hexToBin(tx)) as Transaction)
+    encodeTransactionCommon(
+      decodeTransactionCommon(hexToBin(tx)) as TransactionCommon
+    )
   );
 });
 
 test('decodeTransaction: invalid', (t) => {
   t.deepEqual(
-    decodeTransaction(hexToBin('00')),
+    decodeTransactionCommon(hexToBin('00')),
     TransactionDecodingError.invalidFormat
   );
 });

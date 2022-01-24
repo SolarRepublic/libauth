@@ -1,33 +1,35 @@
-import {
-  InstructionSetOperationMapping,
-  Operation,
-} from '../../virtual-machine';
-import {
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
-} from '../../vm-types';
+  InstructionSetOperationMapping,
+  Operation,
+} from '../../vm';
 
-import { isScriptNumberError, parseBytesAsScriptNumber } from './common';
-import { applyError, AuthenticationErrorCommon } from './errors';
+import {
+  applyError,
+  AuthenticationErrorCommon,
+  isScriptNumberError,
+  parseBytesAsScriptNumber,
+} from './common.js';
 
-export const incrementOperationCount = <
-  State extends { operationCount: number }
->(
-  operation: Operation<State>
-): Operation<State> => (state: State) => {
-  const nextState = operation(state);
-  // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-  nextState.operationCount += 1;
-  return nextState;
-};
+export const incrementOperationCount =
+  <State extends { operationCount: number }>(
+    operation: Operation<State>
+  ): Operation<State> =>
+  (state: State) => {
+    const nextState = operation(state);
+    // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
+    nextState.operationCount += 1;
+    return nextState;
+  };
 
-export const conditionallyEvaluate = <
-  State extends AuthenticationProgramStateExecutionStack
->(
-  operation: Operation<State>
-): Operation<State> => (state: State) =>
-  state.executionStack.every((item) => item) ? operation(state) : state;
+export const conditionallyEvaluate =
+  <State extends AuthenticationProgramStateExecutionStack>(
+    operation: Operation<State>
+  ): Operation<State> =>
+  (state: State) =>
+    state.executionStack.every((item) => item) ? operation(state) : state;
 
 /**
  * Map a function over each operation in an `InstructionSet.operations` object,
@@ -36,12 +38,10 @@ export const conditionallyEvaluate = <
  * @param combinator - a function to apply to each operation
  */
 export const mapOverOperations = <State>(
-  operations: InstructionSetOperationMapping<State>,
-  ...combinators: ((operation: Operation<State>) => Operation<State>)[]
+  combinators: ((operation: Operation<State>) => Operation<State>)[],
+  operations: InstructionSetOperationMapping<State>
 ) =>
-  Object.keys(operations).reduce<{
-    [opcode: number]: Operation<State>;
-  }>(
+  Object.keys(operations).reduce<{ [opcode: number]: Operation<State> }>(
     (result, operation) => ({
       ...result,
       [operation]: combinators.reduce(
@@ -56,9 +56,8 @@ export const mapOverOperations = <State>(
  * Pop one stack item off of `state.stack` and provide that item to `operation`.
  */
 export const useOneStackItem = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (nextState: State, [value]: [Uint8Array]) => State
@@ -66,18 +65,14 @@ export const useOneStackItem = <
   // eslint-disable-next-line functional/immutable-data
   const item = state.stack.pop();
   if (item === undefined) {
-    return applyError<State, Errors>(
-      AuthenticationErrorCommon.emptyStack,
-      state
-    );
+    return applyError(AuthenticationErrorCommon.emptyStack, state);
   }
   return operation(state, [item]);
 };
 
 export const useTwoStackItems = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -92,9 +87,8 @@ export const useTwoStackItems = <
   );
 
 export const useThreeStackItems = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -109,9 +103,8 @@ export const useThreeStackItems = <
   );
 
 export const useFourStackItems = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -131,9 +124,8 @@ export const useFourStackItems = <
   );
 
 export const useSixStackItems = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -163,19 +155,24 @@ export const useSixStackItems = <
       )
   );
 
-const normalMaximumScriptNumberByteLength = 4;
+const typicalMaximumScriptNumberByteLength = 8;
 
 export const useOneScriptNumber = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (nextState: State, [value]: [bigint]) => State,
   {
-    requireMinimalEncoding,
-    maximumScriptNumberByteLength = normalMaximumScriptNumberByteLength,
-  }: { requireMinimalEncoding: boolean; maximumScriptNumberByteLength?: number }
+    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding = true,
+  }: {
+    maximumScriptNumberByteLength?: number;
+    requireMinimalEncoding?: boolean;
+  } = {
+    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding: true,
+  }
 ) =>
   useOneStackItem(state, (nextState, [item]) => {
     const value = parseBytesAsScriptNumber(item, {
@@ -183,18 +180,14 @@ export const useOneScriptNumber = <
       requireMinimalEncoding,
     });
     if (isScriptNumberError(value)) {
-      return applyError<State, Errors>(
-        AuthenticationErrorCommon.invalidScriptNumber,
-        state
-      );
+      return applyError(AuthenticationErrorCommon.invalidScriptNumber, state);
     }
     return operation(nextState, [value]);
   });
 
 export const useTwoScriptNumbers = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -202,9 +195,15 @@ export const useTwoScriptNumbers = <
     [firstValue, secondValue]: [bigint, bigint]
   ) => State,
   {
-    requireMinimalEncoding,
-    maximumScriptNumberByteLength = normalMaximumScriptNumberByteLength,
-  }: { requireMinimalEncoding: boolean; maximumScriptNumberByteLength?: number }
+    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding = true,
+  }: {
+    maximumScriptNumberByteLength?: number;
+    requireMinimalEncoding?: boolean;
+  } = {
+    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding: true,
+  }
 ) =>
   useOneScriptNumber(
     state,
@@ -219,9 +218,8 @@ export const useTwoScriptNumbers = <
   );
 
 export const useThreeScriptNumbers = <
-  State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
-  Errors
+  State extends AuthenticationProgramStateError &
+    AuthenticationProgramStateStack
 >(
   state: State,
   operation: (
@@ -229,9 +227,15 @@ export const useThreeScriptNumbers = <
     [firstValue, secondValue, thirdValue]: [bigint, bigint, bigint]
   ) => State,
   {
-    requireMinimalEncoding,
-    maximumScriptNumberByteLength = normalMaximumScriptNumberByteLength,
-  }: { requireMinimalEncoding: boolean; maximumScriptNumberByteLength?: number }
+    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding = true,
+  }: {
+    maximumScriptNumberByteLength?: number;
+    requireMinimalEncoding?: boolean;
+  } = {
+    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    requireMinimalEncoding: true,
+  }
 ) =>
   useTwoScriptNumbers(
     state,
@@ -259,8 +263,10 @@ export const pushToStack = <State extends AuthenticationProgramStateStack>(
   return state;
 };
 
-// TODO: if firstOperation errors, secondOperation might overwrite the error
-export const combineOperations = <State>(
-  firstOperation: Operation<State>,
-  secondOperation: Operation<State>
-) => (state: State) => secondOperation(firstOperation(state));
+export const combineOperations =
+  <State>(
+    firstOperation: Operation<State>,
+    secondOperation: Operation<State>
+  ) =>
+  (state: State) =>
+    secondOperation(firstOperation(state));

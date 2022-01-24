@@ -1,18 +1,18 @@
-import { flattenBinArray } from '../../format/hex';
-import {
+import type {
   AuthenticationInstruction,
+  AuthenticationProgramStateExecutionStack,
   ParsedAuthenticationInstruction,
   ParsedAuthenticationInstructionMalformed,
-} from '../../vm/instruction-sets/instruction-sets-types';
+} from '../../lib';
 import {
   authenticationInstructionIsMalformed,
+  encodeParsedAuthenticationInstructionMalformed,
+  flattenBinArray,
   parseBytecode,
-  serializeParsedAuthenticationInstructionMalformed,
-} from '../../vm/instruction-sets/instruction-sets-utils';
-import { AuthenticationProgramStateExecutionStack } from '../../vm/vm';
-import { createCompilerCommonSynchronous } from '../compiler';
+} from '../../lib.js';
+import { createCompilerCommonSynchronous } from '../template.js';
 
-import {
+import type {
   CompilationError,
   CompilationErrorRecoverable,
   EvaluationSample,
@@ -196,7 +196,7 @@ export const allErrorsAreRecoverable = (
  */
 export interface BtlResolution {
   bytecode: Uint8Array;
-  type: 'variable' | 'script' | 'opcode' | ResolvedSegmentLiteralType;
+  type: ResolvedSegmentLiteralType | 'opcode' | 'script' | 'variable';
   text: string;
 }
 
@@ -288,19 +288,15 @@ export const extractResolvedVariableBytecodeMap = (
  * @param errors - an array of compilation errors
  * @param separator - the characters with which to join the formatted errors.
  */
-export const stringifyErrors = (
-  errors: CompilationError[],
-  separator = '; '
-) => {
-  return `${errors
+export const stringifyErrors = (errors: CompilationError[], separator = '; ') =>
+  `${errors
     .map(
       (error) =>
         `[${error.range.startLineNumber}, ${error.range.startColumn}] ${error.error}`
     )
     .join(separator)}`;
-};
 
-export interface SampleExtractionResult<ProgramState, Opcodes = number> {
+export interface SampleExtractionResult<ProgramState> {
   /**
    * The samples successfully extracted from the provided `nodes` and `trace`.
    *
@@ -313,7 +309,7 @@ export interface SampleExtractionResult<ProgramState, Opcodes = number> {
    * returned, and the final state (the evaluation result) is dropped. This can
    * be detected by checking if the length of `unmatchedStates` is `0`.
    */
-  samples: EvaluationSample<ProgramState, Opcodes>[];
+  samples: EvaluationSample<ProgramState>[];
   /**
    * If the provided `nodes` are exhausted before all states from `trace` have
    * been matched, the remaining "unmatched" states are returned. This is useful
@@ -442,7 +438,7 @@ export interface SampleExtractionResult<ProgramState, Opcodes = number> {
  * @param trace - the `vm.debug` result to map to these nodes
  */
 // eslint-disable-next-line complexity
-export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
+export const extractEvaluationSamples = <ProgramState>({
   evaluationRange,
   nodes,
   trace,
@@ -450,7 +446,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
   evaluationRange: Range;
   nodes: ScriptReductionTraceScriptNode<ProgramState>['script'];
   trace: ProgramState[];
-}): SampleExtractionResult<ProgramState, Opcodes> => {
+}): SampleExtractionResult<ProgramState> => {
   const traceWithoutFinalState =
     trace.length > 1 ? trace.slice(0, -1) : trace.slice();
   if (traceWithoutFinalState.length === 0) {
@@ -459,7 +455,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
       unmatchedStates: [],
     };
   }
-  const samples: EvaluationSample<ProgramState, Opcodes>[] = [
+  const samples: EvaluationSample<ProgramState>[] = [
     {
       evaluationRange,
       internalStates: [],
@@ -496,18 +492,19 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
             mergedRange: mergeRanges([incomplete.range, currentNode.range]),
           };
 
-    const parsed = parseBytecode<Opcodes>(mergedBytecode);
+    const parsed = parseBytecode(mergedBytecode);
 
+    const [zeroth] = parsed;
     const hasNonMalformedInstructions =
-      parsed.length !== 0 && !('malformed' in parsed[0]);
+      zeroth !== undefined && !('malformed' in zeroth);
 
     if (hasNonMalformedInstructions) {
       const lastInstruction = parsed[parsed.length - 1];
-      const validInstructions = (authenticationInstructionIsMalformed(
-        lastInstruction
-      )
-        ? parsed.slice(0, parsed.length - 1)
-        : parsed) as AuthenticationInstruction<Opcodes>[];
+      const validInstructions = (
+        authenticationInstructionIsMalformed(lastInstruction)
+          ? parsed.slice(0, parsed.length - 1)
+          : parsed
+      ) as AuthenticationInstruction[];
       const firstUnmatchedStateIndex = nextState + validInstructions.length;
       const matchingStates = traceWithoutFinalState.slice(
         nextState,
@@ -522,7 +519,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
        * Guaranteed to have a defined `state` (or the loop would have exited).
        */
       const firstPairedState = pairedStates[0] as {
-        instruction: ParsedAuthenticationInstruction<Opcodes>;
+        instruction: ParsedAuthenticationInstruction;
         state: ProgramState;
       };
 
@@ -552,7 +549,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
       // eslint-disable-next-line functional/no-conditional-statement
       if (closesASecondSample) {
         const finalState = pairedStates[sampleClosingIndex] as {
-          instruction: ParsedAuthenticationInstruction<Opcodes>;
+          instruction: ParsedAuthenticationInstruction;
           state: ProgramState;
         };
         const secondSamplePairsBegin = closesCurrentlyOpenSample ? 1 : 0;
@@ -560,7 +557,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
           secondSamplePairsBegin,
           sampleClosingIndex
         ) as {
-          instruction: ParsedAuthenticationInstruction<Opcodes>;
+          instruction: ParsedAuthenticationInstruction;
           state: ProgramState;
         }[];
         // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
@@ -579,9 +576,8 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
       if (authenticationInstructionIsMalformed(lastInstruction)) {
         // eslint-disable-next-line functional/no-expression-statement
         incomplete = {
-          bytecode: serializeParsedAuthenticationInstructionMalformed(
-            lastInstruction
-          ),
+          bytecode:
+            encodeParsedAuthenticationInstructionMalformed(lastInstruction),
           range: currentNode.range,
         };
         // eslint-disable-next-line functional/no-conditional-statement
@@ -592,7 +588,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
       // eslint-disable-next-line functional/no-conditional-statement
     } else {
       const lastInstruction = parsed[parsed.length - 1] as
-        | ParsedAuthenticationInstructionMalformed<Opcodes>
+        | ParsedAuthenticationInstructionMalformed
         | undefined;
 
       // eslint-disable-next-line functional/no-expression-statement
@@ -600,9 +596,8 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
         lastInstruction === undefined
           ? undefined
           : {
-              bytecode: serializeParsedAuthenticationInstructionMalformed(
-                lastInstruction
-              ),
+              bytecode:
+                encodeParsedAuthenticationInstructionMalformed(lastInstruction),
               range: mergedRange,
             };
     }
@@ -646,10 +641,7 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
  * @param nodes - an array of reduced nodes to parse
  * @param trace - the `vm.debug` result to map to these nodes
  */
-export const extractEvaluationSamplesRecursive = <
-  ProgramState,
-  Opcodes = number
->({
+export const extractEvaluationSamplesRecursive = <ProgramState>({
   evaluationRange,
   nodes,
   trace,
@@ -657,20 +649,20 @@ export const extractEvaluationSamplesRecursive = <
   evaluationRange: Range;
   nodes: ScriptReductionTraceScriptNode<ProgramState>['script'];
   trace: ProgramState[];
-}): SampleExtractionResult<ProgramState, Opcodes> => {
+}): SampleExtractionResult<ProgramState> => {
   const extractEvaluations = (
     node: ScriptReductionTraceChildNode<ProgramState>,
     depth = 1
-  ): EvaluationSample<ProgramState, Opcodes>[] => {
+  ): EvaluationSample<ProgramState>[] => {
     if ('push' in node) {
-      return node.push.script.reduce<EvaluationSample<ProgramState, Opcodes>[]>(
+      return node.push.script.reduce<EvaluationSample<ProgramState>[]>(
         (all, childNode) => [...all, ...extractEvaluations(childNode, depth)],
         []
       );
     }
     if ('source' in node) {
       const childSamples = node.source.script.reduce<
-        EvaluationSample<ProgramState, Opcodes>[]
+        EvaluationSample<ProgramState>[]
       >(
         (all, childNode) => [
           ...all,
@@ -681,7 +673,7 @@ export const extractEvaluationSamplesRecursive = <
       const traceWithoutUnlockingPhase = node.trace.slice(1);
       const evaluationBeginToken = '$(';
       const evaluationEndToken = ')';
-      const extracted = extractEvaluationSamples<ProgramState, Opcodes>({
+      const extracted = extractEvaluationSamples<ProgramState>({
         evaluationRange: {
           endColumn: node.range.endColumn - evaluationEndToken.length,
           endLineNumber: node.range.endLineNumber,
@@ -696,16 +688,13 @@ export const extractEvaluationSamplesRecursive = <
     return [];
   };
 
-  const { samples, unmatchedStates } = extractEvaluationSamples<
-    ProgramState,
-    Opcodes
-  >({
+  const { samples, unmatchedStates } = extractEvaluationSamples<ProgramState>({
     evaluationRange,
     nodes,
     trace,
   });
 
-  const childSamples = nodes.reduce<EvaluationSample<ProgramState, Opcodes>[]>(
+  const childSamples = nodes.reduce<EvaluationSample<ProgramState>[]>(
     (all, node) => [...all, ...extractEvaluations(node)],
     []
   );
@@ -755,10 +744,9 @@ const stateIsExecuting = (state: AuthenticationProgramStateExecutionStack) =>
  * executing), defaults to `1,1`
  */
 export const extractUnexecutedRanges = <
-  ProgramState extends AuthenticationProgramStateExecutionStack,
-  Opcodes = number
+  ProgramState extends AuthenticationProgramStateExecutionStack
 >(
-  samples: EvaluationSample<ProgramState, Opcodes>[],
+  samples: EvaluationSample<ProgramState>[],
   evaluationBegins = '1,1'
 ) => {
   const reduced = samples.reduce<{

@@ -1,5 +1,4 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
-import test, { Macro } from 'ava';
+import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
 
 import {
@@ -31,7 +30,7 @@ import {
   numberToBinUintLE,
   readBitcoinVarInt,
   varIntPrefixToSize,
-} from '../lib';
+} from '../lib.js';
 
 test('numberToBinUint16LE', (t) => {
   t.deepEqual(numberToBinUint16LE(0), Uint8Array.from([0, 0]));
@@ -342,7 +341,7 @@ test('binToBigIntUint256BE and bigIntToBinUint256BEClamped', (t) => {
   const max = new Uint8Array(32);
   max.fill(255);
   const overMax = new Uint8Array(33);
-  // eslint-disable-next-line functional/immutable-data
+
   overMax[0] = 255;
   t.deepEqual(
     bigIntToBinUint256BEClamped(BigInt(`0x${binToHex(overMax)}`)),
@@ -424,16 +423,7 @@ test('binToBigIntUint64LE', (t) => {
   t.deepEqual(
     binToBigIntUint64LE(
       Uint8Array.from([
-        0xef,
-        0xcd,
-        0xab,
-        0x89,
-        0x67,
-        0x45,
-        0x23,
-        0x01,
-        0x00,
-        0x00,
+        0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x00, 0x00,
       ])
     ),
     BigInt('0x0123456789abcdef')
@@ -453,26 +443,19 @@ test('readBitcoinVarInt: offset is optional', (t) => {
   });
 });
 
-const varIntVector: Macro<[string, bigint, number, number?, string?]> = (
-  t,
-  hex,
-  value,
-  nextOffset,
-  start = 0,
-  expected = hex
+const varIntVector = test.macro<[string, bigint, number, number?, string?]>({
   // eslint-disable-next-line max-params
-) => {
-  t.deepEqual(readBitcoinVarInt(hexToBin(hex), start), {
-    nextOffset,
-    value,
-  });
-  t.deepEqual(bigIntToBitcoinVarInt(value), hexToBin(expected));
-};
+  exec: (t, hex, value, nextOffset, start = 0, expected = hex) => {
+    t.deepEqual(readBitcoinVarInt(hexToBin(hex), start), {
+      nextOffset,
+      value,
+    });
+    t.deepEqual(bigIntToBitcoinVarInt(value), hexToBin(expected));
+  },
+  title: (_, string) => `readBitcoinVarInt/bigIntToBitcoinVarInt: ${string}`,
+});
 
-// eslint-disable-next-line functional/immutable-data
-varIntVector.title = (_, string) =>
-  `readBitcoinVarInt/bigIntToBitcoinVarInt: ${string}`;
-
+/* spell-checker: disable */
 test(varIntVector, '00', BigInt(0x00), 1);
 test(varIntVector, '01', BigInt(0x01), 1);
 test(varIntVector, '12', BigInt(0x12), 1);
@@ -494,6 +477,8 @@ test(varIntVector, 'fe11111111', BigInt(0x11111111), 5);
 test(varIntVector, 'fe12345678', BigInt(0x78563412), 5);
 test(varIntVector, 'feffffffff', BigInt(0xffffffff), 5);
 test(varIntVector, 'ff0000000001000000', BigInt(0x0100000000), 9);
+/* spell-checker: enable */
+
 test(
   varIntVector,
   '0000ff0000000001000000',

@@ -1,79 +1,72 @@
-import { TransactionContextCommon } from '../transaction/transaction-types';
-import {
-  AuthenticationErrorCommon,
-  generateBytecodeMap,
-  OpcodesCommon,
-} from '../vm/instruction-sets/instruction-sets';
-import {
+import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
-} from '../vm/vm-types';
+  CompilationContextBCH,
+} from '../lib';
+import { generateBytecodeMap, Opcodes } from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults';
-import { compilerOperationsCommon } from './compiler-operations';
-import {
-  AnyCompilationEnvironment,
+import { CompilerDefaults } from './compiler-defaults.js';
+import { compilerOperationsCommon } from './compiler-operations.js';
+import type {
+  AnyCompilerConfiguration,
   BytecodeGenerationResult,
   CompilationData,
-  CompilationEnvironment,
   Compiler,
+  CompilerConfiguration,
 } from './compiler-types';
-import { compileScript } from './language/compile';
-import { CompilationResult } from './language/language-types';
-import { generateScenarioCommon } from './scenarios';
-import { AuthenticationTemplate } from './template-types';
+import { generateScenarioCommon } from './scenarios.js';
+import type { CompilationResult } from './template';
+import type { AuthenticationTemplate } from './template-types';
+import { compileScript } from './template.js';
 
 /**
- * Create a `Compiler` from the provided compilation environment. This method
- * requires a full `CompilationEnvironment` and does not instantiate any new
+ * Create a `Compiler` from the provided compiler configuration. This method
+ * requires a full `CompilerConfiguration` and does not instantiate any new
  * crypto or VM implementations.
  *
- * @param compilationEnvironment - the environment from which to create the
+ * @param compilerConfiguration - the configuration from which to create the
  * compiler
  */
 export const createCompiler = <
-  TransactionContext extends TransactionContextCommon,
-  Environment extends AnyCompilationEnvironment<TransactionContext>,
-  Opcodes extends number = number,
-  ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum<
-      Opcodes
-    > = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum<Opcodes>
+  CompilationContext extends CompilationContextBCH,
+  Configuration extends AnyCompilerConfiguration<CompilationContext>,
+  ProgramState extends AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack
 >(
-  compilationEnvironment: Environment
-): Compiler<TransactionContext, Environment, ProgramState> => ({
-  environment: compilationEnvironment,
+  compilerConfiguration: Configuration
+): Compiler<CompilationContext, Configuration, ProgramState> => ({
+  configuration: compilerConfiguration,
   generateBytecode: <Debug extends boolean>(
     scriptId: string,
-    data: CompilationData<TransactionContext>,
+    data: CompilationData<CompilationContext>,
     debug = false
   ) => {
-    const result = compileScript<ProgramState, TransactionContext>(
+    const result = compileScript<ProgramState, CompilationContext>(
       scriptId,
       data,
-      compilationEnvironment
+      compilerConfiguration
     );
-    return (debug
-      ? result
-      : result.success
-      ? { bytecode: result.bytecode, success: true }
-      : {
-          errorType: result.errorType,
-          errors: result.errors,
-          success: false,
-        }) as Debug extends true
+    return (
+      debug
+        ? result
+        : result.success
+        ? { bytecode: result.bytecode, success: true }
+        : {
+            errorType: result.errorType,
+            errors: result.errors,
+            success: false,
+          }
+    ) as Debug extends true
       ? CompilationResult<ProgramState>
       : BytecodeGenerationResult<ProgramState>;
   },
   generateScenario: ({ unlockingScriptId, scenarioId }) =>
     generateScenarioCommon({
-      environment: compilationEnvironment,
+      configuration: compilerConfiguration,
       scenarioId,
       unlockingScriptId,
     }),
@@ -99,11 +92,13 @@ export const createAuthenticationProgramEvaluationCommon = (
   evaluationBytecode: Uint8Array
 ): AuthenticationProgramCommon => ({
   inputIndex: 0,
-  sourceOutput: {
-    lockingBytecode: evaluationBytecode,
-    satoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
-  },
-  spendingTransaction: {
+  sourceOutputs: [
+    {
+      lockingBytecode: evaluationBytecode,
+      valueSatoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
+    },
+  ],
+  transaction: {
     inputs: [
       {
         outpointIndex: 0,
@@ -116,7 +111,7 @@ export const createAuthenticationProgramEvaluationCommon = (
     outputs: [
       {
         lockingBytecode: Uint8Array.of(),
-        satoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
+        valueSatoshis: Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]),
       },
     ],
     version: 0,
@@ -124,67 +119,60 @@ export const createAuthenticationProgramEvaluationCommon = (
 });
 
 /**
- * Synchronously create a compiler using the default common environment. Because
- * this compiler has no access to Secp256k1, Sha256, or a VM, it cannot compile
- * evaluations or operations which require key derivation or hashing.
+ * Synchronously create a compiler using the default common compiler
+ * configuration. Because this compiler has no access to Secp256k1, Sha256, or a
+ * VM, it cannot compile evaluations or operations which require key derivation
+ * or hashing.
  *
- * @param scriptsAndOverrides - a compilation environment from which properties
- * will be used to override properties of the default common compilation
- * environment – must include the `scripts` property
+ * @param scriptsAndOverrides - a compiler configuration from which properties
+ * will be used to override properties of the default common compiler
+ * configuration – must include the `scripts` property
  */
 export const createCompilerCommonSynchronous = <
-  Environment extends AnyCompilationEnvironment<TransactionContextCommon>,
-  ProgramState extends AuthenticationProgramStateCommon<Opcodes, Errors>,
-  Opcodes extends number = OpcodesCommon,
-  Errors = AuthenticationErrorCommon
+  Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
+  ProgramState extends AuthenticationProgramStateCommon
 >(
-  scriptsAndOverrides: Environment
-): Compiler<TransactionContextCommon, Environment, ProgramState> => {
-  return createCompiler<
-    TransactionContextCommon,
-    Environment,
-    Opcodes,
-    ProgramState
-  >({
+  scriptsAndOverrides: Configuration
+): Compiler<CompilationContextBCH, Configuration, ProgramState> =>
+  createCompiler<CompilationContextBCH, Configuration, ProgramState>({
     ...{
       createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
-      opcodes: generateBytecodeMap(OpcodesCommon),
+      opcodes: generateBytecodeMap(Opcodes),
       operations: compilerOperationsCommon,
     },
     ...scriptsAndOverrides,
   });
-};
 
 /**
- * Create a partial `CompilationEnvironment` from an `AuthenticationTemplate` by
+ * Create a partial `CompilerConfiguration` from an `AuthenticationTemplate` by
  * extracting and formatting the `scripts` and `variables` properties.
  *
  * Note, if this `AuthenticationTemplate` might be malformed, first validate it
  * with `validateAuthenticationTemplate`.
  *
  * @param template - the `AuthenticationTemplate` from which to extract the
- * compilation environment
+ * compiler configuration
  */
-export const authenticationTemplateToCompilationEnvironment = (
+export const authenticationTemplateToCompilerConfiguration = (
   template: AuthenticationTemplate
 ): Pick<
-  CompilationEnvironment,
+  CompilerConfiguration,
   | 'entityOwnership'
+  | 'lockingScriptTypes'
   | 'scenarios'
   | 'scripts'
-  | 'variables'
   | 'unlockingScripts'
-  | 'lockingScriptTypes'
   | 'unlockingScriptTimeLockTypes'
+  | 'variables'
 > => {
   const scripts = Object.entries(template.scripts).reduce<
-    CompilationEnvironment['scripts']
+    CompilerConfiguration['scripts']
   >((all, [id, def]) => ({ ...all, [id]: def.script }), {});
   const variables = Object.values(template.entities).reduce<
-    CompilationEnvironment['variables']
+    CompilerConfiguration['variables']
   >((all, entity) => ({ ...all, ...entity.variables }), {});
   const entityOwnership = Object.entries(template.entities).reduce<
-    CompilationEnvironment['entityOwnership']
+    CompilerConfiguration['entityOwnership']
   >(
     (all, [entityId, entity]) => ({
       ...all,
@@ -199,7 +187,7 @@ export const authenticationTemplateToCompilationEnvironment = (
     {}
   );
   const unlockingScripts = Object.entries(template.scripts).reduce<
-    CompilationEnvironment['unlockingScripts']
+    CompilerConfiguration['unlockingScripts']
   >(
     (all, [id, def]) =>
       'unlocks' in def && (def.unlocks as string | undefined) !== undefined
@@ -208,7 +196,7 @@ export const authenticationTemplateToCompilationEnvironment = (
     {}
   );
   const unlockingScriptTimeLockTypes = Object.entries(template.scripts).reduce<
-    CompilationEnvironment['unlockingScriptTimeLockTypes']
+    CompilerConfiguration['unlockingScriptTimeLockTypes']
   >(
     (all, [id, def]) =>
       'timeLockType' in def && def.timeLockType !== undefined
@@ -217,7 +205,7 @@ export const authenticationTemplateToCompilationEnvironment = (
     {}
   );
   const lockingScriptTypes = Object.entries(template.scripts).reduce<
-    CompilationEnvironment['lockingScriptTypes']
+    CompilerConfiguration['lockingScriptTypes']
   >(
     (all, [id, def]) =>
       'lockingType' in def &&
@@ -230,7 +218,7 @@ export const authenticationTemplateToCompilationEnvironment = (
     template.scenarios === undefined
       ? undefined
       : Object.entries(template.scenarios).reduce<
-          CompilationEnvironment['scenarios']
+          CompilerConfiguration['scenarios']
         >((all, [id, def]) => ({ ...all, [id]: def }), {});
   return {
     entityOwnership,
@@ -244,15 +232,15 @@ export const authenticationTemplateToCompilationEnvironment = (
 };
 
 /**
- * Create a partial `CompilationEnvironment` from an `AuthenticationTemplate`,
+ * Create a partial `CompilerConfiguration` from an `AuthenticationTemplate`,
  * virtualizing all script tests as unlocking and locking script pairs.
  *
  * @param template - the authentication template from which to extract the
- * compilation environment
+ * compiler configuration
  */
-export const authenticationTemplateToCompilationEnvironmentVirtualizedTests = (
+export const authenticationTemplateToCompilerConfigurationVirtualizedTests = (
   template: AuthenticationTemplate
-): ReturnType<typeof authenticationTemplateToCompilationEnvironment> => {
+): ReturnType<typeof authenticationTemplateToCompilerConfiguration> => {
   const virtualizedScripts = Object.entries(template.scripts).reduce<
     typeof template.scripts
   >((all, [scriptId, script]) => {
@@ -292,7 +280,7 @@ export const authenticationTemplateToCompilationEnvironmentVirtualizedTests = (
       ...virtualizedScripts,
     },
   };
-  return authenticationTemplateToCompilationEnvironment(
+  return authenticationTemplateToCompilerConfiguration(
     templateWithVirtualizedTests
   );
 };

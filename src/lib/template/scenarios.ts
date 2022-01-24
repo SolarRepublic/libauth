@@ -1,29 +1,36 @@
-import { binToHex, hexToBin } from '../format/hex';
+import type { CompilationContextBCH, Input, Output } from '../lib';
 import {
   bigIntToBinUint256BEClamped,
   bigIntToBinUint64LE,
-} from '../format/numbers';
-import { deriveHdPrivateNodeFromSeed, encodeHdPrivateKey } from '../key/hd-key';
-import {
-  Output,
-  TransactionContextCommon,
-} from '../transaction/transaction-types';
+  binToHex,
+  deriveHdPrivateNodeFromSeed,
+  encodeHdPrivateKey,
+  hexToBin,
+} from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults';
-import {
-  AnyCompilationEnvironmentIgnoreOperations,
-  CompilationData,
-  Scenario,
-} from './compiler-types';
-import { compileScript, compileScriptRaw } from './language/compile';
-import { CompilationError } from './language/language-types';
-import { stringifyErrors } from './language/language-utils';
-import {
+import type {
+  AnyCompilerConfigurationIgnoreOperations,
   AuthenticationTemplateKey,
   AuthenticationTemplateScenario,
   AuthenticationTemplateScenarioData,
   AuthenticationTemplateScenarioOutput,
-} from './template-types';
+  AuthenticationTemplateScenarioTransactionOutput,
+  CompilationData,
+  CompilationError,
+  Scenario,
+} from './template';
+import {
+  CompilerDefaults,
+  compileScript,
+  compileScriptRaw,
+  stringifyErrors,
+} from './template.js';
+
+/**
+ * The default `lockingBytecode` value for scenario outputs is a new empty
+ * object (`{}`).
+ */
+const defaultScenarioTransactionOutputLockingBytecode = () => ({});
 
 /**
  * The contents of an `AuthenticationTemplateScenario` without the `name` and
@@ -31,7 +38,7 @@ import {
  */
 export type ScenarioDefinition = Pick<
   AuthenticationTemplateScenario,
-  'data' | 'transaction' | 'value'
+  'data' | 'sourceOutputs' | 'transaction'
 >;
 
 type RequiredTwoLevels<T> = {
@@ -40,41 +47,33 @@ type RequiredTwoLevels<T> = {
 
 /**
  * All scenarios extend the default scenario, so the `data`, `transaction` (and
- * all `transaction` properties), and `value` properties are guaranteed to be
- * defined in an extended scenario definition.
+ * all `transaction` properties), and `sourceOutputs` properties are guaranteed
+ * to be defined in an extended scenario definition.
  */
 export type ExtendedScenarioDefinition = Required<
   Pick<ScenarioDefinition, 'data'>
 > &
-  RequiredTwoLevels<Pick<ScenarioDefinition, 'transaction'>> &
-  Required<Pick<ScenarioDefinition, 'value'>>;
-
-/*
- * & {
- *   value: Uint8Array;
- * };
- */
+  Required<Pick<ScenarioDefinition, 'sourceOutputs'>> &
+  RequiredTwoLevels<Pick<ScenarioDefinition, 'transaction'>>;
 
 /**
- * Given a compilation environment, generate the default scenario which is
- * extended by all the environments scenarios.
+ * Given a compiler configuration, generate the default scenario which is
+ * extended by all the configuration's scenarios.
  *
  * For details on default scenario generation, see
  * `AuthenticationTemplateScenario.extends`.
  *
- * @param environment - the compilation environment from which to generate the
+ * @param configuration - the compiler configuration from which to generate the
  * default scenario
  */
 // eslint-disable-next-line complexity
 export const generateDefaultScenarioDefinition = <
-  Environment extends AnyCompilationEnvironmentIgnoreOperations<
-    TransactionContext
-  >,
-  TransactionContext
+  Configuration extends AnyCompilerConfigurationIgnoreOperations<CompilationContext>,
+  CompilationContext
 >(
-  environment: Environment
-): string | ExtendedScenarioDefinition => {
-  const { variables, entityOwnership } = environment;
+  configuration: Configuration
+): ExtendedScenarioDefinition | string => {
+  const { variables, entityOwnership } = configuration;
 
   const keyVariableIds =
     variables === undefined
@@ -122,23 +121,23 @@ export const generateDefaultScenarioDefinition = <
 
   const defaultScenario: ExtendedScenarioDefinition = {
     data: {
-      currentBlockHeight: CompilerDefaults.defaultScenarioCurrentBlockHeight as const,
-      currentBlockTime: CompilerDefaults.defaultScenarioCurrentBlockTime as const,
+      currentBlockHeight:
+        CompilerDefaults.defaultScenarioCurrentBlockHeight as const,
+      currentBlockTime:
+        CompilerDefaults.defaultScenarioCurrentBlockTime as const,
       ...(privateKeys === undefined || Object.keys(privateKeys).length === 0
         ? {}
         : { keys: { privateKeys } }),
     },
+    sourceOutputs: [{ lockingBytecode: null }],
     transaction: {
       inputs: [{ unlockingBytecode: null }],
       locktime: CompilerDefaults.defaultScenarioTransactionLocktime as const,
       outputs: [
-        {
-          lockingBytecode: CompilerDefaults.defaultScenarioTransactionOutputsLockingBytecodeHex as const,
-        },
+        { lockingBytecode: defaultScenarioTransactionOutputLockingBytecode() },
       ],
       version: CompilerDefaults.defaultScenarioTransactionVersion as const,
     },
-    value: CompilerDefaults.defaultScenarioValue as const,
   };
 
   const hasHdKeys =
@@ -152,12 +151,12 @@ export const generateDefaultScenarioDefinition = <
     return defaultScenario;
   }
 
-  const { sha256, sha512 } = environment;
+  const { sha256, sha512 } = configuration;
   if (sha256 === undefined) {
-    return 'An implementations of "sha256" is required to generate defaults for HD keys, but the "sha256" property is not included in this compilation environment.';
+    return 'An implementations of "sha256" is required to generate defaults for HD keys, but the "sha256" property is not included in this compiler configuration.';
   }
   if (sha512 === undefined) {
-    return 'An implementations of "sha512" is required to generate defaults for HD keys, but the "sha512" property is not included in this compilation environment.';
+    return 'An implementations of "sha512" is required to generate defaults for HD keys, but the "sha512" property is not included in this compiler configuration.';
   }
   const crypto = { sha256, sha512 };
 
@@ -205,56 +204,54 @@ export const generateDefaultScenarioDefinition = <
 export const extendScenarioDefinitionData = (
   parentData: NonNullable<AuthenticationTemplateScenario['data']>,
   childData: NonNullable<AuthenticationTemplateScenario['data']>
-) => {
-  return {
-    ...parentData,
-    ...childData,
-    ...(parentData.bytecode === undefined && childData.bytecode === undefined
-      ? {}
-      : {
-          bytecode: {
-            ...parentData.bytecode,
-            ...childData.bytecode,
+) => ({
+  ...parentData,
+  ...childData,
+  ...(parentData.bytecode === undefined && childData.bytecode === undefined
+    ? {}
+    : {
+        bytecode: {
+          ...parentData.bytecode,
+          ...childData.bytecode,
+        },
+      }),
+  ...(parentData.hdKeys === undefined && childData.hdKeys === undefined
+    ? {}
+    : {
+        hdKeys: {
+          ...parentData.hdKeys,
+          ...childData.hdKeys,
+          ...(parentData.hdKeys?.hdPrivateKeys === undefined &&
+          childData.hdKeys?.hdPrivateKeys === undefined
+            ? {}
+            : {
+                hdPrivateKeys: {
+                  ...parentData.hdKeys?.hdPrivateKeys,
+                  ...childData.hdKeys?.hdPrivateKeys,
+                },
+              }),
+          ...(parentData.hdKeys?.hdPublicKeys === undefined &&
+          childData.hdKeys?.hdPublicKeys === undefined
+            ? {}
+            : {
+                hdPublicKeys: {
+                  ...parentData.hdKeys?.hdPublicKeys,
+                  ...childData.hdKeys?.hdPublicKeys,
+                },
+              }),
+        },
+      }),
+  ...(parentData.keys === undefined && childData.keys === undefined
+    ? {}
+    : {
+        keys: {
+          privateKeys: {
+            ...parentData.keys?.privateKeys,
+            ...childData.keys?.privateKeys,
           },
-        }),
-    ...(parentData.hdKeys === undefined && childData.hdKeys === undefined
-      ? {}
-      : {
-          hdKeys: {
-            ...parentData.hdKeys,
-            ...childData.hdKeys,
-            ...(parentData.hdKeys?.hdPrivateKeys === undefined &&
-            childData.hdKeys?.hdPrivateKeys === undefined
-              ? {}
-              : {
-                  hdPrivateKeys: {
-                    ...parentData.hdKeys?.hdPrivateKeys,
-                    ...childData.hdKeys?.hdPrivateKeys,
-                  },
-                }),
-            ...(parentData.hdKeys?.hdPublicKeys === undefined &&
-            childData.hdKeys?.hdPublicKeys === undefined
-              ? {}
-              : {
-                  hdPublicKeys: {
-                    ...parentData.hdKeys?.hdPublicKeys,
-                    ...childData.hdKeys?.hdPublicKeys,
-                  },
-                }),
-          },
-        }),
-    ...(parentData.keys === undefined && childData.keys === undefined
-      ? {}
-      : {
-          keys: {
-            privateKeys: {
-              ...parentData.keys?.privateKeys,
-              ...childData.keys?.privateKeys,
-            },
-          },
-        }),
-  };
-};
+        },
+      }),
+});
 
 /**
  * Extend a child scenario definition with values from a parent scenario
@@ -271,8 +268,8 @@ export const extendScenarioDefinition = <
 >(
   parentScenario: ParentScenarioType,
   childScenario: AuthenticationTemplateScenario
-) => {
-  return {
+) =>
+  ({
     ...(parentScenario.data === undefined && childScenario.data === undefined
       ? {}
       : {
@@ -290,22 +287,25 @@ export const extendScenarioDefinition = <
             ...childScenario.transaction,
           },
         }),
-    ...(parentScenario.value === undefined && childScenario.value === undefined
+    ...(parentScenario.sourceOutputs === undefined &&
+    childScenario.sourceOutputs === undefined
       ? {}
-      : { value: childScenario.value ?? parentScenario.value }),
+      : {
+          sourceOutputs:
+            childScenario.sourceOutputs ?? parentScenario.sourceOutputs,
+        }),
   } as ParentScenarioType extends ExtendedScenarioDefinition
     ? ExtendedScenarioDefinition
-    : ScenarioDefinition;
-};
+    : ScenarioDefinition);
 
 /**
  * Generate the full scenario which is extended by the provided scenario
  * identifier. Scenarios for which `extends` is `undefined` extend the default
- * scenario for the provided compilation environment.
+ * scenario for the provided compiler configuration.
  *
  * @param scenarioId - the identifier of the scenario for from which to select
  * the extended scenario
- * @param environment - the compilation environment from which to generate the
+ * @param configuration - the compiler configuration from which to generate the
  * extended scenario
  * @param sourceScenarioIds - an array of scenario identifiers indicating the
  * path taken to arrive at the current scenario - used to detect and prevent
@@ -313,22 +313,20 @@ export const extendScenarioDefinition = <
  */
 // eslint-disable-next-line complexity
 export const generateExtendedScenario = <
-  Environment extends AnyCompilationEnvironmentIgnoreOperations<
-    TransactionContext
-  >,
-  TransactionContext
+  Configuration extends AnyCompilerConfigurationIgnoreOperations<CompilationContext>,
+  CompilationContext
 >({
-  environment,
+  configuration,
   scenarioId,
   sourceScenarioIds = [],
 }: {
-  environment: Environment;
-  scenarioId?: string;
+  configuration: Configuration;
+  scenarioId?: string | undefined;
   sourceScenarioIds?: string[];
-}): string | ExtendedScenarioDefinition => {
+}): ExtendedScenarioDefinition | string => {
   if (scenarioId === undefined) {
-    return generateDefaultScenarioDefinition<Environment, TransactionContext>(
-      environment
+    return generateDefaultScenarioDefinition<Configuration, CompilationContext>(
+      configuration
     );
   }
 
@@ -337,17 +335,17 @@ export const generateExtendedScenario = <
       ' → '
     )}`;
   }
-  const scenario = environment.scenarios?.[scenarioId];
+  const scenario = configuration.scenarios?.[scenarioId];
   if (scenario === undefined) {
-    return `Cannot extend scenario "${scenarioId}": a scenario with the identifier ${scenarioId} is not included in this compilation environment.`;
+    return `Cannot extend scenario "${scenarioId}": a scenario with the identifier ${scenarioId} is not included in this compiler configuration.`;
   }
   const parentScenario =
     scenario.extends === undefined
-      ? generateDefaultScenarioDefinition<Environment, TransactionContext>(
-          environment
+      ? generateDefaultScenarioDefinition<Configuration, CompilationContext>(
+          configuration
         )
-      : generateExtendedScenario<Environment, TransactionContext>({
-          environment,
+      : generateExtendedScenario<Configuration, CompilationContext>({
+          configuration,
           scenarioId: scenario.extends,
           sourceScenarioIds: [...sourceScenarioIds, scenarioId],
         });
@@ -366,7 +364,7 @@ export const generateExtendedScenario = <
  */
 // eslint-disable-next-line complexity
 export const extendedScenarioDefinitionToCompilationData = (
-  definition: ScenarioDefinition & Required<Pick<ScenarioDefinition, 'data'>>
+  definition: Required<Pick<ScenarioDefinition, 'data'>> & ScenarioDefinition
 ): CompilationData => ({
   ...(definition.data.currentBlockHeight === undefined
     ? {}
@@ -418,23 +416,21 @@ export const extendedScenarioDefinitionToCompilationData = (
  * scripts provided by a `AuthenticationTemplateScenarioData`.
  *
  * @param compilationData - the compilation data to extend
- * @param environment - the compilation environment in which to compile the
+ * @param configuration - the compiler configuration in which to compile the
  * scripts
  * @param scenarioDataBytecodeScripts - the `data.bytecode` property of an
  * `AuthenticationTemplateScenarioData`
  */
 export const extendCompilationDataWithScenarioBytecode = <
-  Environment extends AnyCompilationEnvironmentIgnoreOperations<
-    TransactionContext
-  >,
-  TransactionContext
+  Configuration extends AnyCompilerConfigurationIgnoreOperations<CompilationContext>,
+  CompilationContext
 >({
   compilationData,
-  environment,
+  configuration,
   scenarioDataBytecodeScripts,
 }: {
-  compilationData: CompilationData<TransactionContext>;
-  environment: Environment;
+  compilationData: CompilationData<CompilationContext>;
+  configuration: Configuration;
   scenarioDataBytecodeScripts: NonNullable<
     AuthenticationTemplateScenarioData['bytecode']
   >;
@@ -443,17 +439,18 @@ export const extendCompilationDataWithScenarioBytecode = <
     `${CompilerDefaults.scenarioBytecodeScriptPrefix}${id}`;
   const bytecodeScripts = Object.entries(scenarioDataBytecodeScripts).reduce<{
     [bytecodeScriptIdentifier: string]: string;
-  }>((all, [id, script]) => {
-    return {
+  }>(
+    (all, [id, script]) => ({
       ...all,
       [prefixBytecodeScriptId(id)]: script,
-    };
-  }, {});
+    }),
+    {}
+  );
 
-  const bytecodeScriptExtendedEnvironment: Environment = {
-    ...environment,
+  const bytecodeScriptExtendedConfiguration: Configuration = {
+    ...configuration,
     scripts: {
-      ...environment.scripts,
+      ...configuration.scripts,
       ...bytecodeScripts,
     },
   };
@@ -464,13 +461,13 @@ export const extendCompilationDataWithScenarioBytecode = <
         id: string;
       }
     | {
-        errors: [CompilationError] | CompilationError[];
+        errors: CompilationError[] | [CompilationError];
         id: string;
       }
   )[] = Object.keys(scenarioDataBytecodeScripts).map((id) => {
     const result = compileScriptRaw({
+      configuration: bytecodeScriptExtendedConfiguration,
       data: compilationData,
-      environment: bytecodeScriptExtendedEnvironment,
       scriptId: prefixBytecodeScriptId(id),
     });
     if (result.success) {
@@ -489,7 +486,7 @@ export const extendCompilationDataWithScenarioBytecode = <
     (
       result
     ): result is {
-      errors: [CompilationError] | CompilationError[];
+      errors: CompilationError[] | [CompilationError];
       id: string;
     } => 'errors' in result
   );
@@ -504,31 +501,28 @@ export const extendCompilationDataWithScenarioBytecode = <
       .join('; ')}`;
   }
 
-  const compiledBytecode = (bytecodeCompilations as {
-    bytecode: Uint8Array;
-    id: string;
-  }[]).reduce<{
-    [fullIdentifier: string]: Uint8Array;
-  }>((all, result) => ({ ...all, [result.id]: result.bytecode }), {});
+  const compiledBytecode = (
+    bytecodeCompilations as {
+      bytecode: Uint8Array;
+      id: string;
+    }[]
+  ).reduce<{ [fullIdentifier: string]: Uint8Array }>(
+    (all, result) => ({ ...all, [result.id]: result.bytecode }),
+    {}
+  );
 
   return {
     ...(Object.keys(compiledBytecode).length > 0
       ? { bytecode: compiledBytecode }
       : {}),
     ...compilationData,
-  } as CompilationData<TransactionContext>;
+  } as CompilationData<CompilationContext>;
 };
 
 /**
- * The default `lockingBytecode` value for scenario outputs is a new empty
- * object (`{}`).
- */
-const getScenarioOutputDefaultLockingBytecode = () => ({});
-
-/**
- * Generate a scenario given a compilation environment. If neither `scenarioId`
- * or `unlockingScriptId` are provided, the default scenario for the compilation
- * environment will be generated.
+ * Generate a scenario given a compiler configuration. If neither `scenarioId`
+ * or `unlockingScriptId` are provided, the default scenario for the compiler
+ * configuration will be generated.
  *
  * Returns either the full `CompilationData` for the selected scenario or an
  * error message (as a `string`).
@@ -538,55 +532,60 @@ const getScenarioOutputDefaultLockingBytecode = () => ({});
  * @param unlockingScriptId - the ID of the unlocking script under test by this
  * scenario – if `undefined` but required by the scenario, an error will be
  * produced
- * @param environment - the compilation environment from which to generate the
+ * @param configuration - the compiler configuration from which to generate the
  * scenario
  */
 // eslint-disable-next-line complexity
 export const generateScenarioCommon = <
-  Environment extends AnyCompilationEnvironmentIgnoreOperations
+  Configuration extends AnyCompilerConfigurationIgnoreOperations
 >({
-  environment,
+  configuration,
   scenarioId,
   unlockingScriptId,
 }: {
-  environment: Environment;
-  scenarioId?: string;
-  unlockingScriptId?: string;
+  configuration: Configuration;
+  scenarioId?: string | undefined;
+  unlockingScriptId?: string | undefined;
 }): Scenario | string => {
   const { scenario, scenarioName } =
     scenarioId === undefined
       ? { scenario: {}, scenarioName: `the default scenario` }
       : {
-          scenario: environment.scenarios?.[scenarioId],
+          scenario: configuration.scenarios?.[scenarioId],
           scenarioName: `scenario "${scenarioId}"`,
         };
 
   if (scenario === undefined) {
-    return `Cannot generate ${scenarioName}: a scenario with the identifier ${
-      scenarioId as string
-    } is not included in this compilation environment.`;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return `Cannot generate ${scenarioName}: a scenario with the identifier ${scenarioId!} is not included in this compiler configuration.`;
   }
 
   const parentScenario = generateExtendedScenario<
-    Environment,
-    TransactionContextCommon
-  >({ environment, scenarioId });
+    Configuration,
+    CompilationContextBCH
+  >({ configuration, scenarioId });
   if (typeof parentScenario === 'string') {
     return `Cannot generate ${scenarioName}: ${parentScenario}`;
   }
 
   const extendedScenario = extendScenarioDefinition(parentScenario, scenario);
-  const partialCompilationData = extendedScenarioDefinitionToCompilationData(
-    extendedScenario
-  );
+  const partialCompilationData =
+    extendedScenarioDefinitionToCompilationData(extendedScenario);
   const fullCompilationData = extendCompilationDataWithScenarioBytecode({
     compilationData: partialCompilationData,
-    environment,
+    configuration,
     scenarioDataBytecodeScripts: extendedScenario.data.bytecode ?? {},
   });
 
   if (typeof fullCompilationData === 'string') {
     return `Cannot generate ${scenarioName}: ${fullCompilationData}`;
+  }
+
+  if (
+    extendedScenario.transaction.inputs.length !==
+    extendedScenario.sourceOutputs.length
+  ) {
+    return `Cannot generate ${scenarioName}: could not match source outputs with inputs – "sourceOutputs" must be the same length as "transaction.inputs".`;
   }
 
   const testedInputs = extendedScenario.transaction.inputs.filter(
@@ -599,25 +598,51 @@ export const generateScenarioCommon = <
     (input) => input.unlockingBytecode === null
   );
 
+  const testedSourceOutputs = extendedScenario.sourceOutputs.filter(
+    (output) => output.lockingBytecode === null
+  );
+  if (testedSourceOutputs.length !== 1) {
+    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – "sourceOutputs" must include exactly one output which has "lockingBytecode" set to "null".`;
+  }
+
+  if (
+    extendedScenario.sourceOutputs[testedInputIndex].lockingBytecode !== null
+  ) {
+    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – the "null" locking and unlocking bytecode in "transaction.inputs" and "sourceOutputs" must be at the same index.`;
+  }
+
   const outputs = extendedScenario.transaction.outputs.map<
-    Required<AuthenticationTemplateScenarioOutput>
+    Required<AuthenticationTemplateScenarioTransactionOutput>
   >((output) => ({
     lockingBytecode:
-      output.lockingBytecode ?? getScenarioOutputDefaultLockingBytecode(),
-    satoshis: output.satoshis ?? CompilerDefaults.defaultScenarioOutputSatoshis,
+      output.lockingBytecode ??
+      defaultScenarioTransactionOutputLockingBytecode(),
+    valueSatoshis:
+      output.valueSatoshis ??
+      CompilerDefaults.defaultScenarioOutputValueSatoshis,
   }));
 
-  const compiledOutputResults = outputs.map<string | Output>(
+  const bytecodeUnderTest = undefined;
+  const compileOutput =
+    (overrideAddressIndex: boolean) =>
     // eslint-disable-next-line complexity
-    (output, index) => {
-      const satoshis =
-        typeof output.satoshis === 'string'
-          ? hexToBin(output.satoshis)
-          : bigIntToBinUint64LE(BigInt(output.satoshis));
+    (
+      output: Required<AuthenticationTemplateScenarioOutput<boolean>>,
+      index: number
+    ) => {
+      const valueSatoshis =
+        typeof output.valueSatoshis === 'string'
+          ? hexToBin(output.valueSatoshis)
+          : bigIntToBinUint64LE(BigInt(output.valueSatoshis));
+
+      if (output.lockingBytecode === null) {
+        return { lockingBytecode: bytecodeUnderTest, valueSatoshis };
+      }
+
       if (typeof output.lockingBytecode === 'string') {
         return {
           lockingBytecode: hexToBin(output.lockingBytecode),
-          satoshis,
+          valueSatoshis,
         };
       }
 
@@ -625,7 +650,7 @@ export const generateScenarioCommon = <
       const impliedLockingScriptId =
         unlockingScriptId === undefined
           ? undefined
-          : environment.unlockingScripts?.[unlockingScriptId];
+          : configuration.unlockingScripts?.[unlockingScriptId];
       const scriptId =
         typeof specifiedLockingScriptId === 'string'
           ? specifiedLockingScriptId
@@ -635,12 +660,16 @@ export const generateScenarioCommon = <
         if (unlockingScriptId === undefined) {
           return `Cannot generate locking bytecode for output ${index}: this output is set to use the script unlocked by the unlocking script under test, but an unlocking script ID was not provided for scenario generation.`;
         }
-        return `Cannot generate locking bytecode for output ${index}: the locking script unlocked by "${unlockingScriptId}" is not provided in this compilation environment.`;
+        return `Cannot generate locking bytecode for output ${index}: the locking script unlocked by "${unlockingScriptId}" is not provided in this compiler configuration.`;
       }
 
       const overriddenDataDefinition =
         output.lockingBytecode.overrides === undefined
-          ? undefined
+          ? overrideAddressIndex
+            ? extendScenarioDefinitionData(extendedScenario.data, {
+                hdKeys: { addressIndex: 1 },
+              })
+            : undefined
           : extendScenarioDefinitionData(
               extendedScenario.data,
               output.lockingBytecode.overrides
@@ -653,7 +682,7 @@ export const generateScenarioCommon = <
               compilationData: extendedScenarioDefinitionToCompilationData({
                 data: overriddenDataDefinition,
               }),
-              environment,
+              configuration,
               scenarioDataBytecodeScripts:
                 overriddenDataDefinition.bytecode ?? {},
             });
@@ -667,7 +696,7 @@ export const generateScenarioCommon = <
           ? fullCompilationData
           : overriddenCompilationData;
 
-      const result = compileScript(scriptId, data, environment);
+      const result = compileScript(scriptId, data, configuration);
 
       if (!result.success) {
         return `Cannot generate locking bytecode for output ${index}: ${stringifyErrors(
@@ -675,11 +704,13 @@ export const generateScenarioCommon = <
         )}`;
       }
 
-      return { lockingBytecode: result.bytecode, satoshis };
-    }
-  );
+      return { lockingBytecode: result.bytecode, valueSatoshis };
+    };
 
-  const outputCompilationErrors = compiledOutputResults.filter(
+  const compiledTransactionOutputResults = outputs.map<
+    Output<Uint8Array | undefined> | string
+  >(compileOutput(true));
+  const outputCompilationErrors = compiledTransactionOutputResults.filter(
     (result): result is string => typeof result === 'string'
   );
   if (outputCompilationErrors.length > 0) {
@@ -687,43 +718,126 @@ export const generateScenarioCommon = <
       '; '
     )}`;
   }
-  const compiledOutputs = compiledOutputResults as Output[];
+  const compiledTransactionOutputs =
+    compiledTransactionOutputResults as Output[];
 
-  const sourceSatoshis =
-    typeof extendedScenario.value === 'number'
-      ? bigIntToBinUint64LE(BigInt(extendedScenario.value))
-      : hexToBin(extendedScenario.value);
+  const compiledSourceOutputResults = outputs.map<
+    Output<Uint8Array | undefined> | string
+  >(compileOutput(false));
+  const sourceOutputCompilationErrors = compiledSourceOutputResults.filter(
+    (result): result is string => typeof result === 'string'
+  );
+  if (outputCompilationErrors.length > 0) {
+    return `Cannot generate ${scenarioName}: ${sourceOutputCompilationErrors.join(
+      '; '
+    )}`;
+  }
+  const compiledSourceOutputs = compiledSourceOutputResults as Output<
+    Uint8Array | undefined
+  >[];
 
-  const unlockingBytecodeUnderTest = undefined;
+  const compiledTransactionInputResults =
+    extendedScenario.transaction.inputs.map<
+      Input<Uint8Array | undefined> | string
+      // eslint-disable-next-line complexity
+    >((input, index) => {
+      const appliedDefaults = {
+        outpointIndex:
+          input.outpointIndex ??
+          CompilerDefaults.defaultScenarioInputOutpointIndex,
+        outpointTransactionHash: hexToBin(
+          input.outpointTransactionHash ??
+            CompilerDefaults.defaultScenarioInputOutpointTransactionHash
+        ),
+        sequenceNumber:
+          input.sequenceNumber ??
+          CompilerDefaults.defaultScenarioInputSequenceNumber,
+      };
+
+      if (typeof input.unlockingBytecode === 'string') {
+        return {
+          ...appliedDefaults,
+          unlockingBytecode: hexToBin(input.unlockingBytecode),
+        };
+      }
+
+      if (input.unlockingBytecode === null) {
+        return { ...appliedDefaults, unlockingBytecode: bytecodeUnderTest };
+      }
+
+      const scriptId =
+        input.unlockingBytecode?.script === undefined ||
+        input.unlockingBytecode.script === null
+          ? unlockingScriptId
+          : input.unlockingBytecode.script;
+
+      if (scriptId === undefined) {
+        if (unlockingScriptId === undefined) {
+          return `Cannot generate unlocking bytecode for input ${index}: this input is set to use the unlocking script under test, but an unlocking script ID was not provided for scenario generation.`;
+        }
+        return `Cannot generate unlocking bytecode for input ${index}: the unlocking script "${unlockingScriptId}" is not provided in this compiler configuration.`;
+      }
+
+      const overriddenDataDefinition =
+        input.unlockingBytecode?.overrides === undefined
+          ? undefined
+          : extendScenarioDefinitionData(
+              extendedScenario.data,
+              input.unlockingBytecode.overrides
+            );
+
+      const overriddenCompilationData =
+        overriddenDataDefinition === undefined
+          ? undefined
+          : extendCompilationDataWithScenarioBytecode({
+              compilationData: extendedScenarioDefinitionToCompilationData({
+                data: overriddenDataDefinition,
+              }),
+              configuration,
+              scenarioDataBytecodeScripts:
+                overriddenDataDefinition.bytecode ?? {},
+            });
+
+      if (typeof overriddenCompilationData === 'string') {
+        return `Cannot generate unlocking bytecode for input ${index}: ${overriddenCompilationData}`;
+      }
+
+      const data =
+        overriddenCompilationData === undefined
+          ? fullCompilationData
+          : overriddenCompilationData;
+
+      const result = compileScript(scriptId, data, configuration);
+
+      if (!result.success) {
+        return `Cannot generate unlocking bytecode for input ${index}: ${stringifyErrors(
+          result.errors
+        )}`;
+      }
+      return { ...appliedDefaults, unlockingBytecode: result.bytecode };
+    });
+
+  const inputCompilationErrors = compiledTransactionInputResults.filter(
+    (result): result is string => typeof result === 'string'
+  );
+  if (inputCompilationErrors.length > 0) {
+    return `Cannot generate ${scenarioName}: ${inputCompilationErrors.join(
+      '; '
+    )}`;
+  }
+  const compiledTransactionInputs = compiledTransactionInputResults as Input<
+    Uint8Array | undefined
+  >[];
+
   return {
     data: fullCompilationData,
     program: {
       inputIndex: testedInputIndex,
-      sourceOutput: { satoshis: sourceSatoshis },
-      spendingTransaction: {
-        // eslint-disable-next-line complexity
-        inputs: extendedScenario.transaction.inputs.map((input) => ({
-          outpointIndex:
-            input.outpointIndex ??
-            CompilerDefaults.defaultScenarioInputOutpointIndex,
-          outpointTransactionHash: hexToBin(
-            input.outpointTransactionHash ??
-              CompilerDefaults.defaultScenarioInputOutpointTransactionHash
-          ),
-          sequenceNumber:
-            input.sequenceNumber ??
-            CompilerDefaults.defaultScenarioInputSequenceNumber,
-          unlockingBytecode:
-            input.unlockingBytecode === null
-              ? unlockingBytecodeUnderTest
-              : hexToBin(
-                  typeof input.unlockingBytecode === 'string'
-                    ? input.unlockingBytecode
-                    : CompilerDefaults.defaultScenarioInputUnlockingBytecodeHex
-                ),
-        })),
+      sourceOutputs: compiledSourceOutputs,
+      transaction: {
+        inputs: compiledTransactionInputs,
         locktime: extendedScenario.transaction.locktime,
-        outputs: compiledOutputs,
+        outputs: compiledTransactionOutputs,
         version: extendedScenario.transaction.version,
       },
     },

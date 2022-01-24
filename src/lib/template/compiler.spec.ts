@@ -1,17 +1,17 @@
-/* eslint-disable functional/no-expression-statement, camelcase, @typescript-eslint/naming-convention */
+/* eslint-disable camelcase, @typescript-eslint/naming-convention */
 import test from 'ava';
 
+import type { AuthenticationTemplate } from '../lib';
 import {
-  AuthenticationTemplate,
   authenticationTemplateP2pkh,
   authenticationTemplateP2pkhNonHd,
-  authenticationTemplateToCompilationEnvironment,
-  authenticationTemplateToCompilationEnvironmentVirtualizedTests,
+  authenticationTemplateToCompilerConfiguration,
+  authenticationTemplateToCompilerConfigurationVirtualizedTests,
   createCompilerCommonSynchronous,
   hexToBin,
   stringify,
   stringifyTestVector,
-} from '../lib';
+} from '../lib.js';
 
 test('createCompilerCommonSynchronous', (t) => {
   const compiler = createCompilerCommonSynchronous({
@@ -35,12 +35,12 @@ test('createCompilerCommonSynchronous', (t) => {
   });
 });
 
-test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pkhNonHd', (t) => {
-  const environment = authenticationTemplateToCompilationEnvironment(
+test('authenticationTemplateToCompilerConfiguration: authenticationTemplateP2pkhNonHd', (t) => {
+  const configuration = authenticationTemplateToCompilerConfiguration(
     authenticationTemplateP2pkhNonHd
   );
   t.deepEqual(
-    environment,
+    configuration,
     {
       entityOwnership: {
         key: 'owner',
@@ -49,8 +49,7 @@ test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pk
         lock: 'standard',
       },
       scripts: {
-        lock:
-          'OP_DUP\nOP_HASH160 <$(<key.public_key> OP_HASH160\n)> OP_EQUALVERIFY\nOP_CHECKSIG',
+        lock: 'OP_DUP\nOP_HASH160 <$(<key.public_key> OP_HASH160\n)> OP_EQUALVERIFY\nOP_CHECKSIG',
         unlock: '<key.schnorr_signature.all_outputs>\n<key.public_key>',
       },
       unlockingScriptTimeLockTypes: {},
@@ -65,16 +64,16 @@ test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pk
         },
       },
     },
-    stringify(environment)
+    stringify(configuration)
   );
 });
 
-test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pkh', (t) => {
-  const environment = authenticationTemplateToCompilationEnvironment(
+test('authenticationTemplateToCompilerConfiguration: authenticationTemplateP2pkh', (t) => {
+  const configuration = authenticationTemplateToCompilerConfiguration(
     authenticationTemplateP2pkh
   );
   t.deepEqual(
-    environment,
+    configuration,
     {
       entityOwnership: {
         key: 'owner',
@@ -83,8 +82,7 @@ test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pk
         lock: 'standard',
       },
       scripts: {
-        lock:
-          'OP_DUP\nOP_HASH160 <$(<key.public_key> OP_HASH160\n)> OP_EQUALVERIFY\nOP_CHECKSIG',
+        lock: 'OP_DUP\nOP_HASH160 <$(<key.public_key> OP_HASH160\n)> OP_EQUALVERIFY\nOP_CHECKSIG',
         unlock: '<key.schnorr_signature.all_outputs>\n<key.public_key>',
       },
       unlockingScriptTimeLockTypes: {},
@@ -99,13 +97,13 @@ test('authenticationTemplateToCompilationEnvironment: authenticationTemplateP2pk
         },
       },
     },
-    stringify(environment)
+    stringify(configuration)
   );
 });
 
-test('authenticationTemplateToCompilationEnvironmentVirtualizedTests', (t) => {
-  const environment = authenticationTemplateToCompilationEnvironmentVirtualizedTests(
-    {
+test('authenticationTemplateToCompilerConfigurationVirtualizedTests', (t) => {
+  const configuration =
+    authenticationTemplateToCompilerConfigurationVirtualizedTests({
       entities: {},
       scripts: {
         add_two: {
@@ -130,11 +128,10 @@ test('authenticationTemplateToCompilationEnvironmentVirtualizedTests', (t) => {
       },
       supported: ['BCH_2019_05'],
       version: 0,
-    } as AuthenticationTemplate
-  );
+    } as AuthenticationTemplate);
 
   t.deepEqual(
-    environment,
+    configuration,
     {
       entityOwnership: {},
       lockingScriptTypes: {},
@@ -173,6 +170,6 @@ test('authenticationTemplateToCompilationEnvironmentVirtualizedTests', (t) => {
       },
       variables: {},
     },
-    stringifyTestVector(environment)
+    stringifyTestVector(configuration)
   );
 });

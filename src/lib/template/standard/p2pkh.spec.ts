@@ -1,11 +1,10 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
 import {
   authenticationTemplateP2pkh,
   authenticationTemplateP2pkhNonHd,
   validateAuthenticationTemplate,
-} from '../../lib';
+} from '../../lib.js';
 
 test('authenticationTemplateP2pkh is valid', (t) => {
   const template = validateAuthenticationTemplate(

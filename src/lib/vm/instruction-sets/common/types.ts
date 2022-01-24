@@ -1,3 +1,6 @@
+import type { AuthenticationInstruction } from '../../../lib';
+import { Opcodes } from '../../../lib.js';
+
 export enum ScriptNumberError {
   outOfRange = 'Failed to parse Script Number: overflows Script Number range.',
   requiresMinimal = 'Failed to parse Script Number: the number is not minimally-encoded.',
@@ -9,7 +12,7 @@ export const isScriptNumberError = (
   value === ScriptNumberError.outOfRange ||
   value === ScriptNumberError.requiresMinimal;
 
-const normalMaximumScriptNumberByteLength = 4;
+const typicalMaximumScriptNumberByteLength = 8;
 
 /**
  * This method attempts to parse a "Script Number", a format with which numeric
@@ -55,23 +58,24 @@ const normalMaximumScriptNumberByteLength = 4;
 export const parseBytesAsScriptNumber = (
   bytes: Uint8Array,
   {
-    maximumScriptNumberByteLength = normalMaximumScriptNumberByteLength,
+    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
     requireMinimalEncoding = true,
   }: {
     maximumScriptNumberByteLength?: number;
     requireMinimalEncoding?: boolean;
   } = {
-    maximumScriptNumberByteLength: normalMaximumScriptNumberByteLength,
+    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
     requireMinimalEncoding: true,
   }
-): bigint | ScriptNumberError => {
+): ScriptNumberError | bigint => {
   if (bytes.length === 0) {
     return BigInt(0);
   }
   if (bytes.length > maximumScriptNumberByteLength) {
     return ScriptNumberError.outOfRange;
   }
-  const mostSignificantByte = bytes[bytes.length - 1];
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const mostSignificantByte = bytes[bytes.length - 1]!;
   const secondMostSignificantByte = bytes[bytes.length - 1 - 1];
   const allButTheSignBit = 0b1111_111;
   const justTheSignBit = 0b1000_0000;
@@ -80,8 +84,8 @@ export const parseBytesAsScriptNumber = (
     requireMinimalEncoding &&
     // eslint-disable-next-line no-bitwise
     (mostSignificantByte & allButTheSignBit) === 0 &&
-    // eslint-disable-next-line no-bitwise
-    (bytes.length <= 1 || (secondMostSignificantByte & justTheSignBit) === 0)
+    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unnecessary-type-assertion
+    (bytes.length <= 1 || (secondMostSignificantByte! & justTheSignBit) === 0)
   ) {
     return ScriptNumberError.requiresMinimal;
   }
@@ -92,12 +96,13 @@ export const parseBytesAsScriptNumber = (
   let result = BigInt(0);
   // eslint-disable-next-line functional/no-let, functional/no-loop-statement, no-plusplus
   for (let byte = 0; byte < bytes.length; byte++) {
-    // eslint-disable-next-line functional/no-expression-statement,  no-bitwise
-    result |= BigInt(bytes[byte]) << BigInt(byte * bitsPerByte);
+    // eslint-disable-next-line functional/no-expression-statement,  no-bitwise, @typescript-eslint/no-non-null-assertion
+    result |= BigInt(bytes[byte]!) << BigInt(byte * bitsPerByte);
   }
 
   /* eslint-disable no-bitwise */
-  const isNegative = (bytes[bytes.length - 1] & signFlippingByte) !== 0;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const isNegative = (bytes[bytes.length - 1]! & signFlippingByte) !== 0;
   return isNegative
     ? -(
         result &
@@ -134,8 +139,8 @@ export const bigIntToScriptNumber = (integer: bigint): Uint8Array => {
   }
 
   const signFlippingByte = 0x80;
-  // eslint-disable-next-line no-bitwise, functional/no-conditional-statement
-  if ((bytes[bytes.length - 1] & signFlippingByte) > 0) {
+  // eslint-disable-next-line no-bitwise, functional/no-conditional-statement, @typescript-eslint/no-non-null-assertion
+  if ((bytes[bytes.length - 1]! & signFlippingByte) > 0) {
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
     bytes.push(isNegative ? signFlippingByte : 0x00);
     // eslint-disable-next-line functional/no-conditional-statement
@@ -176,3 +181,53 @@ export const stackItemIsTruthy = (item: Uint8Array) => {
  */
 export const booleanToScriptNumber = (value: boolean) =>
   value ? bigIntToScriptNumber(BigInt(1)) : bigIntToScriptNumber(BigInt(0));
+
+const enum PayToScriptHash {
+  length = 3,
+  lastElement = 2,
+}
+
+export const isPayToScriptHash = (
+  verificationInstructions: readonly AuthenticationInstruction[]
+) =>
+  verificationInstructions.length === PayToScriptHash.length &&
+  verificationInstructions[0]?.opcode === Opcodes.OP_HASH160 &&
+  verificationInstructions[1]?.opcode === Opcodes.OP_PUSHBYTES_20 &&
+  verificationInstructions[PayToScriptHash.lastElement]?.opcode ===
+    Opcodes.OP_EQUAL;
+
+const enum SegWit {
+  minimumLength = 4,
+  maximumLength = 42,
+  OP_0 = 0,
+  OP_1 = 81,
+  OP_16 = 96,
+  versionAndLengthBytes = 2,
+}
+
+/**
+ * Test a stack item for the SegWit Recovery Rules activated in `BCH_2019_05`.
+ *
+ * @param bytecode - the stack item to test
+ */
+// eslint-disable-next-line complexity
+export const isWitnessProgram = (bytecode: Uint8Array) => {
+  const correctLength =
+    bytecode.length >= SegWit.minimumLength &&
+    bytecode.length <= SegWit.maximumLength;
+  const validVersionPush =
+    bytecode[0] === SegWit.OP_0 ||
+    (bytecode[0] >= SegWit.OP_1 && bytecode[0] <= SegWit.OP_16);
+  const correctLengthByte =
+    bytecode[1] + SegWit.versionAndLengthBytes === bytecode.length;
+  return correctLength && validVersionPush && correctLengthByte;
+};
+
+/**
+ * From C++ implementation:
+ * Note that IsPushOnly() *does* consider OP_RESERVED to be a push-type
+ * opcode, however execution of OP_RESERVED fails, so it's not relevant to
+ * P2SH/BIP62 as the scriptSig would fail prior to the P2SH special
+ * validation code being executed.
+ */
+export const isPushOperation = (opcode: number) => opcode < Opcodes.OP_16;

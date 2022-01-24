@@ -1,18 +1,15 @@
-import { Sha256 } from '../crypto/crypto';
-import { OpcodesCommon } from '../vm/instruction-sets/common/opcodes';
+import type { Sha256 } from '../lib';
+import { Opcodes } from '../lib.js';
 
+import type { Base58AddressNetwork, CashAddressNetworkPrefix } from './address';
 import {
   Base58AddressFormatVersion,
-  Base58AddressNetwork,
-  decodeBase58Address,
-  encodeBase58AddressFormat,
-} from './base58-address';
-import {
-  CashAddressNetworkPrefix,
   CashAddressType,
+  decodeBase58Address,
   decodeCashAddress,
+  encodeBase58AddressFormat,
   encodeCashAddress,
-} from './cash-address';
+} from './address.js';
 
 /**
  * The most common address types used on bitcoin and bitcoin-like networks. Each
@@ -92,11 +89,11 @@ export const lockingBytecodeToAddressContents = (
   const p2pkhLength = 25;
   if (
     bytecode.length === p2pkhLength &&
-    bytecode[0] === OpcodesCommon.OP_DUP &&
-    bytecode[1] === OpcodesCommon.OP_HASH160 &&
-    bytecode[2] === OpcodesCommon.OP_PUSHBYTES_20 &&
-    bytecode[23] === OpcodesCommon.OP_EQUALVERIFY &&
-    bytecode[24] === OpcodesCommon.OP_CHECKSIG
+    bytecode[0] === Opcodes.OP_DUP &&
+    bytecode[1] === Opcodes.OP_HASH160 &&
+    bytecode[2] === Opcodes.OP_PUSHBYTES_20 &&
+    bytecode[23] === Opcodes.OP_EQUALVERIFY &&
+    bytecode[24] === Opcodes.OP_CHECKSIG
   ) {
     const start = 3;
     const end = 23;
@@ -106,9 +103,9 @@ export const lockingBytecodeToAddressContents = (
   const p2shLength = 23;
   if (
     bytecode.length === p2shLength &&
-    bytecode[0] === OpcodesCommon.OP_HASH160 &&
-    bytecode[1] === OpcodesCommon.OP_PUSHBYTES_20 &&
-    bytecode[22] === OpcodesCommon.OP_EQUAL
+    bytecode[0] === Opcodes.OP_HASH160 &&
+    bytecode[1] === Opcodes.OP_PUSHBYTES_20 &&
+    bytecode[22] === Opcodes.OP_EQUAL
   ) {
     const start = 2;
     const end = 22;
@@ -118,8 +115,8 @@ export const lockingBytecodeToAddressContents = (
   const p2pkUncompressedLength = 67;
   if (
     bytecode.length === p2pkUncompressedLength &&
-    bytecode[0] === OpcodesCommon.OP_PUSHBYTES_65 &&
-    bytecode[66] === OpcodesCommon.OP_CHECKSIG
+    bytecode[0] === Opcodes.OP_PUSHBYTES_65 &&
+    bytecode[66] === Opcodes.OP_CHECKSIG
   ) {
     const start = 1;
     const end = 66;
@@ -129,8 +126,8 @@ export const lockingBytecodeToAddressContents = (
   const p2pkCompressedLength = 35;
   if (
     bytecode.length === p2pkCompressedLength &&
-    bytecode[0] === OpcodesCommon.OP_PUSHBYTES_33 &&
-    bytecode[34] === OpcodesCommon.OP_CHECKSIG
+    bytecode[0] === Opcodes.OP_PUSHBYTES_33 &&
+    bytecode[34] === Opcodes.OP_CHECKSIG
   ) {
     const start = 1;
     const end = 34;
@@ -157,34 +154,34 @@ export const addressContentsToLockingBytecode = (
 ) => {
   if (addressContents.type === AddressType.p2pkh) {
     return Uint8Array.from([
-      OpcodesCommon.OP_DUP,
-      OpcodesCommon.OP_HASH160,
-      OpcodesCommon.OP_PUSHBYTES_20,
+      Opcodes.OP_DUP,
+      Opcodes.OP_HASH160,
+      Opcodes.OP_PUSHBYTES_20,
       ...addressContents.payload,
-      OpcodesCommon.OP_EQUALVERIFY,
-      OpcodesCommon.OP_CHECKSIG,
+      Opcodes.OP_EQUALVERIFY,
+      Opcodes.OP_CHECKSIG,
     ]);
   }
   if (addressContents.type === AddressType.p2sh) {
     return Uint8Array.from([
-      OpcodesCommon.OP_HASH160,
-      OpcodesCommon.OP_PUSHBYTES_20,
+      Opcodes.OP_HASH160,
+      Opcodes.OP_PUSHBYTES_20,
       ...addressContents.payload,
-      OpcodesCommon.OP_EQUAL,
+      Opcodes.OP_EQUAL,
     ]);
   }
   if (addressContents.type === AddressType.p2pk) {
     const compressedPublicKeyLength = 33;
     return addressContents.payload.length === compressedPublicKeyLength
       ? Uint8Array.from([
-          OpcodesCommon.OP_PUSHBYTES_33,
+          Opcodes.OP_PUSHBYTES_33,
           ...addressContents.payload,
-          OpcodesCommon.OP_CHECKSIG,
+          Opcodes.OP_CHECKSIG,
         ])
       : Uint8Array.from([
-          OpcodesCommon.OP_PUSHBYTES_65,
+          Opcodes.OP_PUSHBYTES_65,
           ...addressContents.payload,
-          OpcodesCommon.OP_CHECKSIG,
+          Opcodes.OP_CHECKSIG,
         ]);
   }
   return addressContents.payload;

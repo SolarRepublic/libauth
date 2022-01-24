@@ -1,9 +1,9 @@
+import type { HashFunction } from '../lib';
 import {
-  HashFunction,
+  base64ToBin,
   instantiateRustWasm,
   ripemd160Base64Bytes,
-} from '../bin/bin';
-import { base64ToBin } from '../format/format';
+} from '../lib.js';
 
 export interface Ripemd160 extends HashFunction {
   /**

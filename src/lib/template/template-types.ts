@@ -2,7 +2,7 @@
 /**
  * Because this file is consumed by the `doc:generate-json-schema` package
  * script to produce a JSON schema, large sections of the below documentation
- * are copied from this libraries `Transaction` and `CompilationData` types.
+ * are copied from this library's `Transaction` and `CompilationData` types.
  *
  * This is preferable to importing those types, as most documentation needs to
  * be slightly modified for this context, and avoiding imports in this file
@@ -58,9 +58,9 @@ export interface AuthenticationTemplate {
   scripts: {
     [scriptId: string]:
       | AuthenticationTemplateScript
-      | AuthenticationTemplateScriptUnlocking
       | AuthenticationTemplateScriptLocking
-      | AuthenticationTemplateScriptTested;
+      | AuthenticationTemplateScriptTested
+      | AuthenticationTemplateScriptUnlocking;
   };
   /**
    * A list of authentication virtual machine versions supported by this
@@ -88,6 +88,7 @@ export interface AuthenticationTemplate {
   version: 0;
 }
 
+// TODO: clean up VM versions?
 /**
  * Allowable identifiers for authentication virtual machine versions. The `BCH`
  * prefix identifies the Bitcoin Cash network, the `BSV` prefix identifies the
@@ -101,21 +102,21 @@ export interface AuthenticationTemplate {
  * compatibility with the live virtual machine version.
  */
 export type AuthenticationVirtualMachineIdentifier =
-  | 'BCH_2022_11_SPEC'
-  | 'BCH_2022_11'
-  | 'BCH_2022_05_SPEC'
-  | 'BCH_2022_05'
-  | 'BCH_2021_11_SPEC'
-  | 'BCH_2021_11'
-  | 'BCH_2021_05_SPEC'
-  | 'BCH_2021_05'
+  | 'BCH_2019_05'
+  | 'BCH_2019_11'
+  | 'BCH_2020_05'
   | 'BCH_2020_11_SPEC'
   | 'BCH_2020_11'
-  | 'BCH_2020_05'
-  | 'BCH_2019_11'
-  | 'BCH_2019_05'
-  | 'BSV_2020_02'
+  | 'BCH_2021_05_SPEC'
+  | 'BCH_2021_05'
+  | 'BCH_2021_11_SPEC'
+  | 'BCH_2021_11'
+  | 'BCH_2022_05_SPEC'
+  | 'BCH_2022_05'
+  | 'BCH_2022_11_SPEC'
+  | 'BCH_2022_11'
   | 'BSV_2018_11'
+  | 'BSV_2020_02'
   | 'BTC_2017_08';
 
 /**
@@ -170,9 +171,9 @@ export interface AuthenticationTemplateScenarioData {
    * Scripts are provided in BTL, and have access to each other and all other
    * template scripts and defined variables. However, cyclical references will
    * produce an error at compile time. Also, because the results of these
-   * compilations will be used to generate the transaction context for this
+   * compilations will be used to generate the compilation context for this
    * scenario, these scripts may not use compiler operations which themselves
-   * require access to transaction context (e.g. signatures).
+   * require access to compilation context (e.g. signatures).
    *
    * The provided `fullIdentifier` should match the complete identifier for
    * each item, e.g. `some_wallet_data`, `variable_id.public_key`, or
@@ -188,9 +189,7 @@ export interface AuthenticationTemplateScenarioData {
    * reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must
    * use the identifier `_scenario_my_foo`.
    */
-  bytecode?: {
-    [fullIdentifier: string]: string;
-  };
+  bytecode?: { [fullIdentifier: string]: string };
   /**
    * The current block height at the "address creation time" implied in this
    * scenario.
@@ -220,6 +219,8 @@ export interface AuthenticationTemplateScenarioData {
      *
      * This is required for any compiler operation which requires derivation.
      * Typically, the value is incremented by one for each address in a wallet.
+     *
+     * Defaults to `0`.
      */
     addressIndex?: number;
     /**
@@ -234,9 +235,7 @@ export interface AuthenticationTemplateScenarioData {
      * `hdPublicKeys`) are provided for the same entity in the same scenario
      * (not recommended), the HD private key is used.
      */
-    hdPublicKeys?: {
-      [entityId: string]: string;
-    };
+    hdPublicKeys?: { [entityId: string]: string };
     /**
      * A map of entity IDs to master HD private keys. These master HD private
      * keys are used to derive each `HdKey` variable assigned to that entity
@@ -249,9 +248,7 @@ export interface AuthenticationTemplateScenarioData {
      * `hdPublicKeys`) are provided for the same entity in the same scenario
      * (not recommended), the HD private key is used.
      */
-    hdPrivateKeys?: {
-      [entityId: string]: string;
-    };
+    hdPrivateKeys?: { [entityId: string]: string };
   };
   /**
    * An object describing the settings used for `Key` variables in this
@@ -262,11 +259,43 @@ export interface AuthenticationTemplateScenarioData {
      * A map of `Key` variable IDs to their 32-byte, hexadecimal-encoded private
      * key values.
      */
-    privateKeys?: {
-      [variableId: string]: string;
-    };
+    privateKeys?: { [variableId: string]: string };
   };
 }
+
+/**
+ * A type which describes the configuration for a particular locking or
+ * unlocking bytecode within an authentication template scenario.
+ *
+ * Bytecode may be specified as either a hexadecimal-encoded string or an object
+ * describing the required compilation.
+ *
+ * Defaults to `{}` if left undefined (which uses the default values for
+ * `script` and `overrides`, respectively).
+ */
+export type AuthenticationTemplateScenarioBytecode =
+  | string
+  | {
+      /**
+       * The identifier of the script to compile when generating this bytecode.
+       * May also be set to `null`, which is automatically substituted for the
+       * identifier of the locking or unlocking script under test, respectively.
+       *
+       * If undefined, defaults to `null`.
+       */
+      script?: string | null;
+      /**
+       * Scenario data which extends the scenario's top-level `data` during
+       * script compilation.
+       *
+       * Each property is extended individually – to modify a property set by
+       * the top-level scenario `data`, the new value must be listed here.
+       *
+       * Defaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults
+       * to `{ "hdKeys": { "addressIndex": 1 } }` for `transaction.outputs`.
+       */
+      overrides?: AuthenticationTemplateScenarioData;
+    };
 
 /**
  * An example input used to define a scenario for an authentication template.
@@ -360,63 +389,33 @@ export interface AuthenticationTemplateScenarioInput {
   sequenceNumber?: number;
   /**
    * The `unlockingBytecode` value of this input for this scenario. This must be
-   * either a `null` value – indicating that this input contains the
-   * `unlockingBytecode` under test by the scenario – or a hexadecimal-encoded
-   * bytecode value.
+   * either `null` – indicating that this input contains the `unlockingBytecode`
+   * under test by the scenario – or a hexadecimal-encoded bytecode value.
    *
-   * Defaults to an empty string (`''`). For a scenario to be valid,
-   * `unlockingBytecode` must be `null` for exactly one input in the scenario.
+   * For a scenario to be valid, `unlockingBytecode` must be `null` for exactly
+   * one input in the scenario.
    *
-   * @remarks
-   * While the `outpointIndex`, `outpointTransactionHash`, and `sequenceNumber`
-   * of every input is part of a transaction's signing serialization, as of
-   * 2020, no virtual machine currently requires access to the
-   * `unlockingBytecode` of sibling inputs during the evaluation of an input's
-   * `unlockingBytecode`. However, for completeness (and to allow for testing of
-   * virtual machines with this requirement), scenarios may also specify an
-   * `unlockingBytecode` value for each input not under test.
+   * Defaults to `null`.
    */
-  unlockingBytecode?: null | string;
+  unlockingBytecode?: AuthenticationTemplateScenarioBytecode | null;
 }
 
 /**
  * An example output used to define a scenario for an authentication template.
  */
-export interface AuthenticationTemplateScenarioOutput {
+export interface AuthenticationTemplateScenarioOutput<
+  IsSourceOutput extends boolean
+> {
   /**
-   * The bytecode used to encumber this transaction output for this scenario.
-   * This value is included in signing serializations, and therefore has an
-   * effect on the transaction context for this scenario.
+   * The locking bytecode used to encumber this output.
    *
    * This value may be provided as either a hexadecimal-encoded string or an
-   * object describing the required compilation.
-   *
-   * If undefined, this defaults to `{}`, which uses the default values for
-   * `script` and `overrides`, respectively.
+   * object describing the required compilation. If undefined, defaults to `{}`,
+   * which uses the default values for `script` and `overrides`, respectively.
    */
-  readonly lockingBytecode?:
-    | string
-    | {
-        /**
-         * The identifier of the script to compile when generating this
-         * `lockingBytecode`. May also be set to `null`, which represents the
-         * identifier of the locking script unlocked by the unlocking script
-         * under test.
-         *
-         * If undefined, defaults to `null`.
-         */
-        script?: string | null;
-        /**
-         * Scenario data which extends this scenario's top-level data during
-         * script compilation.
-         *
-         * Each property is extended individually – to modify a property set by
-         * the top-level scenario data, the new value must be listed here.
-         *
-         * If undefined, defaults to `{ "hdKeys": { "addressIndex": 1 } }`.
-         */
-        overrides?: AuthenticationTemplateScenarioData;
-      };
+  readonly lockingBytecode?: IsSourceOutput extends true
+    ? AuthenticationTemplateScenarioBytecode | null
+    : AuthenticationTemplateScenarioBytecode;
   /**
    * The value of the output in satoshis, the smallest unit of bitcoin.
    *
@@ -427,17 +426,30 @@ export interface AuthenticationTemplateScenarioOutput {
    * `Number.MAX_SAFE_INTEGER` (`9007199254740991`), so typically, this value
    * is defined using a `number`. However, this value may also be defined using
    * a 16-character, hexadecimal-encoded `string`, to allow for the full range
-   * of the 64-bit unsigned, little-endian integer used to serialize `satoshis`
-   * in the encoded output format, e.g. `"ffffffffffffffff"`. This is useful
-   * for representing scenarios where intentionally excessive values are
-   * provided (to ensure an otherwise properly-signed transaction can never be
-   * included in the blockchain), e.g. transaction size estimations or off-chain
-   * Bitauth signatures.
+   * of the 64-bit unsigned, little-endian integer used to encode
+   * `valueSatoshis` in the encoded output format, e.g. `"ffffffffffffffff"`.
+   * This is useful for representing scenarios where intentionally excessive
+   * values are provided (to ensure an otherwise properly-signed transaction can
+   * never be included in the blockchain), e.g. transaction size estimations or
+   * off-chain Bitauth signatures.
    *
    * If undefined, this defaults to: `0`.
    */
-  readonly satoshis?: number | string;
+  readonly valueSatoshis?: number | string;
 }
+
+/**
+ * A transaction output used to define an authentication template scenario
+ * transaction.
+ */
+export type AuthenticationTemplateScenarioTransactionOutput =
+  AuthenticationTemplateScenarioOutput<false>;
+
+/**
+ * An source output used by an authentication template scenario.
+ */
+export type AuthenticationTemplateScenarioSourceOutput =
+  AuthenticationTemplateScenarioOutput<true>;
 
 /**
  * An object describing the configuration for a particular scenario within an
@@ -489,7 +501,7 @@ export interface AuthenticationTemplateScenario {
    *   - if the scenario is being used for transaction estimation, all
    * transaction properties are taken from the transaction being estimated.
    *   - if the scenario is being used for script testing and validation, the
-   * default value for each `transaction` property used.
+   * default value for each `transaction` property is used.
    *
    * When a scenario is extended, each property of `data` and `transaction` is
    * extended individually: if the extending scenario does not provide a new
@@ -512,7 +524,7 @@ export interface AuthenticationTemplateScenario {
    * {
    *   "inputs": [{ "unlockingBytecode": null }],
    *   "locktime": 0,
-   *   "outputs": [{ "lockingBytecode": "" }],
+   *   "outputs": [{ "lockingBytecode": {} }],
    *   "version": 2
    * }
    * ```
@@ -528,7 +540,8 @@ export interface AuthenticationTemplateScenario {
    *   "outpointIndex": 0,
    *   "outpointTransactionHash":
    *     "0000000000000000000000000000000000000000000000000000000000000000",
-   *   "sequenceNumber": 0
+   *   "sequenceNumber": 0,
+   *   "unlockingBytecode": null
    * }
    * ```
    * And an output of `{}` is interpreted as:
@@ -538,14 +551,14 @@ export interface AuthenticationTemplateScenario {
    *     "script": null,
    *     "overrides": { "hdKeys": { "addressIndex": 1 } }
    *   },
-   *   "satoshis": 0
+   *   "valueSatoshis": 0
    * }
    * ```
    */
   transaction?: {
     /**
-     * The list of inputs to use when generating the transaction context for
-     * this scenario.
+     * The list of inputs to use when generating the transaction for this
+     * scenario.
      *
      * To be valid the `inputs` property must have exactly one input with
      * `unlockingBytecode` set to `null`. This is the input in which the
@@ -556,9 +569,9 @@ export interface AuthenticationTemplateScenario {
      */
     inputs?: AuthenticationTemplateScenarioInput[];
     /**
-     * The locktime to use when generating the transaction context for this
-     * scenario. A positive integer from `0` to a maximum of `4294967295` – if
-     * undefined, defaults to `0`.
+     * The locktime to use when generating the transaction for this scenario. A
+     * positive integer from `0` to a maximum of `4294967295` – if undefined,
+     * defaults to `0`.
      *
      * Locktime can be provided as either a timestamp or a block height. Values
      * less than `500000000` are understood to be a block height (the current
@@ -600,30 +613,34 @@ export interface AuthenticationTemplateScenario {
      */
     locktime?: number;
     /**
-     * The list of outputs to use when generating the transaction context for
-     * this scenario.
+     * The list of outputs to use when generating the transaction for this
+     * scenario.
      *
-     * If undefined, defaults to `[{ "lockingBytecode": "" }]`.
+     * If undefined, defaults to `[{ "lockingBytecode": {} }]`.
      */
-    outputs?: AuthenticationTemplateScenarioOutput[];
+    outputs?: AuthenticationTemplateScenarioTransactionOutput[];
     /**
-     * The version to use when generating the transaction context for this
-     * scenario. A positive integer from `0` to a maximum of `4294967295` – if
-     * undefined, inherits the default scenario `version` value: `2`.
+     * The version to use when generating the transaction for this scenario. A
+     * positive integer from `0` to a maximum of `4294967295` – if undefined,
+     * inherits the default scenario `version` value: `2`.
      */
     version?: number;
   };
   /**
-   * The value in satoshis of the hypothetical output being spent by the input
-   * under test in this scenario.
+   * The list of source outputs (a.k.a. UTXOs) to use when generating the
+   * compilation context for this scenario.
    *
-   * May be encoded as either a number (for values below `2^53-1`) or a
-   * little-endian, unsigned 64-bit integer in hexadecimal format (a
-   * 16-character string).
+   * The `sourceOutputs` property must have the same length as
+   * `transaction.inputs`, and each source output must be ordered to match the
+   * index of the input which spends it.
    *
-   * If undefined, defaults to `0`.
+   * To be valid the `sourceOutputs` property must have exactly one source
+   * output with `lockingBytecode` set to `null`. This must be the output at the
+   * same index as the `null` `unlockingBytecode` input in `transaction.inputs`.
+   *
+   * If undefined, defaults to `[{ "lockingBytecode": null }]`.
    */
-  value?: number | string;
+  sourceOutputs?: AuthenticationTemplateScenarioSourceOutput[];
 }
 
 /**
@@ -732,7 +749,7 @@ export interface AuthenticationTemplateScriptUnlocking
    * If `timeLockType` is undefined, the script is assumed to have no reliance
    * on absolute time locks.
    */
-  timeLockType?: 'timestamp' | 'height';
+  timeLockType?: 'height' | 'timestamp';
   /**
    * The identifier of the script which can be unlocked by this script.
    *
@@ -762,7 +779,7 @@ export interface AuthenticationTemplateScriptLocking
    * locking script. It must be present on any script referenced by the
    * `unlocks` property of another script.
    */
-  lockingType: 'standard' | 'p2sh';
+  lockingType: 'p2sh' | 'standard';
 }
 
 export interface AuthenticationTemplateScriptTested
@@ -881,7 +898,7 @@ export interface AuthenticationTemplateHdKey
    * compilation data when deriving this `HdKey`. (Default: 0)
    *
    * This is useful for deriving the "next" (`1`) or "previous" (`-1`) address
-   * to be used in the current compilation context.
+   * to be used in the current compiler configuration.
    */
   addressOffset?: number;
   /**
@@ -1040,7 +1057,7 @@ export interface AuthenticationTemplateAddressData
 }
 
 export type AuthenticationTemplateVariable =
+  | AuthenticationTemplateAddressData
   | AuthenticationTemplateHdKey
   | AuthenticationTemplateKey
-  | AuthenticationTemplateWalletData
-  | AuthenticationTemplateAddressData;
+  | AuthenticationTemplateWalletData;

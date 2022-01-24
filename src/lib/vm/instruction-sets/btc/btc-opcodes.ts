@@ -1,7 +1,7 @@
-export enum OpcodesCommon {
-  /**
-   * A.K.A. `OP_FALSE` or `OP_PUSHBYTES_0`
-   */
+/**
+ *  `OpcodesBCH` currently represents the `BTC_2017_08` instruction set.
+ */
+export enum OpcodesBTC {
   OP_0 = 0x00,
   OP_PUSHBYTES_1 = 0x01,
   OP_PUSHBYTES_2 = 0x02,
@@ -83,9 +83,6 @@ export enum OpcodesCommon {
   OP_PUSHDATA_4 = 0x4e,
   OP_1NEGATE = 0x4f,
   OP_RESERVED = 0x50,
-  /**
-   * A.K.A. `OP_TRUE`
-   */
   OP_1 = 0x51,
   OP_2 = 0x52,
   OP_3 = 0x53,
@@ -182,13 +179,7 @@ export enum OpcodesCommon {
   OP_CHECKMULTISIG = 0xae,
   OP_CHECKMULTISIGVERIFY = 0xaf,
   OP_NOP1 = 0xb0,
-  /**
-   * Previously `OP_NOP2`
-   */
   OP_CHECKLOCKTIMEVERIFY = 0xb1,
-  /**
-   * Previously `OP_NOP2`
-   */
   OP_CHECKSEQUENCEVERIFY = 0xb2,
   OP_NOP4 = 0xb3,
   OP_NOP5 = 0xb4,
@@ -261,10 +252,25 @@ export enum OpcodesCommon {
   OP_UNKNOWN247 = 0xf7,
   OP_UNKNOWN248 = 0xf8,
   OP_UNKNOWN249 = 0xf9,
-  OP_UNKNOWN250 = 0xfa,
-  OP_UNKNOWN251 = 0xfb,
+  /**
+   * Used internally in the C++ implementation.
+   */
+  OP_SMALLINTEGER = 0xfa,
+  /**
+   * Used internally in the C++ implementation.
+   */
+  OP_PUBKEYS = 0xfb,
   OP_UNKNOWN252 = 0xfc,
-  OP_UNKNOWN253 = 0xfd,
-  OP_UNKNOWN254 = 0xfe,
-  OP_UNKNOWN255 = 0xff,
+  /**
+   * Used internally in the C++ implementation.
+   */
+  OP_PUBKEYHASH = 0xfd,
+  /**
+   * Used internally in the C++ implementation.
+   */
+  OP_PUBKEY = 0xfe,
+  /**
+   * Used internally in the C++ implementation.
+   */
+  OP_INVALIDOPCODE = 0xff,
 }

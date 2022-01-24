@@ -1,12 +1,11 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
+import type { Ripemd160 } from '../lib';
 import {
   getEmbeddedRipemd160Binary,
   instantiateRipemd160,
   instantiateRipemd160Bytes,
-  Ripemd160,
-} from '../lib';
+} from '../lib.js';
 
-import { testHashFunction } from './hash.spec.helper';
+import { testHashFunction } from './hash.spec.helper.js';
 
 // prettier-ignore
 const abcHash = new Uint8Array([142, 178, 8, 247, 224, 93, 152, 122, 155, 4, 74, 142, 152, 198, 176, 135, 241, 90, 11, 252]);

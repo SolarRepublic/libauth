@@ -1,16 +1,13 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
-import {
-  compilerOperationSigningSerializationFullBCH,
-  TransactionContextCommon,
-} from '../../lib';
+import type { CompilationContextBCH } from '../../lib';
+import { compilerOperationSigningSerializationFullBCH } from '../../lib.js';
 
 test('compilerOperationSigningSerializationFullBCH: requires an algorithm', (t) => {
   t.deepEqual(
     compilerOperationSigningSerializationFullBCH(
       '',
-      { transactionContext: {} as TransactionContextCommon },
+      { compilationContext: {} as CompilationContextBCH },
       {
         scripts: { lock: '' },
         sha256: { hash: () => Uint8Array.of() },
@@ -29,7 +26,7 @@ test('compilerOperationSigningSerializationFullBCH: error on unknown algorithms'
   t.deepEqual(
     compilerOperationSigningSerializationFullBCH(
       'signing_serialization.full_unknown_serialization',
-      { transactionContext: {} as TransactionContextCommon },
+      { compilationContext: {} as CompilationContextBCH },
       {
         scripts: { lock: '' },
         sha256: { hash: () => Uint8Array.of() },

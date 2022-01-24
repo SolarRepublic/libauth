@@ -1,13 +1,12 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  hexToBin,
 } from '../../lib';
+import { hexToBin } from '../../lib.js';
 
-import { expectCompilationResult } from './compiler-bch.e2e.spec.helper';
+import { expectCompilationResult } from './compiler-bch.e2e.spec.helper.js';
 
 test(
   '[BCH compiler] transformation – unlocking script – standard locking type',

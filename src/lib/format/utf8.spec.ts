@@ -1,9 +1,8 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 import { testProp } from 'ava-fast-check';
-import * as fc from 'fast-check';
+import fc from 'fast-check';
 
-import { binToUtf8, hexToBin, utf8ToBin } from '../lib';
+import { binToUtf8, hexToBin, utf8ToBin } from '../lib.js';
 
 const maxUint8Number = 255;
 const fcUint8Array = (minLength: number, maxLength: number) =>

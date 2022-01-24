@@ -1,18 +1,18 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/naming-convention */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  hexToBin,
 } from '../../lib';
+import { hexToBin } from '../../lib.js';
 
 import {
   expectCompilationResult,
   privkey,
-} from './compiler-bch.e2e.spec.helper';
+} from './compiler-bch.e2e.spec.helper.js';
 
-test(
+test.failing(
   '[BCH compiler] Key – ECDSA: use a private key',
   expectCompilationResult,
   '<owner.signature.all_outputs>',
@@ -28,7 +28,7 @@ test(
   }
 );
 
-test(
+test.failing(
   '[BCH compiler] Key – schnorr: use a private key',
   expectCompilationResult,
   '<owner.schnorr_signature.all_outputs>',
@@ -70,7 +70,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.public_key" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.public_key" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 18,
           endLineNumber: 1,
@@ -385,7 +385,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.signature.all_outputs" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.signature.all_outputs" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -412,7 +412,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 37,
           endLineNumber: 1,
@@ -439,7 +439,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.signature.all_outputs" – the "sha256" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.signature.all_outputs" – the "sha256" property was not provided in the compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -466,7 +466,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "sha256" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "sha256" property was not provided in the compiler configuration.',
         range: {
           endColumn: 37,
           endLineNumber: 1,

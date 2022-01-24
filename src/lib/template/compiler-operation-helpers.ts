@@ -1,18 +1,18 @@
-import { decodeHdPrivateKey, deriveHdPath } from '../key/hd-key';
-import { TransactionContextCommon } from '../transaction/transaction-types';
+import type { CompilationContextBCH } from '../lib';
+import { decodeHdPrivateKey, deriveHdPath } from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults';
-import {
-  AnyCompilationEnvironment,
+import { CompilerDefaults } from './compiler-defaults.js';
+import type {
+  AnyCompilerConfiguration,
   CompilationData,
-  CompilationEnvironment,
+  CompilerConfiguration,
   CompilerOperation,
   CompilerOperationErrorFatal,
   CompilerOperationResult,
   CompilerOperationSkip,
 } from './compiler-types';
-import { resolveScriptIdentifier } from './language/resolve';
-import { AuthenticationTemplateHdKey } from './template-types';
+import type { AuthenticationTemplateHdKey } from './template-types';
+import { resolveScriptIdentifier } from './template.js';
 
 /**
  * Attempt a series of compiler operations, skipping to the next operation if
@@ -23,23 +23,23 @@ import { AuthenticationTemplateHdKey } from './template-types';
  * @param operations - an array of skippable operations to try
  * @param finalOperation - a final, un-skippable operation
  */
-export const attemptCompilerOperations = <
-  TransactionContext = TransactionContextCommon
->(
-  operations: CompilerOperation<TransactionContext, true>[],
-  finalOperation: CompilerOperation<TransactionContext>
-): CompilerOperation<TransactionContext> => (identifier, data, environment) => {
-  // eslint-disable-next-line functional/no-loop-statement
-  for (const operation of operations) {
-    const result = operation(identifier, data, environment);
-    if (result.status !== 'skip') return result;
-  }
-  return finalOperation(identifier, data, environment);
-};
+export const attemptCompilerOperations =
+  <CompilationContext = CompilationContextBCH>(
+    operations: CompilerOperation<CompilationContext, true>[],
+    finalOperation: CompilerOperation<CompilationContext>
+  ): CompilerOperation<CompilationContext> =>
+  (identifier, data, configuration) => {
+    // eslint-disable-next-line functional/no-loop-statement
+    for (const operation of operations) {
+      const result = operation(identifier, data, configuration);
+      if (result.status !== 'skip') return result;
+    }
+    return finalOperation(identifier, data, configuration);
+  };
 
 /**
  * Modify a compiler operation to verify that certain properties exist in the
- * `CompilationData` and `CompilationEnvironment` before executing the provided
+ * `CompilationData` and `CompilerConfiguration` before executing the provided
  * operation. If the properties don't exist, an error message is returned.
  *
  * This is useful for eliminating repetitive existence checks.
@@ -49,91 +49,94 @@ export const attemptCompilerOperations = <
  * `false` (meaning the operation should be skipped)
  * @param dataProperties - an array of the top-level properties required in the
  * `CompilationData`
- * @param environmentProperties - an array of the top-level properties required
- * in the `CompilationEnvironment`
+ * @param configurationProperties - an array of the top-level properties
+ * required in the `CompilerConfiguration`
  * @param operation - the operation to run if all required properties exist
  */
-export const compilerOperationRequires = <
-  CanBeSkipped extends boolean,
-  RequiredDataProperties extends keyof CompilationData<unknown>,
-  RequiredEnvironmentProperties extends keyof CompilationEnvironment,
-  TransactionContext = TransactionContextCommon
->({
-  canBeSkipped,
-  dataProperties,
-  environmentProperties,
-  operation,
-}: {
-  canBeSkipped: CanBeSkipped;
-  dataProperties: RequiredDataProperties[];
-  environmentProperties: RequiredEnvironmentProperties[];
-  operation: (
-    identifier: string,
-    data: Required<
-      Pick<CompilationData<TransactionContext>, RequiredDataProperties>
-    > &
-      CompilationData<TransactionContext>,
-    environment: Required<
-      Pick<
-        CompilationEnvironment<TransactionContext>,
-        RequiredEnvironmentProperties
-      >
-    > &
-      CompilationEnvironment<TransactionContext>
-  ) => CompilerOperationResult<CanBeSkipped>;
+export const compilerOperationRequires =
+  <
+    CanBeSkipped extends boolean,
+    RequiredDataProperties extends keyof CompilationData<unknown>,
+    RequiredConfigurationProperties extends keyof CompilerConfiguration,
+    CompilationContext = CompilationContextBCH
+  >({
+    canBeSkipped,
+    dataProperties,
+    configurationProperties,
+    operation,
+  }: {
+    canBeSkipped: CanBeSkipped;
+    dataProperties: RequiredDataProperties[];
+    configurationProperties: RequiredConfigurationProperties[];
+    operation: (
+      identifier: string,
+      data: CompilationData<CompilationContext> &
+        Required<
+          Pick<CompilationData<CompilationContext>, RequiredDataProperties>
+        >,
+      configuration: CompilerConfiguration<CompilationContext> &
+        Required<
+          Pick<
+            CompilerConfiguration<CompilationContext>,
+            RequiredConfigurationProperties
+          >
+        >
+    ) => CompilerOperationResult<CanBeSkipped>;
+  }): CompilerOperation<CompilationContext, CanBeSkipped> =>
   // eslint-disable-next-line complexity
-}): CompilerOperation<TransactionContext, CanBeSkipped> => (
-  identifier,
-  data,
-  environment
-) => {
-  // eslint-disable-next-line functional/no-loop-statement
-  for (const property of environmentProperties) {
-    if (environment[property] === undefined)
-      return (canBeSkipped
-        ? { status: 'skip' }
-        : {
-            error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compilation environment.`,
-            status: 'error',
-          }) as CanBeSkipped extends true
-        ? CompilerOperationSkip
-        : CompilerOperationErrorFatal;
-  }
-  // eslint-disable-next-line functional/no-loop-statement
-  for (const property of dataProperties) {
-    if (
-      (data[property] as typeof data[typeof property] | undefined) === undefined
-    )
-      return (canBeSkipped
-        ? { status: 'skip' }
-        : {
-            error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compilation data.`,
-            status: 'error',
-          }) as CanBeSkipped extends true
-        ? CompilerOperationSkip
-        : CompilerOperationErrorFatal;
-  }
+  (identifier, data, configuration) => {
+    // eslint-disable-next-line functional/no-loop-statement
+    for (const property of configurationProperties) {
+      if (configuration[property] === undefined)
+        return (
+          canBeSkipped
+            ? { status: 'skip' }
+            : {
+                error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compiler configuration.`,
+                status: 'error',
+              }
+        ) as CanBeSkipped extends true
+          ? CompilerOperationSkip
+          : CompilerOperationErrorFatal;
+    }
+    // eslint-disable-next-line functional/no-loop-statement
+    for (const property of dataProperties) {
+      if (
+        (data[property] as typeof data[typeof property] | undefined) ===
+        undefined
+      )
+        return (
+          canBeSkipped
+            ? { status: 'skip' }
+            : {
+                error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compilation data.`,
+                status: 'error',
+              }
+        ) as CanBeSkipped extends true
+          ? CompilerOperationSkip
+          : CompilerOperationErrorFatal;
+    }
 
-  return operation(
-    identifier,
-    data as Required<
-      Pick<CompilationData<TransactionContext>, RequiredDataProperties>
-    >,
-    environment as Required<
-      Pick<
-        CompilationEnvironment<TransactionContext>,
-        RequiredEnvironmentProperties
-      >
-    > &
-      CompilationEnvironment<TransactionContext>
-  );
-};
+    return operation(
+      identifier,
+      data as Required<
+        Pick<CompilationData<CompilationContext>, RequiredDataProperties>
+      >,
+      configuration as CompilerConfiguration<CompilationContext> &
+        Required<
+          Pick<
+            CompilerConfiguration<CompilationContext>,
+            RequiredConfigurationProperties
+          >
+        >
+    );
+  };
 
-export const compilerOperationAttemptBytecodeResolution = compilerOperationRequires(
-  {
+export const compilerOperationAttemptBytecodeResolution =
+  compilerOperationRequires({
     canBeSkipped: true,
+    configurationProperties: [],
     dataProperties: ['bytecode'],
-    environmentProperties: [],
     operation: (identifier, data) => {
       const { bytecode } = data;
       if ((bytecode[identifier] as Uint8Array | undefined) !== undefined) {
@@ -141,26 +144,25 @@ export const compilerOperationAttemptBytecodeResolution = compilerOperationRequi
       }
       return { status: 'skip' };
     },
-  }
-);
+  });
 
 // eslint-disable-next-line complexity
 export const compilerOperationHelperDeriveHdPrivateNode = ({
   addressIndex,
   entityId,
   entityHdPrivateKey,
-  environment,
+  configuration,
   hdKey,
   identifier,
 }: {
   addressIndex: number;
   entityId: string;
   entityHdPrivateKey: string;
-  environment: {
-    ripemd160: NonNullable<CompilationEnvironment['ripemd160']>;
-    secp256k1: NonNullable<CompilationEnvironment['secp256k1']>;
-    sha256: NonNullable<CompilationEnvironment['sha256']>;
-    sha512: NonNullable<CompilationEnvironment['sha512']>;
+  configuration: {
+    ripemd160: NonNullable<CompilerConfiguration['ripemd160']>;
+    secp256k1: NonNullable<CompilerConfiguration['secp256k1']>;
+    sha256: NonNullable<CompilerConfiguration['sha256']>;
+    sha512: NonNullable<CompilerConfiguration['sha512']>;
   };
   hdKey: AuthenticationTemplateHdKey;
   identifier: string;
@@ -181,7 +183,7 @@ export const compilerOperationHelperDeriveHdPrivateNode = ({
 
   const instancePath = privateDerivationPath.replace('i', i.toString());
 
-  const masterContents = decodeHdPrivateKey(environment, entityHdPrivateKey);
+  const masterContents = decodeHdPrivateKey(configuration, entityHdPrivateKey);
   if (typeof masterContents === 'string') {
     return {
       error: `Could not generate ${identifier} – the HD private key provided for ${entityId} could not be decoded: ${masterContents}`,
@@ -190,7 +192,7 @@ export const compilerOperationHelperDeriveHdPrivateNode = ({
   }
 
   const instanceNode = deriveHdPath(
-    environment,
+    configuration,
     masterContents.node,
     instancePath
   );
@@ -212,7 +214,7 @@ export const compilerOperationHelperUnknownEntity = (
   identifier: string,
   variableId: string
 ) => ({
-  error: `Identifier "${identifier}" refers to an HdKey, but the "entityOwnership" for "${variableId}" is not available in this compilation environment.`,
+  error: `Identifier "${identifier}" refers to an HdKey, but the "entityOwnership" for "${variableId}" is not available in this compiler configuration.`,
   status: 'error' as const,
 });
 
@@ -222,17 +224,17 @@ export const compilerOperationHelperAddressIndex = (identifier: string) => ({
 });
 
 export const compilerOperationHelperDeriveHdKeyPrivate = ({
-  environment,
+  configuration,
   hdKeys,
   identifier,
 }: {
-  environment: {
-    entityOwnership: NonNullable<CompilationEnvironment['entityOwnership']>;
-    ripemd160: NonNullable<CompilationEnvironment['ripemd160']>;
-    secp256k1: NonNullable<CompilationEnvironment['secp256k1']>;
-    sha256: NonNullable<CompilationEnvironment['sha256']>;
-    sha512: NonNullable<CompilationEnvironment['sha512']>;
-    variables: NonNullable<CompilationEnvironment['variables']>;
+  configuration: {
+    entityOwnership: NonNullable<CompilerConfiguration['entityOwnership']>;
+    ripemd160: NonNullable<CompilerConfiguration['ripemd160']>;
+    secp256k1: NonNullable<CompilerConfiguration['secp256k1']>;
+    sha256: NonNullable<CompilerConfiguration['sha256']>;
+    sha512: NonNullable<CompilerConfiguration['sha512']>;
+    variables: NonNullable<CompilerConfiguration['variables']>;
   };
   hdKeys: NonNullable<CompilationData['hdKeys']>;
   identifier: string;
@@ -240,7 +242,7 @@ export const compilerOperationHelperDeriveHdKeyPrivate = ({
   const { addressIndex, hdPrivateKeys } = hdKeys;
   const [variableId] = identifier.split('.');
 
-  const entityId = environment.entityOwnership[variableId] as
+  const entityId = configuration.entityOwnership[variableId] as
     | string
     | undefined;
   if (entityId === undefined) {
@@ -265,45 +267,45 @@ export const compilerOperationHelperDeriveHdKeyPrivate = ({
   /**
    * Guaranteed to be an `HdKey` if this method is reached in the compiler.
    */
-  const hdKey = environment.variables[
+  const hdKey = configuration.variables[
     variableId
   ] as AuthenticationTemplateHdKey;
 
   return compilerOperationHelperDeriveHdPrivateNode({
     addressIndex,
+    configuration,
     entityHdPrivateKey,
     entityId,
-    environment,
     hdKey,
     identifier,
   });
 };
 
 /**
- * Returns `false` if the target script ID doesn't exist in the compilation
- * environment (allows for the caller to generate the error message).
+ * Returns `false` if the target script ID doesn't exist in the compiler
+ * configuration (allows for the caller to generate the error message).
  *
  * If the compilation produced errors, returns a `CompilerOperationErrorFatal`.
  *
  * If the compilation was successful, returns the compiled bytecode as a
  * `Uint8Array`.
  */
-export const compilerOperationHelperCompileScript = <TransactionContext>({
+export const compilerOperationHelperCompileScript = <CompilationContext>({
   targetScriptId,
   data,
-  environment,
+  configuration,
 }: {
   targetScriptId: string;
-  data: CompilationData<TransactionContext>;
-  environment: AnyCompilationEnvironment<TransactionContext>;
+  data: CompilationData<CompilationContext>;
+  configuration: AnyCompilerConfiguration<CompilationContext>;
 }) => {
-  const signingTarget = environment.scripts[targetScriptId] as
+  const signingTarget = configuration.scripts[targetScriptId] as
     | string
     | undefined;
 
   const compiledTarget = resolveScriptIdentifier({
+    configuration,
     data,
-    environment,
     identifier: targetScriptId,
   });
   if (signingTarget === undefined || compiledTarget === false) {
@@ -323,28 +325,26 @@ export const compilerOperationHelperCompileScript = <TransactionContext>({
  * `CompilerOperationErrorFatal`.
  */
 export const compilerOperationHelperGenerateCoveredBytecode = <
-  TransactionContext
+  CompilationContext
 >({
   data,
-  environment,
+  configuration,
   identifier,
   sourceScriptIds,
   unlockingScripts,
 }: {
-  data: CompilationData<TransactionContext>;
-  environment: AnyCompilationEnvironment<TransactionContext>;
+  data: CompilationData<CompilationContext>;
+  configuration: AnyCompilerConfiguration<CompilationContext>;
   identifier: string;
   sourceScriptIds: string[];
-  unlockingScripts: {
-    [unlockingScriptId: string]: string;
-  };
+  unlockingScripts: { [unlockingScriptId: string]: string };
 }): CompilerOperationErrorFatal | Uint8Array => {
   const currentScriptId = sourceScriptIds[sourceScriptIds.length - 1] as
     | string
     | undefined;
   if (currentScriptId === undefined) {
     return {
-      error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because the compilation environment's "sourceScriptIds" is empty.`,
+      error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because the compiler configuration's "sourceScriptIds" is empty.`,
       status: 'error',
     };
   }
@@ -354,14 +354,14 @@ export const compilerOperationHelperGenerateCoveredBytecode = <
     | undefined;
   if (targetLockingScriptId === undefined) {
     return {
-      error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because "${currentScriptId}" is not present in the compilation environment "unlockingScripts".`,
+      error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because "${currentScriptId}" is not present in the compiler configuration's "unlockingScripts".`,
       status: 'error',
     };
   }
 
   const result = compilerOperationHelperCompileScript({
+    configuration,
     data,
-    environment,
     targetScriptId: targetLockingScriptId,
   });
 

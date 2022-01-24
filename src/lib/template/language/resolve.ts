@@ -1,27 +1,28 @@
-import { hexToBin, utf8ToBin } from '../../format/format';
-import { bigIntToScriptNumber } from '../../vm/instruction-sets/instruction-sets';
-import {
-  AnyCompilationEnvironment,
+import { bigIntToScriptNumber, hexToBin, utf8ToBin } from '../../lib.js';
+import type {
+  AnyCompilerConfiguration,
+  AuthenticationTemplateVariable,
   CompilationData,
-  CompilationEnvironment,
+  CompilerConfiguration,
   CompilerOperation,
   CompilerOperationResult,
-} from '../compiler-types';
-import { AuthenticationTemplateVariable } from '../template-types';
+} from '../template';
 
-import { compileScriptRaw } from './compile';
-import {
+import { compileScriptRaw } from './compile.js';
+import type {
   BtlScriptSegment,
   CompilationResultSuccess,
-  IdentifierResolutionErrorType,
   IdentifierResolutionFunction,
-  IdentifierResolutionType,
   MarkedNode,
   Range,
   ResolvedScript,
   ResolvedSegment,
-} from './language-types';
-import { stringifyErrors } from './language-utils';
+} from './language';
+import {
+  IdentifierResolutionErrorType,
+  IdentifierResolutionType,
+  stringifyErrors,
+} from './language.js';
 
 const pluckRange = (node: MarkedNode): Range => ({
   endColumn: node.end.column,
@@ -155,11 +156,11 @@ export enum BuiltInVariables {
 }
 
 const attemptCompilerOperation = <
-  TransactionContext,
-  Environment extends AnyCompilationEnvironment<TransactionContext>
+  CompilationContext,
+  Configuration extends AnyCompilerConfiguration<CompilationContext>
 >({
   data,
-  environment,
+  configuration,
   identifier,
   matchingOperations,
   operationExample = 'operation_identifier',
@@ -167,14 +168,12 @@ const attemptCompilerOperation = <
   variableId,
   variableType,
 }: {
-  data: CompilationData<TransactionContext>;
-  environment: Environment;
+  data: CompilationData<CompilationContext>;
+  configuration: Configuration;
   identifier: string;
   matchingOperations:
-    | {
-        [x: string]: CompilerOperation<TransactionContext> | undefined;
-      }
-    | CompilerOperation<TransactionContext>
+    | CompilerOperation<CompilationContext>
+    | { [x: string]: CompilerOperation<CompilationContext> | undefined }
     | undefined;
   operationId: string | undefined;
   variableId: string;
@@ -189,7 +188,7 @@ const attemptCompilerOperation = <
   }
   if (typeof matchingOperations === 'function') {
     const operation = matchingOperations;
-    return operation(identifier, data, environment);
+    return operation(identifier, data, configuration);
   }
   if (operationId === undefined) {
     return {
@@ -197,20 +196,18 @@ const attemptCompilerOperation = <
       status: 'error',
     };
   }
-  const operation = (matchingOperations as {
-    [x: string]: CompilerOperation<TransactionContext> | undefined;
-  })[operationId];
+  const operation = matchingOperations[operationId];
   if (operation === undefined) {
     return {
       error: `The identifier "${identifier}" could not be resolved because the "${variableId}.${operationId}" operation is not available to this compiler.`,
       status: 'error',
     };
   }
-  return operation(identifier, data, environment);
+  return operation(identifier, data, configuration);
 };
 
 /**
- * If the identifer can be successfully resolved as a variable, the result is
+ * If the identifier can be successfully resolved as a variable, the result is
  * returned as a Uint8Array. If the identifier references a known variable, but
  * an error occurs in resolving it, the error is returned as a string.
  * Otherwise, the identifier is not recognized as a variable, and this method
@@ -219,18 +216,18 @@ const attemptCompilerOperation = <
  * @param identifier - The full identifier used to describe this operation, e.g.
  * `owner.signature.all_outputs`.
  * @param data - The `CompilationData` provided to the compiler
- * @param environment - The `CompilationEnvironment` provided to the compiler
+ * @param configuration - The `CompilerConfiguration` provided to the compiler
  */
 export const resolveVariableIdentifier = <
-  TransactionContext,
-  Environment extends AnyCompilationEnvironment<TransactionContext>
+  CompilationContext,
+  Environment extends AnyCompilerConfiguration<CompilationContext>
 >({
   data,
-  environment,
+  configuration,
   identifier,
 }: {
-  data: CompilationData<TransactionContext>;
-  environment: Environment;
+  data: CompilationData<CompilationContext>;
+  configuration: Environment;
   identifier: string;
 }): CompilerOperationResult<true> => {
   const [variableId, operationId] = identifier.split('.') as [
@@ -241,30 +238,30 @@ export const resolveVariableIdentifier = <
   switch (variableId) {
     case BuiltInVariables.currentBlockHeight:
       return attemptCompilerOperation({
+        configuration,
         data,
-        environment,
         identifier,
-        matchingOperations: environment.operations?.currentBlockHeight,
+        matchingOperations: configuration.operations?.currentBlockHeight,
         operationId,
         variableId,
         variableType: 'currentBlockHeight',
       });
     case BuiltInVariables.currentBlockTime:
       return attemptCompilerOperation({
+        configuration,
         data,
-        environment,
         identifier,
-        matchingOperations: environment.operations?.currentBlockTime,
+        matchingOperations: configuration.operations?.currentBlockTime,
         operationId,
         variableId,
         variableType: 'currentBlockTime',
       });
     case BuiltInVariables.signingSerialization:
       return attemptCompilerOperation({
+        configuration,
         data,
-        environment,
         identifier,
-        matchingOperations: environment.operations?.signingSerialization,
+        matchingOperations: configuration.operations?.signingSerialization,
         operationExample: 'version',
         operationId,
         variableId,
@@ -272,38 +269,38 @@ export const resolveVariableIdentifier = <
       });
     default: {
       const expectedVariable: AuthenticationTemplateVariable | undefined =
-        environment.variables?.[variableId];
+        configuration.variables?.[variableId];
 
       if (expectedVariable === undefined) {
         return { status: 'skip' };
       }
       return attemptCompilerOperation({
+        configuration,
         data,
-        environment,
         identifier,
         operationId,
         variableId,
         ...{
           // eslint-disable-next-line @typescript-eslint/naming-convention
           AddressData: {
-            matchingOperations: environment.operations?.addressData,
+            matchingOperations: configuration.operations?.addressData,
             variableType: 'addressData',
           },
           // eslint-disable-next-line @typescript-eslint/naming-convention
           HdKey: {
-            matchingOperations: environment.operations?.hdKey,
+            matchingOperations: configuration.operations?.hdKey,
             operationExample: 'public_key',
             variableType: 'hdKey',
           },
           // eslint-disable-next-line @typescript-eslint/naming-convention
           Key: {
-            matchingOperations: environment.operations?.key,
+            matchingOperations: configuration.operations?.key,
             operationExample: 'public_key',
             variableType: 'key',
           },
           // eslint-disable-next-line @typescript-eslint/naming-convention
           WalletData: {
-            matchingOperations: environment.operations?.walletData,
+            matchingOperations: configuration.operations?.walletData,
             variableType: 'walletData',
           },
         }[expectedVariable.type],
@@ -316,7 +313,7 @@ export const resolveVariableIdentifier = <
  * Compile an internal script identifier.
  *
  * @remarks
- * If the identifer can be successfully resolved as a script, the script is
+ * If the identifier can be successfully resolved as a script, the script is
  * compiled and returned as a CompilationResultSuccess. If an error occurs in
  * compiling it, the error is returned as a string.
  *
@@ -325,24 +322,28 @@ export const resolveVariableIdentifier = <
  *
  * @param identifier - the identifier of the script to be resolved
  * @param data - the provided CompilationData
- * @param environment - the provided CompilationEnvironment
+ * @param configuration - the provided CompilationEnvironment
  * @param parentIdentifier - the identifier of the script which references the
  * script being resolved (for detecting circular dependencies)
  */
-export const resolveScriptIdentifier = <TransactionContext, ProgramState>({
+export const resolveScriptIdentifier = <CompilationContext, ProgramState>({
   data,
-  environment,
+  configuration,
   identifier,
 }: {
   identifier: string;
-  data: CompilationData<TransactionContext>;
-  environment: CompilationEnvironment<TransactionContext>;
+  data: CompilationData<CompilationContext>;
+  configuration: CompilerConfiguration<CompilationContext>;
 }): CompilationResultSuccess<ProgramState> | string | false => {
-  if ((environment.scripts[identifier] as string | undefined) === undefined) {
+  if ((configuration.scripts[identifier] as string | undefined) === undefined) {
     return false;
   }
 
-  const result = compileScriptRaw({ data, environment, scriptId: identifier });
+  const result = compileScriptRaw({
+    configuration,
+    data,
+    scriptId: identifier,
+  });
   if (result.success) {
     return result;
   }
@@ -369,22 +370,23 @@ export const resolveScriptIdentifier = <TransactionContext, ProgramState>({
  *
  * @param scriptId - the `id` of the script for which the resulting
  * `IdentifierResolutionFunction` will be used.
- * @param environment - a snapshot of the context around `scriptId`. See
+ * @param configuration - a snapshot of the configuration around `scriptId`. See
  * `CompilationEnvironment` for details.
  * @param data - the actual variable values (private keys, shared wallet data,
  * shared address data, etc.) to use in resolving variables.
  */
-export const createIdentifierResolver = <TransactionContext>({
-  data,
-  environment,
-}: {
-  data: CompilationData<TransactionContext>;
-  environment: CompilationEnvironment<TransactionContext>;
-}): IdentifierResolutionFunction =>
+export const createIdentifierResolver =
+  <CompilationContext>({
+    data,
+    configuration,
+  }: {
+    data: CompilationData<CompilationContext>;
+    configuration: CompilerConfiguration<CompilationContext>;
+  }): IdentifierResolutionFunction =>
   // eslint-disable-next-line complexity
   (identifier: string): ReturnType<IdentifierResolutionFunction> => {
     const opcodeResult: Uint8Array | undefined =
-      environment.opcodes?.[identifier];
+      configuration.opcodes?.[identifier];
     if (opcodeResult !== undefined) {
       return {
         bytecode: opcodeResult,
@@ -393,8 +395,8 @@ export const createIdentifierResolver = <TransactionContext>({
       };
     }
     const variableResult = resolveVariableIdentifier({
+      configuration,
       data,
-      environment,
       identifier,
     });
     if (variableResult.status !== 'skip') {
@@ -404,11 +406,11 @@ export const createIdentifierResolver = <TransactionContext>({
               ? { debug: variableResult.debug }
               : {}),
             error: variableResult.error,
-            ...(environment.entityOwnership === undefined
+            ...(configuration.entityOwnership === undefined
               ? {}
               : {
                   entityOwnership:
-                    environment.entityOwnership[identifier.split('.')[0]],
+                    configuration.entityOwnership[identifier.split('.')[0]],
                 }),
             recoverable: 'recoverable' in variableResult,
             status: false,
@@ -429,8 +431,8 @@ export const createIdentifierResolver = <TransactionContext>({
           };
     }
     const scriptResult = resolveScriptIdentifier({
+      configuration,
       data,
-      environment,
       identifier,
     });
     if (scriptResult !== false) {

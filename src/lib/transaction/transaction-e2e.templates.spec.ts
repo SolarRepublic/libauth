@@ -1,14 +1,12 @@
-/* eslint-disable functional/no-expression-statement */
-
 import test from 'ava';
 
-import { authenticationTemplateP2pkh } from '../lib';
+import { authenticationTemplateP2pkh } from '../lib.js';
 
-import { oneOfEightTreeSig } from './fixtures/template.1-of-8-tree.spec.helper';
-import { twoOfTwoRecoverable } from './fixtures/template.2-of-2-recoverable.spec.helper';
-import { twoOfThree } from './fixtures/template.2-of-3.spec.helper';
-import { cashChannels } from './fixtures/template.cash-channels.spec.helper';
-import { sigOfSig } from './fixtures/template.sig-of-sig.spec.helper';
+import { oneOfEightTreeSig } from './fixtures/template.1-of-8-tree.spec.helper.js';
+import { twoOfTwoRecoverable } from './fixtures/template.2-of-2-recoverable.spec.helper.js';
+import { twoOfThree } from './fixtures/template.2-of-3.spec.helper.js';
+import { cashChannels } from './fixtures/template.cash-channels.spec.helper.js';
+import { sigOfSig } from './fixtures/template.sig-of-sig.spec.helper.js';
 import {
   cashChannelsJson,
   oneOfEightTreeJson,
@@ -16,9 +14,8 @@ import {
   sigOfSigJson,
   twoOfThreeJson,
   twoOfTwoRecoverableJson,
-} from './transaction-e2e.spec.helper';
+} from './transaction-e2e.spec.helper.js';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 const ignoreDefault = (anything: object) => ({
   ...anything,
   default: true,

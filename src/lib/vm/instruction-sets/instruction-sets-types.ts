@@ -1,4 +1,4 @@
-export interface AuthenticationInstructionPush<Opcodes = number> {
+export interface AuthenticationInstructionPush {
   /**
    * The data to be pushed to the stack.
    */
@@ -6,33 +6,29 @@ export interface AuthenticationInstructionPush<Opcodes = number> {
   /**
    * The opcode used to push this data.
    */
-  readonly opcode: Opcodes;
+  readonly opcode: number;
 }
 
-export interface AuthenticationInstructionOperation<Opcodes = number> {
+export interface AuthenticationInstructionOperation {
   /**
    * The opcode of this instruction's operation.
    */
-  readonly opcode: Opcodes;
+  readonly opcode: number;
 }
 
 /**
  * A properly-formed instruction used by an `AuthenticationVirtualMachine`.
  */
-export type AuthenticationInstruction<Opcodes = number> =
-  | AuthenticationInstructionPush<Opcodes>
-  | AuthenticationInstructionOperation<Opcodes>;
+export type AuthenticationInstruction =
+  | AuthenticationInstructionOperation
+  | AuthenticationInstructionPush;
 
-export type AuthenticationInstructions<
-  Opcodes = number
-> = AuthenticationInstruction<Opcodes>[];
+export type AuthenticationInstructions = AuthenticationInstruction[];
 
 type Uint8Bytes = 1;
 type Uint16Bytes = 2;
 type Uint32Bytes = 4;
-export interface ParsedAuthenticationInstructionPushMalformedLength<
-  Opcodes = number
-> {
+export interface ParsedAuthenticationInstructionPushMalformedLength {
   /**
    * The expected number of length bytes (`length.length`) for this `PUSHDATA` operation.
    */
@@ -42,12 +38,10 @@ export interface ParsedAuthenticationInstructionPushMalformedLength<
    */
   readonly length: Uint8Array;
   readonly malformed: true;
-  readonly opcode: Opcodes;
+  readonly opcode: number;
 }
 
-export interface ParsedAuthenticationInstructionPushMalformedData<
-  Opcodes = number
-> {
+export interface ParsedAuthenticationInstructionPushMalformedData {
   /**
    * The data `Uint8Array` provided. This instruction is malformed because the length of this `Uint8Array` is shorter than the `expectedDataBytes`.
    */
@@ -57,12 +51,12 @@ export interface ParsedAuthenticationInstructionPushMalformedData<
    */
   readonly expectedDataBytes: number;
   readonly malformed: true;
-  readonly opcode: Opcodes;
+  readonly opcode: number;
 }
 
-export type ParsedAuthenticationInstructionMalformed<Opcodes = number> =
-  | ParsedAuthenticationInstructionPushMalformedLength<Opcodes>
-  | ParsedAuthenticationInstructionPushMalformedData<Opcodes>;
+export type ParsedAuthenticationInstructionMalformed =
+  | ParsedAuthenticationInstructionPushMalformedData
+  | ParsedAuthenticationInstructionPushMalformedLength;
 
 /**
  * A potentially-malformed `AuthenticationInstruction`. If `malformed` is
@@ -71,32 +65,17 @@ export type ParsedAuthenticationInstructionMalformed<Opcodes = number> =
  * `ParsedAuthenticationInstructionPushMalformedData`
  *
  * If the final instruction is a push operation which requires more bytes than
- * are available in the remaining portion of a serialized script, that
+ * are available in the remaining portion of an encoded script, that
  * instruction will have a `malformed` property with a value of `true`.
- * .
  */
-export type ParsedAuthenticationInstruction<Opcodes = number> =
-  | AuthenticationInstruction<Opcodes>
-  | ParsedAuthenticationInstructionMalformed<Opcodes>;
+export type ParsedAuthenticationInstruction =
+  | AuthenticationInstruction
+  | ParsedAuthenticationInstructionMalformed;
 
 /**
  * An array of authentication instructions which may end with a malformed
  * instruction.
- *
- * **Implementation note**: this type can be improved by only marking the final
- * element as potentially malformed. This is waiting on:
- * https://github.com/Microsoft/TypeScript/issues/1360
- *
- * The following type can be used when it doesn't produce the error,
- * `A rest element must be last in a tuple type. [1256]`:
- * ```ts
- * export type ParsedAuthenticationInstructions<Opcodes = number> = [
- *   ...AuthenticationInstruction<Opcodes>,
- *   ParsedAuthenticationInstruction<Opcodes>
- * ];
- * ```
  */
-export type ParsedAuthenticationInstructions<Opcodes = number> = (
-  | AuthenticationInstruction<Opcodes>
-  | ParsedAuthenticationInstruction<Opcodes>
-)[];
+export type ParsedAuthenticationInstructions =
+  | [...AuthenticationInstruction[], ParsedAuthenticationInstruction]
+  | [];

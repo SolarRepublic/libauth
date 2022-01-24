@@ -1,10 +1,9 @@
-import { Compiler } from '../template/compiler-types';
+import type { AnyCompilerConfiguration, Compiler } from '../lib.js';
 
-import {
-  TransactionContextCommon,
+import type {
   TransactionGenerationAttempt,
   TransactionTemplateEstimated,
-} from './transaction-types';
+} from './transaction';
 
 /**
  * Generate an "estimated" transaction – an invalid transaction which matches
@@ -20,23 +19,27 @@ import {
  * Like `generateTransaction` This method accepts a transaction template and
  * generates bytecode given all compilation directives, however, each directive
  * must also contain an `estimate` scenario ID which will be used as the `data`
- * in the compilation. The template must also include an `inputSatoshis` value
- * (the total satoshi value of all transaction inputs).
+ * in the compilation. The template must also include a
+ * `totalInputValueSatoshis` value (the total satoshi value of all transaction
+ * inputs).
  *
- * The `satoshis` value of each output is also optional. (All output `satoshis`
- * values will be set to `invalidSatoshis` to guarantee the transaction's
- * invalidity).
+ * The `valueSatoshis` property of each output is also optional. (All output
+ * `valueSatoshis` properties will be set to `excessiveSatoshis` to guarantee the
+ * transaction's invalidity).
  *s
  * @param template - the transaction template from which to generate the
  * "estimated" transaction
  */
 export const estimateTransaction = <
-  CompilerType extends Compiler<TransactionContextCommon, unknown, unknown>
+  CompilerType extends Compiler<
+    unknown,
+    AnyCompilerConfiguration<unknown>,
+    unknown
+  >
 >(
   template: Readonly<TransactionTemplateEstimated<CompilerType>>
-): TransactionGenerationAttempt => {
+): TransactionGenerationAttempt =>
   // TODO: estimateTransaction
-  return typeof template === 'object'
+  typeof template === 'object'
     ? { completions: [], errors: [], stage: 'inputs', success: false }
     : { completions: [], errors: [], stage: 'inputs', success: false };
-};

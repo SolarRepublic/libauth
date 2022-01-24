@@ -1,14 +1,13 @@
-/* eslint-disable functional/no-expression-statement */
-import test, { Macro } from 'ava';
+import test from 'ava';
 
+import type { WalletImportFormatType } from '../lib';
 import {
   Base58AddressError,
   decodePrivateKeyWif,
   encodePrivateKeyWif,
   hexToBin,
   instantiateSha256,
-  WalletImportFormatType,
-} from '../lib';
+} from '../lib.js';
 
 const sha256Promise = instantiateSha256();
 
@@ -20,29 +19,24 @@ test('decodePrivateKeyWif: pass through errors', async (t) => {
   );
 });
 
-const wifVectors: Macro<[WalletImportFormatType, string, string]> = async (
-  t,
-  type,
-  wif,
-  key
+const wifVectors = test.macro<[WalletImportFormatType, string, string]>({
   // eslint-disable-next-line max-params
-) => {
-  const sha256 = await sha256Promise;
+  exec: async (t, type, wif, key) => {
+    const sha256 = await sha256Promise;
 
-  t.deepEqual(encodePrivateKeyWif(sha256, hexToBin(key), type), wif);
-  t.deepEqual(decodePrivateKeyWif(sha256, wif), {
-    privateKey: hexToBin(key),
-    type,
-  });
-};
+    t.deepEqual(encodePrivateKeyWif(sha256, hexToBin(key), type), wif);
+    t.deepEqual(decodePrivateKeyWif(sha256, wif), {
+      privateKey: hexToBin(key),
+      type,
+    });
+  },
+  title: (_, type, base58) =>
+    `encodePrivateKeyWif <-> decodePrivateKeyWif ${type} - ${base58.slice(
+      0,
 
-// eslint-disable-next-line functional/immutable-data
-wifVectors.title = (_, type, base58) =>
-  `encodePrivateKeyWif <-> decodePrivateKeyWif ${type} - ${base58.slice(
-    0,
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    6
-  )}...`;
+      6
+    )}...`,
+});
 
 test(
   wifVectors,

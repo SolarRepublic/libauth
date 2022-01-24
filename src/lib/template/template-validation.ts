@@ -1,10 +1,8 @@
-/* eslint-disable max-lines, @typescript-eslint/ban-types */
-import { hexToBin } from '../format/hex';
-import { validateSecp256k1PrivateKey } from '../key/key-utils';
+/* eslint-disable max-lines */
+import { hexToBin, validateSecp256k1PrivateKey } from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults';
-import { BuiltInVariables } from './language/resolve';
-import {
+import { CompilerDefaults } from './compiler-defaults.js';
+import type {
   AuthenticationTemplate,
   AuthenticationTemplateAddressData,
   AuthenticationTemplateEntity,
@@ -13,7 +11,8 @@ import {
   AuthenticationTemplateScenario,
   AuthenticationTemplateScenarioData,
   AuthenticationTemplateScenarioInput,
-  AuthenticationTemplateScenarioOutput,
+  AuthenticationTemplateScenarioSourceOutput,
+  AuthenticationTemplateScenarioTransactionOutput,
   AuthenticationTemplateScript,
   AuthenticationTemplateScriptLocking,
   AuthenticationTemplateScriptTest,
@@ -23,6 +22,7 @@ import {
   AuthenticationTemplateWalletData,
   AuthenticationVirtualMachineIdentifier,
 } from './template-types';
+import { BuiltInVariables } from './template.js';
 
 const listIds = (ids: string[]) =>
   ids
@@ -81,8 +81,9 @@ const isRangedInteger = (
 ): value is number => isInteger(value) && value >= minimum && value <= maximum;
 
 /**
- * Verify that a value is a valid `satoshi` value: either a number between `0`
- * and `Number.MAX_SAFE_INTEGER` or a 16-character, hexadecimal-encoded string.
+ * Verify that a value is a valid `valueSatoshis` value: either a number between
+ * `0` and `Number.MAX_SAFE_INTEGER` or a 16-character, hexadecimal-encoded
+ * string.
  *
  * @param maybeSatoshis - the value to verify
  */
@@ -126,8 +127,8 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
   const allScripts = unknownScripts as { id: string; script: object }[];
 
   const unlockingResults: (
-    | { id: string; script: AuthenticationTemplateScriptUnlocking }
     | string
+    | { id: string; script: AuthenticationTemplateScriptUnlocking }
   )[] = allScripts
     .filter(({ script }) => 'unlocks' in script)
     // eslint-disable-next-line complexity
@@ -226,8 +227,8 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
   );
 
   const lockingResults: (
-    | { id: string; script: AuthenticationTemplateScriptLocking }
     | string
+    | { id: string; script: AuthenticationTemplateScriptLocking }
   )[] = allScripts
     .filter(
       ({ id, script }) =>
@@ -235,7 +236,11 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
     )
     // eslint-disable-next-line complexity
     .map(({ id, script }) => {
-      const { lockingType, script: scriptContents, name } = script as {
+      const {
+        lockingType,
+        script: scriptContents,
+        name,
+      } = script as {
         name: unknown;
         script: unknown;
         lockingType: unknown;
@@ -288,13 +293,18 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
   }
 
   const testedResults: (
-    | { id: string; script: AuthenticationTemplateScriptTested }
     | string
+    | { id: string; script: AuthenticationTemplateScriptTested }
   )[] = allScripts
     .filter(({ script }) => 'tests' in script)
     // eslint-disable-next-line complexity
     .map(({ id, script }) => {
-      const { tests, script: scriptContents, name, pushed } = script as {
+      const {
+        tests,
+        script: scriptContents,
+        name,
+        pushed,
+      } = script as {
         name: unknown;
         script: unknown;
         tests: unknown;
@@ -319,7 +329,7 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
 
       const extractedTests =
         // eslint-disable-next-line complexity
-        tests.map<string | AuthenticationTemplateScriptTest>((test) => {
+        tests.map<AuthenticationTemplateScriptTest | string>((test) => {
           const {
             check,
             fails,
@@ -420,8 +430,8 @@ export const parseAuthenticationTemplateScripts = (scripts: object) => {
   const alreadySortedIds = [...lockingAndUnlockingIds, testedIds];
 
   const otherResults: (
-    | { id: string; script: AuthenticationTemplateScript }
     | string
+    | { id: string; script: AuthenticationTemplateScript }
   )[] = allScripts
     .filter(({ id }) => !alreadySortedIds.includes(id))
     .map(({ id, script }) => {
@@ -512,8 +522,8 @@ export const parseAuthenticationTemplateVariable = (
   const allEntities = unknownVariables as { id: string; variable: object }[];
 
   const variableResults: (
-    | { id: string; variable: AuthenticationTemplateVariable }
     | string
+    | { id: string; variable: AuthenticationTemplateVariable }
   )[] = allEntities
     // eslint-disable-next-line complexity
     .map(({ id, variable }) => {
@@ -637,9 +647,9 @@ export const parseAuthenticationTemplateVariable = (
           ...(name === undefined ? {} : { name }),
           type,
         } as
-          | AuthenticationTemplateWalletData
           | AuthenticationTemplateAddressData
-          | AuthenticationTemplateKey,
+          | AuthenticationTemplateKey
+          | AuthenticationTemplateWalletData,
       };
     });
 
@@ -649,12 +659,12 @@ export const parseAuthenticationTemplateVariable = (
   if (invalidVariableResults.length > 0) {
     return invalidVariableResults.join(' ');
   }
-  const validVariableResults = (variableResults as unknown) as {
+  const validVariableResults = variableResults as unknown as {
     id: string;
     variable: AuthenticationTemplateVariable;
   }[];
   const clonedVariables = validVariableResults.reduce<{
-    [id: string]: AuthenticationTemplateVariable;
+    [key: string]: AuthenticationTemplateVariable;
   }>((all, result) => ({ ...all, [result.id]: result.variable }), {});
 
   return clonedVariables;
@@ -685,8 +695,8 @@ export const parseAuthenticationTemplateEntities = (entities: object) => {
   const allEntities = unknownEntities as { id: string; entity: object }[];
 
   const entityResults: (
-    | { id: string; entity: AuthenticationTemplateEntity }
     | string
+    | { id: string; entity: AuthenticationTemplateEntity }
   )[] = allEntities
     // eslint-disable-next-line complexity
     .map(({ id, entity }) => {
@@ -763,7 +773,7 @@ export const parseAuthenticationTemplateEntities = (entities: object) => {
 export const parseAuthenticationTemplateScenarioDataHdKeys = (
   hdKeys: object,
   location: string
-): string | AuthenticationTemplateScenarioData['hdKeys'] => {
+): AuthenticationTemplateScenarioData['hdKeys'] | string => {
   const { addressIndex, hdPublicKeys, hdPrivateKeys } = hdKeys as {
     addressIndex: unknown;
     hdPublicKeys: unknown;
@@ -814,7 +824,7 @@ export const parseAuthenticationTemplateScenarioDataHdKeys = (
 export const parseAuthenticationTemplateScenarioDataKeys = (
   keys: object,
   location: string
-): string | AuthenticationTemplateScenarioData['keys'] => {
+): AuthenticationTemplateScenarioData['keys'] | string => {
   const { privateKeys } = keys as { privateKeys: unknown };
 
   if (
@@ -839,20 +849,15 @@ export const parseAuthenticationTemplateScenarioDataKeys = (
 export const parseAuthenticationTemplateScenarioData = (
   data: object,
   location: string
-): string | AuthenticationTemplateScenarioData => {
-  const {
-    bytecode,
-    currentBlockHeight,
-    currentBlockTime,
-    hdKeys,
-    keys,
-  } = data as {
-    bytecode: unknown;
-    currentBlockHeight: unknown;
-    currentBlockTime: unknown;
-    hdKeys: unknown;
-    keys: unknown;
-  };
+): AuthenticationTemplateScenarioData | string => {
+  const { bytecode, currentBlockHeight, currentBlockTime, hdKeys, keys } =
+    data as {
+      bytecode: unknown;
+      currentBlockHeight: unknown;
+      currentBlockTime: unknown;
+      hdKeys: unknown;
+      keys: unknown;
+    };
   if (
     bytecode !== undefined &&
     (!isObject(bytecode) || !isStringObject(bytecode))
@@ -918,7 +923,7 @@ export const parseAuthenticationTemplateScenarioData = (
 export const parseAuthenticationTemplateScenarioTransactionInputs = (
   inputs: unknown,
   location: string
-): undefined | string | AuthenticationTemplateScenarioInput[] => {
+): AuthenticationTemplateScenarioInput[] | string | undefined => {
   if (inputs === undefined) {
     return undefined;
   }
@@ -1002,52 +1007,60 @@ export const parseAuthenticationTemplateScenarioTransactionInputs = (
  * @param location - the location of the error to specify in error messages,
  * e.g. `output 2 in scenario "test"`
  */
-// eslint-disable-next-line complexity
-export const parseAuthenticationTemplateScenarioTransactionOutputLockingBytecode = (
-  lockingBytecode: object,
-  location: string
-): string | AuthenticationTemplateScenarioOutput['lockingBytecode'] => {
-  const { overrides, script } = lockingBytecode as {
-    overrides: unknown;
-    script: unknown;
+
+export const parseAuthenticationTemplateScenarioTransactionOutputLockingBytecode =
+  // eslint-disable-next-line complexity
+  (
+    lockingBytecode: object,
+    location: string
+  ):
+    | AuthenticationTemplateScenarioTransactionOutput['lockingBytecode']
+    | string => {
+    const { overrides, script } = lockingBytecode as {
+      overrides: unknown;
+      script: unknown;
+    };
+
+    if (script !== undefined && script !== null && !isHexString(script)) {
+      return `If defined, the "script" property of ${location} must be a hexadecimal-encoded string or "null".`;
+    }
+
+    const clonedOverrides =
+      overrides === undefined
+        ? undefined
+        : isObject(overrides)
+        ? parseAuthenticationTemplateScenarioData(
+            overrides,
+            `'lockingBytecode.override' in ${location}`
+          )
+        : `If defined, the "overrides" property of ${location} must be an object.`;
+
+    if (typeof clonedOverrides === 'string') {
+      return clonedOverrides;
+    }
+
+    return {
+      ...(script === undefined ? {} : { script }),
+      ...(clonedOverrides === undefined ? {} : { overrides: clonedOverrides }),
+    };
   };
-
-  if (script !== undefined && script !== null && !isHexString(script)) {
-    return `If defined, the "script" property of ${location} must be a hexadecimal-encoded string or "null".`;
-  }
-
-  const clonedOverrides =
-    overrides === undefined
-      ? undefined
-      : isObject(overrides)
-      ? parseAuthenticationTemplateScenarioData(
-          overrides,
-          `'lockingBytecode.override' in ${location}`
-        )
-      : `If defined, the "overrides" property of ${location} must be an object.`;
-
-  if (typeof clonedOverrides === 'string') {
-    return clonedOverrides;
-  }
-
-  return {
-    ...(script === undefined ? {} : { script }),
-    ...(clonedOverrides === undefined ? {} : { overrides: clonedOverrides }),
-  };
-};
 
 /**
- * Validate and clone an Authentication Template Scenario `transaction.outputs`
- * array.
+ * Validate and clone an Authentication Template Scenario outputs array.
  *
  * @param outputs - the `transaction.outputs` array to validate and clone
  * @param location - the location of the error to specify in error messages,
  * e.g. `of output 2 in scenario "test"`
+ * @param allowNull - `true` for `sourceOutputs`, `false` for
+ * `transaction.outputs`
  */
-export const parseAuthenticationTemplateScenarioTransactionOutputs = (
+export const parseAuthenticationTemplateScenarioOutputs = <
+  IsSource extends boolean
+>(
   outputs: unknown,
-  location: string
-): undefined | string | AuthenticationTemplateScenarioOutput[] => {
+  location: string,
+  allowNull: IsSource
+) => {
   if (outputs === undefined) {
     return undefined;
   }
@@ -1057,21 +1070,23 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
   }
 
   const outputResults: (
-    | AuthenticationTemplateScenarioOutput
+    | AuthenticationTemplateScenarioTransactionOutput
     | string
   )[] = outputs
     // eslint-disable-next-line complexity
     .map((maybeOutput, outputIndex) => {
-      const { lockingBytecode, satoshis } = maybeOutput as {
+      const { lockingBytecode, valueSatoshis } = maybeOutput as {
         lockingBytecode: unknown;
-        satoshis: unknown;
+        valueSatoshis: unknown;
       };
 
       const newLocation = `output ${outputIndex} in ${location}`;
+
       if (
         lockingBytecode !== undefined &&
         typeof lockingBytecode !== 'string' &&
-        !isObject(lockingBytecode)
+        !isObject(lockingBytecode) &&
+        !(allowNull && lockingBytecode === null)
       ) {
         return `If defined, the "lockingBytecode" property of ${newLocation} must be a string or an object.`;
       }
@@ -1084,7 +1099,9 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
       }
 
       const clonedLockingBytecode =
-        lockingBytecode === undefined || typeof lockingBytecode === 'string'
+        lockingBytecode === undefined ||
+        typeof lockingBytecode === 'string' ||
+        lockingBytecode === null
           ? undefined
           : parseAuthenticationTemplateScenarioTransactionOutputLockingBytecode(
               lockingBytecode,
@@ -1095,17 +1112,17 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
         return clonedLockingBytecode;
       }
 
-      if (!isValidSatoshisValue(satoshis)) {
-        return `If defined, the "satoshis" property of ${newLocation} must be either a number or a little-endian, unsigned 64-bit integer as a hexadecimal-encoded string (16 characters).`;
+      if (!isValidSatoshisValue(valueSatoshis)) {
+        return `If defined, the "valueSatoshis" property of ${newLocation} must be either a number or a little-endian, unsigned 64-bit integer as a hexadecimal-encoded string (16 characters).`;
       }
 
       return {
-        ...(lockingBytecode === undefined
+        ...(lockingBytecode === undefined || clonedLockingBytecode === undefined
           ? {}
           : typeof lockingBytecode === 'string'
           ? { lockingBytecode }
           : { lockingBytecode: clonedLockingBytecode }),
-        ...(satoshis === undefined ? {} : { satoshis }),
+        ...(valueSatoshis === undefined ? {} : { valueSatoshis }),
       };
     });
 
@@ -1115,12 +1132,17 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
   if (invalidOutputResults.length > 0) {
     return invalidOutputResults.join(' ');
   }
-  const clonedOutputs = outputResults as AuthenticationTemplateScenarioOutput[];
+  const clonedOutputs =
+    outputResults as AuthenticationTemplateScenarioTransactionOutput[];
 
   if (clonedOutputs.length === 0) {
     return `If defined, the "transaction.outputs" property of ${location} must be have at least one output.`;
   }
-  return clonedOutputs;
+  return clonedOutputs as
+    | string
+    | (IsSource extends true
+        ? AuthenticationTemplateScenarioSourceOutput[]
+        : AuthenticationTemplateScenarioTransactionOutput[] | undefined);
 };
 
 /**
@@ -1134,7 +1156,7 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
 export const parseAuthenticationTemplateScenarioTransaction = (
   transaction: object,
   location: string
-): string | AuthenticationTemplateScenario['transaction'] => {
+): AuthenticationTemplateScenario['transaction'] | string => {
   const { inputs, locktime, outputs, version } = transaction as {
     inputs: unknown;
     locktime: unknown;
@@ -1164,9 +1186,10 @@ export const parseAuthenticationTemplateScenarioTransaction = (
     return clonedInputs;
   }
 
-  const clonedOutputs = parseAuthenticationTemplateScenarioTransactionOutputs(
+  const clonedOutputs = parseAuthenticationTemplateScenarioOutputs(
     outputs,
-    location
+    location,
+    false
   );
 
   if (typeof clonedOutputs === 'string') {
@@ -1204,8 +1227,8 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
   const allScenarios = unknownScenarios as { id: string; scenario: object }[];
 
   const scenarioResults: (
-    | { id: string; scenario: AuthenticationTemplateScenario }
     | string
+    | { id: string; scenario: AuthenticationTemplateScenario }
   )[] = allScenarios
     // eslint-disable-next-line complexity
     .map(({ id, scenario }) => {
@@ -1215,14 +1238,14 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
         extends: extendsProp,
         name,
         transaction,
-        value,
+        sourceOutputs,
       } = scenario as {
         data: unknown;
         description: unknown;
         extends: unknown;
         name: unknown;
         transaction: unknown;
-        value: unknown;
+        sourceOutputs: unknown;
       };
 
       const location = `scenario "${id}"`;
@@ -1238,8 +1261,18 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
         return `If defined, the "extends" property of ${location} must be a string.`;
       }
 
-      if (!isValidSatoshisValue(value)) {
+      if (sourceOutputs !== undefined && Array.isArray(sourceOutputs)) {
         return `If defined, the "value" property of ${location} must be either a number or a little-endian, unsigned 64-bit integer as a hexadecimal-encoded string (16 characters).`;
+      }
+
+      const clonedSourceOutputs = parseAuthenticationTemplateScenarioOutputs(
+        sourceOutputs,
+        location,
+        true
+      );
+
+      if (typeof clonedSourceOutputs === 'string') {
+        return clonedSourceOutputs;
       }
 
       if (data !== undefined && !isObject(data)) {
@@ -1290,7 +1323,9 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
           ...(transactionResult === undefined
             ? {}
             : { transaction: transactionResult }),
-          ...(value === undefined ? {} : { value }),
+          ...(clonedSourceOutputs === undefined
+            ? {}
+            : { sourceOutputs: clonedSourceOutputs }),
         },
       };
     });
@@ -1358,6 +1393,7 @@ const supportsOnlyValidVmIdentifiers = <Identifiers>(
   const { supported } = maybeTemplate as { supported?: unknown };
   return (
     Array.isArray(supported) &&
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     supported.every((value) => availableIdentifiers.includes(value))
   );
 };
@@ -1383,7 +1419,7 @@ const supportsOnlyValidVmIdentifiers = <Identifiers>(
 // eslint-disable-next-line complexity
 export const validateAuthenticationTemplate = (
   maybeTemplate: unknown
-): string | AuthenticationTemplate => {
+): AuthenticationTemplate | string => {
   if (typeof maybeTemplate !== 'object' || maybeTemplate === null) {
     return 'A valid authentication template must be an object.';
   }
@@ -1410,7 +1446,7 @@ export const validateAuthenticationTemplate = (
   ] as AuthenticationVirtualMachineIdentifier[];
   if (
     !supportsOnlyValidVmIdentifiers(maybeTemplate, vmIdentifiers) ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     maybeTemplate.supported.includes(undefined as any)
   ) {
     return `Version 0 authentication templates must include a "supported" list of authentication virtual machine versions. Available identifiers are: ${vmIdentifiers.join(
@@ -1429,7 +1465,7 @@ export const validateAuthenticationTemplate = (
     return 'The "description" property of an authentication template must be a string.';
   }
 
-  const { entities, scenarios, scripts } = (maybeTemplate as unknown) as {
+  const { entities, scenarios, scripts } = maybeTemplate as unknown as {
     entities: unknown;
     scenarios: unknown;
     scripts: unknown;

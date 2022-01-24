@@ -1,4 +1,3 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 
 import {
@@ -9,12 +8,13 @@ import {
   parseBytesAsScriptNumber,
   ScriptNumberError,
   stackItemIsTruthy,
-} from '../../../lib';
+} from '../../../lib.js';
 
 /**
  * Derived from https://github.com/bitcoinjs/bitcoinjs-lib
  */
 const minimallyEncodedScriptNumbers: readonly [string, bigint][] = [
+  /* spell-checker:disable */
   ['', BigInt(0)],
   ['01', BigInt(1)],
   ['02', BigInt(2)],
@@ -62,6 +62,7 @@ const minimallyEncodedScriptNumbers: readonly [string, bigint][] = [
   ['fd', BigInt(-125)],
   ['82', BigInt(-2)],
   ['81', BigInt(-1)],
+  /* spell-checker:enable */
 ];
 
 const nonMinimallyEncodedScriptNumbers: readonly [string, bigint][] = [

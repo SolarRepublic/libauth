@@ -1,13 +1,15 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
-import {
+import type {
   BtlScriptSegment,
   IdentifierResolutionFunction,
+  ResolvedScript,
+} from '../../lib';
+import {
   IdentifierResolutionType,
   parseScript,
   resolveScriptSegment,
-} from '../../lib';
+} from '../../lib.js';
 
 test('resolveScriptSegment: error on unrecognized parse results', (t) => {
   const segment = {
@@ -84,5 +86,5 @@ test('resolveScriptSegment: marks unknown identifier types', (t) => {
       unknown: 'some_identifier',
       value: Uint8Array.of(),
     },
-  ] as unknown);
+  ] as unknown as ResolvedScript);
 });

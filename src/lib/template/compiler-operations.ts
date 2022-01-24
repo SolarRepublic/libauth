@@ -1,8 +1,16 @@
-import { bigIntToBitcoinVarInt, numberToBinUint32LE } from '../format/numbers';
-import { decodeHdPublicKey, deriveHdPath } from '../key/hd-key';
-import { bigIntToScriptNumber } from '../vm/instruction-sets/instruction-sets';
+import {
+  bigIntToBitcoinVarInt,
+  bigIntToScriptNumber,
+  decodeHdPublicKey,
+  deriveHdPath,
+  encodeOutpoints,
+  encodeOutputsForSigning,
+  encodeSequenceNumbersForSigning,
+  generateSigningSerializationComponentsBCH,
+  numberToBinUint32LE,
+} from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults';
+import { CompilerDefaults } from './compiler-defaults.js';
 import {
   attemptCompilerOperations,
   compilerOperationAttemptBytecodeResolution,
@@ -11,14 +19,14 @@ import {
   compilerOperationHelperGenerateCoveredBytecode,
   compilerOperationHelperUnknownEntity,
   compilerOperationRequires,
-} from './compiler-operation-helpers';
-import { CompilerOperationResult } from './compiler-types';
-import { AuthenticationTemplateHdKey } from './template-types';
+} from './compiler-operation-helpers.js';
+import type { CompilerOperationResult } from './compiler-types';
+import type { AuthenticationTemplateHdKey } from './template-types';
 
 export const compilerOperationAddressData = compilerOperationRequires({
   canBeSkipped: false,
+  configurationProperties: [],
   dataProperties: ['bytecode'],
-  environmentProperties: [],
   operation: (identifier, data) => {
     const { bytecode } = data;
     if (identifier in bytecode) {
@@ -34,8 +42,8 @@ export const compilerOperationAddressData = compilerOperationRequires({
 
 export const compilerOperationWalletData = compilerOperationRequires({
   canBeSkipped: false,
+  configurationProperties: [],
   dataProperties: ['bytecode'],
-  environmentProperties: [],
   operation: (identifier, data) => {
     const { bytecode } = data;
     if (identifier in bytecode) {
@@ -51,72 +59,74 @@ export const compilerOperationWalletData = compilerOperationRequires({
 
 export const compilerOperationCurrentBlockTime = compilerOperationRequires({
   canBeSkipped: false,
+  configurationProperties: [],
   dataProperties: ['currentBlockTime'],
-  environmentProperties: [],
-  operation: (_, data) => {
-    return {
-      bytecode: numberToBinUint32LE(data.currentBlockTime),
-      status: 'success',
-    };
-  },
+  operation: (_, data) => ({
+    bytecode: numberToBinUint32LE(data.currentBlockTime),
+    status: 'success',
+  }),
 });
 
 export const compilerOperationCurrentBlockHeight = compilerOperationRequires({
   canBeSkipped: false,
+  configurationProperties: [],
   dataProperties: ['currentBlockHeight'],
-  environmentProperties: [],
   operation: (_, data) => ({
     bytecode: bigIntToScriptNumber(BigInt(data.currentBlockHeight)),
     status: 'success',
   }),
 });
 
-export const compilerOperationSigningSerializationCorrespondingOutput = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationCorrespondingOutput =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) =>
-      data.transactionContext.correspondingOutput === undefined
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => {
+      const { correspondingOutput } = generateSigningSerializationComponentsBCH(
+        data.compilationContext
+      );
+      return correspondingOutput === undefined
         ? { bytecode: Uint8Array.of(), status: 'success' }
         : {
-            bytecode: data.transactionContext.correspondingOutput,
+            bytecode: correspondingOutput,
             status: 'success',
-          },
-  }
-);
+          };
+    },
+  });
 
-export const compilerOperationSigningSerializationCorrespondingOutputHash = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationCorrespondingOutputHash =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sha256'],
-    operation: (_, data, environment) =>
-      data.transactionContext.correspondingOutput === undefined
+    configurationProperties: ['sha256'],
+    dataProperties: ['compilationContext'],
+    operation: (_, data, configuration) => {
+      const { correspondingOutput } = generateSigningSerializationComponentsBCH(
+        data.compilationContext
+      );
+      return correspondingOutput === undefined
         ? { bytecode: Uint8Array.of(), status: 'success' }
         : {
-            bytecode: environment.sha256.hash(
-              environment.sha256.hash(
-                data.transactionContext.correspondingOutput
-              )
+            bytecode: configuration.sha256.hash(
+              configuration.sha256.hash(correspondingOutput)
             ),
             status: 'success',
-          },
-  }
-);
+          };
+    },
+  });
 
 const compilerOperationHelperSigningSerializationCoveredBytecode = (
   returnLength: boolean
 ) =>
   compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sourceScriptIds', 'unlockingScripts'],
-    operation: (identifier, data, environment) => {
-      const { unlockingScripts, sourceScriptIds } = environment;
+    configurationProperties: ['sourceScriptIds', 'unlockingScripts'],
+    dataProperties: ['compilationContext'],
+    operation: (identifier, data, configuration) => {
+      const { unlockingScripts, sourceScriptIds } = configuration;
       const result = compilerOperationHelperGenerateCoveredBytecode({
+        configuration,
         data,
-        environment,
         identifier,
         sourceScriptIds,
         unlockingScripts,
@@ -135,174 +145,188 @@ const compilerOperationHelperSigningSerializationCoveredBytecode = (
     },
   });
 
-export const compilerOperationSigningSerializationCoveredBytecode = compilerOperationHelperSigningSerializationCoveredBytecode(
-  false
-);
-export const compilerOperationSigningSerializationCoveredBytecodeLength = compilerOperationHelperSigningSerializationCoveredBytecode(
-  true
-);
+export const compilerOperationSigningSerializationCoveredBytecode =
+  compilerOperationHelperSigningSerializationCoveredBytecode(false);
+export const compilerOperationSigningSerializationCoveredBytecodeLength =
+  compilerOperationHelperSigningSerializationCoveredBytecode(true);
 
-export const compilerOperationSigningSerializationLocktime = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationLocktime =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: numberToBinUint32LE(data.transactionContext.locktime),
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationOutpointIndex = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) => ({
-      bytecode: numberToBinUint32LE(data.transactionContext.outpointIndex),
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationOutpointTransactionHash = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) => ({
-      bytecode: data.transactionContext.outpointTransactionHash,
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationOutputValue = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) => ({
-      bytecode: data.transactionContext.outputValue,
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationSequenceNumber = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) => ({
-      bytecode: numberToBinUint32LE(data.transactionContext.sequenceNumber),
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationTransactionOutpoints = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
-    operation: (_, data) => ({
-      bytecode: data.transactionContext.transactionOutpoints,
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationTransactionOutpointsHash = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sha256'],
-    operation: (_, data, environment) => ({
-      bytecode: environment.sha256.hash(
-        environment.sha256.hash(data.transactionContext.transactionOutpoints)
+      bytecode: numberToBinUint32LE(
+        data.compilationContext.transaction.locktime
       ),
       status: 'success',
     }),
-  }
-);
+  });
 
-export const compilerOperationSigningSerializationTransactionOutputs = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationOutpointIndex =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: data.transactionContext.transactionOutputs,
-      status: 'success',
-    }),
-  }
-);
-
-export const compilerOperationSigningSerializationTransactionOutputsHash = compilerOperationRequires(
-  {
-    canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sha256'],
-    operation: (_, data, environment) => ({
-      bytecode: environment.sha256.hash(
-        environment.sha256.hash(data.transactionContext.transactionOutputs)
+      bytecode: numberToBinUint32LE(
+        data.compilationContext.transaction.inputs[
+          data.compilationContext.inputIndex
+        ].outpointIndex
       ),
       status: 'success',
     }),
-  }
-);
+  });
 
-export const compilerOperationSigningSerializationTransactionSequenceNumbers = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationOutpointTransactionHash =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: data.transactionContext.transactionSequenceNumbers,
+      bytecode:
+        data.compilationContext.transaction.inputs[
+          data.compilationContext.inputIndex
+        ].outpointTransactionHash,
       status: 'success',
     }),
-  }
-);
+  });
 
-export const compilerOperationSigningSerializationTransactionSequenceNumbersHash = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationOutputValue =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sha256'],
-    operation: (_, data, environment) => ({
-      bytecode: environment.sha256.hash(
-        environment.sha256.hash(
-          data.transactionContext.transactionSequenceNumbers
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => ({
+      bytecode:
+        data.compilationContext.sourceOutputs[
+          data.compilationContext.inputIndex
+        ].valueSatoshis,
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationSequenceNumber =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => ({
+      bytecode: numberToBinUint32LE(
+        data.compilationContext.transaction.inputs[
+          data.compilationContext.inputIndex
+        ].sequenceNumber
+      ),
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationTransactionOutpoints =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => ({
+      bytecode: encodeOutpoints(data.compilationContext.transaction.inputs),
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationTransactionOutpointsHash =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: ['sha256'],
+    dataProperties: ['compilationContext'],
+    operation: (_, data, configuration) => ({
+      bytecode: configuration.sha256.hash(
+        configuration.sha256.hash(
+          encodeOutpoints(data.compilationContext.transaction.inputs)
         )
       ),
       status: 'success',
     }),
-  }
-);
+  });
 
-export const compilerOperationSigningSerializationVersion = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationTransactionOutputs =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: [],
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: numberToBinUint32LE(data.transactionContext.version),
+      bytecode: encodeOutputsForSigning(
+        data.compilationContext.transaction.outputs
+      ),
       status: 'success',
     }),
-  }
-);
+  });
+
+export const compilerOperationSigningSerializationTransactionOutputsHash =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: ['sha256'],
+    dataProperties: ['compilationContext'],
+    operation: (_, data, configuration) => ({
+      bytecode: configuration.sha256.hash(
+        configuration.sha256.hash(
+          encodeOutputsForSigning(data.compilationContext.transaction.outputs)
+        )
+      ),
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationTransactionSequenceNumbers =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => ({
+      bytecode: encodeSequenceNumbersForSigning(
+        data.compilationContext.transaction.inputs
+      ),
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationTransactionSequenceNumbersHash =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: ['sha256'],
+    dataProperties: ['compilationContext'],
+    operation: (_, data, configuration) => ({
+      bytecode: configuration.sha256.hash(
+        configuration.sha256.hash(
+          encodeSequenceNumbersForSigning(
+            data.compilationContext.transaction.inputs
+          )
+        )
+      ),
+      status: 'success',
+    }),
+  });
+
+export const compilerOperationSigningSerializationVersion =
+  compilerOperationRequires({
+    canBeSkipped: false,
+    configurationProperties: [],
+    dataProperties: ['compilationContext'],
+    operation: (_, data) => ({
+      bytecode: numberToBinUint32LE(
+        data.compilationContext.transaction.version
+      ),
+      status: 'success',
+    }),
+  });
 
 export const compilerOperationKeyPublicKeyCommon = attemptCompilerOperations(
   [compilerOperationAttemptBytecodeResolution],
   compilerOperationRequires({
     canBeSkipped: false,
+    configurationProperties: ['secp256k1'],
     dataProperties: ['keys'],
-    environmentProperties: ['secp256k1'],
-    operation: (identifier, data, environment) => {
+    operation: (identifier, data, configuration) => {
       const { keys } = data;
-      const { secp256k1 } = environment;
+      const { secp256k1 } = configuration;
       const { privateKeys } = keys;
       const [variableId] = identifier.split('.');
 
@@ -330,8 +354,7 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
   [compilerOperationAttemptBytecodeResolution],
   compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['hdKeys'],
-    environmentProperties: [
+    configurationProperties: [
       'entityOwnership',
       'ripemd160',
       'secp256k1',
@@ -339,14 +362,15 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
       'sha512',
       'variables',
     ],
+    dataProperties: ['hdKeys'],
     operation:
       // eslint-disable-next-line complexity
-      (identifier, data, environment): CompilerOperationResult => {
+      (identifier, data, configuration): CompilerOperationResult => {
         const { hdKeys } = data;
         const { hdPrivateKeys, addressIndex, hdPublicKeys } = hdKeys;
         const [variableId] = identifier.split('.');
 
-        const entityId = environment.entityOwnership[variableId] as
+        const entityId = configuration.entityOwnership[variableId] as
           | string
           | undefined;
         if (entityId === undefined) {
@@ -363,22 +387,22 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
         /**
          * Guaranteed to be an `HdKey` if this method is reached in the compiler.
          */
-        const hdKey = environment.variables[
+        const hdKey = configuration.variables[
           variableId
         ] as AuthenticationTemplateHdKey;
 
         if (entityHdPrivateKey !== undefined) {
           const privateResult = compilerOperationHelperDeriveHdPrivateNode({
             addressIndex,
+            configuration,
             entityHdPrivateKey,
             entityId,
-            environment,
             hdKey,
             identifier,
           });
           if (privateResult.status === 'error') return privateResult;
           return {
-            bytecode: environment.secp256k1.derivePublicKeyCompressed(
+            bytecode: configuration.secp256k1.derivePublicKeyCompressed(
               privateResult.bytecode
             ),
             status: 'success',
@@ -416,7 +440,7 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
         const instancePath = publicDerivationPath.replace('i', i.toString());
 
         const masterContents = decodeHdPublicKey(
-          environment,
+          configuration,
           entityHdPublicKey
         );
         if (typeof masterContents === 'string') {
@@ -427,7 +451,7 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
         }
 
         const instanceNode = deriveHdPath(
-          environment,
+          configuration,
           masterContents.node,
           instancePath
         );
@@ -456,21 +480,31 @@ export const compilerOperationsCommon = {
     public_key: compilerOperationKeyPublicKeyCommon,
   },
   signingSerialization: {
-    corresponding_output: compilerOperationSigningSerializationCorrespondingOutput,
-    corresponding_output_hash: compilerOperationSigningSerializationCorrespondingOutputHash,
+    corresponding_output:
+      compilerOperationSigningSerializationCorrespondingOutput,
+    corresponding_output_hash:
+      compilerOperationSigningSerializationCorrespondingOutputHash,
     covered_bytecode: compilerOperationSigningSerializationCoveredBytecode,
-    covered_bytecode_length: compilerOperationSigningSerializationCoveredBytecodeLength,
+    covered_bytecode_length:
+      compilerOperationSigningSerializationCoveredBytecodeLength,
     locktime: compilerOperationSigningSerializationLocktime,
     outpoint_index: compilerOperationSigningSerializationOutpointIndex,
-    outpoint_transaction_hash: compilerOperationSigningSerializationOutpointTransactionHash,
+    outpoint_transaction_hash:
+      compilerOperationSigningSerializationOutpointTransactionHash,
     output_value: compilerOperationSigningSerializationOutputValue,
     sequence_number: compilerOperationSigningSerializationSequenceNumber,
-    transaction_outpoints: compilerOperationSigningSerializationTransactionOutpoints,
-    transaction_outpoints_hash: compilerOperationSigningSerializationTransactionOutpointsHash,
-    transaction_outputs: compilerOperationSigningSerializationTransactionOutputs,
-    transaction_outputs_hash: compilerOperationSigningSerializationTransactionOutputsHash,
-    transaction_sequence_numbers: compilerOperationSigningSerializationTransactionSequenceNumbers,
-    transaction_sequence_numbers_hash: compilerOperationSigningSerializationTransactionSequenceNumbersHash,
+    transaction_outpoints:
+      compilerOperationSigningSerializationTransactionOutpoints,
+    transaction_outpoints_hash:
+      compilerOperationSigningSerializationTransactionOutpointsHash,
+    transaction_outputs:
+      compilerOperationSigningSerializationTransactionOutputs,
+    transaction_outputs_hash:
+      compilerOperationSigningSerializationTransactionOutputsHash,
+    transaction_sequence_numbers:
+      compilerOperationSigningSerializationTransactionSequenceNumbers,
+    transaction_sequence_numbers_hash:
+      compilerOperationSigningSerializationTransactionSequenceNumbersHash,
     version: compilerOperationSigningSerializationVersion,
   },
   walletData: compilerOperationWalletData,

@@ -1,1 +1,1 @@
-export * from './p2pkh';
+export * from './p2pkh.js';

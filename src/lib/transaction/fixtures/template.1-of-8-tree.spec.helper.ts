@@ -1,8 +1,8 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention, @typescript-eslint/no-magic-numbers */
-import {
+import type {
   AuthenticationTemplate,
   AuthenticationTemplateHdKey,
-} from '../../template/template-types';
+} from '../../lib';
 
 /**
  * This is a mostly-hard-coded 1-of-8 example. A more general function could

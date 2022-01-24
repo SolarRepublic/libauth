@@ -1,6 +1,6 @@
 export enum CompilerDefaults {
   /**
-   * The `addressIndex` used by default scenarios.
+   * The `addressIndex` used by the default scenario `data`.
    */
   defaultScenarioAddressIndex = 0,
   /**
@@ -33,19 +33,9 @@ export enum CompilerDefaults {
    */
   defaultScenarioInputSequenceNumber = 0,
   /**
-   * The default `unlockingBytecode` of untested inputs in scenarios.
+   * The default `valueSatoshis` of outputs in scenarios.
    */
-  defaultScenarioInputUnlockingBytecodeHex = '',
-  /**
-   * The default `satoshis` of outputs in scenarios.
-   */
-  defaultScenarioOutputSatoshis = 0,
-  /**
-   * The hexadecimal-encoded value of the `lockingBytecode` in the single
-   * default output (`transaction.outputs`) of the default authentication
-   * template scenario.
-   */
-  defaultScenarioTransactionOutputsLockingBytecodeHex = '',
+  defaultScenarioOutputValueSatoshis = 0,
   /**
    * The value of `transaction.locktime` in the default authentication template
    * scenario.
@@ -58,11 +48,7 @@ export enum CompilerDefaults {
    */
   defaultScenarioTransactionVersion = 2,
   /**
-   * The default value of the hypothetical UTXO being spent by the input under
-   * test in a scenario.
-   */
-  defaultScenarioValue = 0,
-  /**
+   *s
    * If unset, each `HdKey` uses this `addressOffset`.
    */
   hdKeyAddressOffset = 0,
@@ -85,21 +71,21 @@ export enum CompilerDefaults {
   /**
    * The prefix used to identify the `check` script from a virtualized
    * `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilationEnvironmentVirtualizedTests`.
+   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
    */
   virtualizedTestCheckScriptPrefix = '__virtualized_test_check_',
 
   /**
    * The prefix used to identify the concatenated tested and `check` script from
    * a virtualized `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilationEnvironmentVirtualizedTests`.
+   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
    */
   virtualizedTestLockingScriptPrefix = '__virtualized_test_lock_',
 
   /**
    * The prefix used to identify the `setup` script from a virtualized
    * `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilationEnvironmentVirtualizedTests`.
+   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
    */
   virtualizedTestUnlockingScriptPrefix = '__virtualized_test_unlock_',
 }

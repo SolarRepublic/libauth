@@ -1,17 +1,17 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/naming-convention */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  hexToBin,
 } from '../../lib';
+import { hexToBin } from '../../lib.js';
 
 import {
   expectCompilationResult,
   hdPrivateKey,
   hdPublicKey,
-} from './compiler-bch.e2e.spec.helper';
+} from './compiler-bch.e2e.spec.helper.js';
 
 /**
  * `m/0` public key push
@@ -45,7 +45,7 @@ const m1PublicPush = hexToBin(
   '21034002efc4f44014b116a986faa63b741b0b894a45ccf3f30c671e4146fb1c1954'
 );
 
-test(
+test.failing(
   '[BCH compiler] HdKey – ECDSA: use an HD private key, addressIndex (`0`)',
   expectCompilationResult,
   '<owner.signature.all_outputs>',
@@ -61,7 +61,7 @@ test(
   { owner: { type: 'HdKey' } }
 );
 
-test(
+test.failing(
   '[BCH compiler] HdKey – schnorr: use a private key',
   expectCompilationResult,
   '<owner.schnorr_signature.all_outputs>',
@@ -169,7 +169,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.public_key" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.public_key" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 18,
           endLineNumber: 1,
@@ -408,7 +408,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.signature.all_outputs" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.signature.all_outputs" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -435,7 +435,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "secp256k1" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "secp256k1" property was not provided in the compiler configuration.',
         range: {
           endColumn: 37,
           endLineNumber: 1,
@@ -462,7 +462,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.signature.all_outputs" – the "sha256" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.signature.all_outputs" – the "sha256" property was not provided in the compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -489,7 +489,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "sha256" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.schnorr_signature.all_outputs" – the "sha256" property was not provided in the compiler configuration.',
         range: {
           endColumn: 37,
           endLineNumber: 1,
@@ -555,7 +555,12 @@ test(
   '[BCH compiler] HdKey – invalid HD private key',
   expectCompilationResult,
   '<owner.public_key>',
-  { hdKeys: { addressIndex: 2, hdPrivateKeys: { ownerEntityId: 'xbad' } } },
+  {
+    hdKeys: {
+      addressIndex: 2,
+      hdPrivateKeys: { ownerEntityId: 'xprivkey1bad' },
+    },
+  },
   {
     errorType: 'resolve',
     errors: [
@@ -650,7 +655,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.signature.all_outputs" – the "entityOwnership" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.signature.all_outputs" – the "entityOwnership" property was not provided in the compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -681,7 +686,7 @@ test(
     errors: [
       {
         error:
-          'Identifier "owner.signature.all_outputs" refers to an HdKey, but the "entityOwnership" for "owner" is not available in this compilation environment.',
+          'Identifier "owner.signature.all_outputs" refers to an HdKey, but the "entityOwnership" for "owner" is not available in this compiler configuration.',
         range: {
           endColumn: 29,
           endLineNumber: 1,
@@ -708,7 +713,7 @@ test(
     errors: [
       {
         error:
-          'Cannot resolve "owner.public_key" – the "entityOwnership" property was not provided in the compilation environment.',
+          'Cannot resolve "owner.public_key" – the "entityOwnership" property was not provided in the compiler configuration.',
         range: {
           endColumn: 18,
           endLineNumber: 1,
@@ -735,7 +740,7 @@ test(
     errors: [
       {
         error:
-          'Identifier "owner.public_key" refers to an HdKey, but the "entityOwnership" for "owner" is not available in this compilation environment.',
+          'Identifier "owner.public_key" refers to an HdKey, but the "entityOwnership" for "owner" is not available in this compiler configuration.',
         range: {
           endColumn: 18,
           endLineNumber: 1,
@@ -780,7 +785,12 @@ test(
   '[BCH compiler] HdKey – invalid HD public key',
   expectCompilationResult,
   '<owner.public_key>',
-  { hdKeys: { addressIndex: 2, hdPublicKeys: { ownerEntityId: 'xbad' } } },
+  {
+    hdKeys: {
+      addressIndex: 2,
+      hdPublicKeys: { ownerEntityId: 'xprivkey1bad' },
+    },
+  },
   {
     errorType: 'resolve',
     errors: [

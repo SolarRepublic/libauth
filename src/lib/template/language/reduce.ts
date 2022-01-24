@@ -1,23 +1,23 @@
-import { flattenBinArray } from '../../format/format';
-import {
-  AuthenticationErrorCommon,
-  encodeDataPush,
-} from '../../vm/instruction-sets/instruction-sets';
-import { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
-import {
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
-} from '../../vm/vm-types';
-
+  AuthenticationVirtualMachine,
+} from '../../lib';
 import {
+  AuthenticationErrorCommon,
+  encodeDataPush,
+  flattenBinArray,
+} from '../../lib.js';
+
+import type {
   CompilationError,
   Range,
   ResolvedScript,
   ScriptReductionTraceChildNode,
   ScriptReductionTraceScriptNode,
 } from './language-types';
-import { mergeRanges } from './language-utils';
+import { mergeRanges } from './language-utils.js';
 
 const emptyReductionTraceNode = (range: Range) => ({
   bytecode: Uint8Array.of(),
@@ -41,9 +41,9 @@ const emptyReductionTraceNode = (range: Range) => ({
  * @param state - the final program state to verify
  */
 export const verifyBtlEvaluationState = <
-  ProgramState extends AuthenticationProgramStateStack &
+  ProgramState extends AuthenticationProgramStateError &
     AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<unknown>
+    AuthenticationProgramStateStack
 >(
   state: ProgramState
 ) => {
@@ -72,13 +72,18 @@ export const verifyBtlEvaluationState = <
  * of an evaluation and returns the authentication program used to evaluate it
  */
 export const reduceScript = <
-  ProgramState extends AuthenticationProgramStateStack &
+  ProgramState extends AuthenticationProgramStateError &
     AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<unknown>,
-  AuthenticationProgram
+    AuthenticationProgramStateStack,
+  AuthenticationProgram,
+  ResolvedTransaction
 >(
   resolvedScript: ResolvedScript,
-  vm?: AuthenticationVirtualMachine<AuthenticationProgram, ProgramState>,
+  vm?: AuthenticationVirtualMachine<
+    ResolvedTransaction,
+    AuthenticationProgram,
+    ProgramState
+  >,
   createEvaluationProgram?: (instructions: Uint8Array) => AuthenticationProgram
 ): ScriptReductionTraceScriptNode<ProgramState> => {
   const script = resolvedScript.map<
@@ -169,9 +174,9 @@ export const reduceScript = <
           ],
           ...emptyReductionTraceNode(segment.range),
         };
-      // eslint-disable-next-line functional/no-conditional-statement
+
       default:
-        // eslint-disable-next-line functional/no-throw-statement, @typescript-eslint/no-throw-literal, no-throw-literal
+        // eslint-disable-next-line functional/no-throw-statement, @typescript-eslint/no-throw-literal
         throw new Error(
           `"${(segment as { type: string }).type}" is not a known segment type.`
         ) as never;

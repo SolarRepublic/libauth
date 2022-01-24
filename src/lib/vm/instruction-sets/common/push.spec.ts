@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers, functional/no-expression-statement */
 import test from 'ava';
 
 import {
@@ -6,7 +5,7 @@ import {
   hexToBin,
   PushOperationConstants,
   range,
-} from '../../../lib';
+} from '../../../lib.js';
 
 const prefixDataPushVectors = [
   ['', '00'],

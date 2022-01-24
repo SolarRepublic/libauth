@@ -1,15 +1,15 @@
 /* global Buffer */
-/* eslint-disable functional/no-expression-statement */
+/* eslint-disable functional/no-expression-statement, functional/no-return-void */
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import test from 'ava';
-import * as bcrypto from 'bcrypto';
-import * as fc from 'fast-check';
-import * as hashJs from 'hash.js';
+import bcrypto from 'bcrypto';
+import fc from 'fast-check';
+import hashJs from 'hash.js';
 
-import { HashFunction } from '../bin/bin';
+import type { HashFunction } from '../lib';
 
 const testLength = 10000;
 
@@ -39,18 +39,18 @@ export const testHashFunction = <T extends HashFunction>({
   abcHash: Uint8Array;
   testHash: Uint8Array;
   bitcoinTsHash: Uint8Array;
-  nodeJsAlgorithm: 'ripemd160' | 'sha256' | 'sha512' | 'sha1';
+  nodeJsAlgorithm: 'ripemd160' | 'sha1' | 'sha256' | 'sha512';
 }) => {
   const binary = getEmbeddedBinary();
   const bcryptoAlgorithm = nodeJsAlgorithm.toUpperCase() as
     | 'RIPEMD160'
+    | 'SHA1'
     | 'SHA256'
-    | 'SHA512'
-    | 'SHA1';
+    | 'SHA512';
 
   test(`[crypto] ${hashFunctionName} getEmbeddedBinary returns the proper binary`, (t) => {
     const path = join(
-      __dirname,
+      new URL('.', import.meta.url).pathname,
       '..',
       'bin',
       `${hashFunctionName}`,

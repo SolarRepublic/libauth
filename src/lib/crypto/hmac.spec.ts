@@ -1,7 +1,6 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import { createHmac } from 'crypto';
 
-import test, { Macro } from 'ava';
+import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
 
 import {
@@ -11,28 +10,28 @@ import {
   hmacSha512,
   instantiateSha256,
   instantiateSha512,
-} from '../lib';
+} from '../lib.js';
 
 const sha256Promise = instantiateSha256();
 const sha512Promise = instantiateSha512();
 
-const vectors: Macro<[
-  { secret: string; message: string; sha256: string; sha512: string }
-]> = async (t, vector) => {
-  const sha256 = await sha256Promise;
-  const sha512 = await sha512Promise;
-  t.deepEqual(
-    hmacSha256(sha256, hexToBin(vector.secret), hexToBin(vector.message)),
-    hexToBin(vector.sha256)
-  );
-  t.deepEqual(
-    hmacSha512(sha512, hexToBin(vector.secret), hexToBin(vector.message)),
-    hexToBin(vector.sha512)
-  );
-};
-// eslint-disable-next-line functional/immutable-data
-vectors.title = (title) =>
-  `[crypto] HMAC Test Vector #${title ?? '?'} (RFC 4231)`;
+const vectors = test.macro<
+  [{ secret: string; message: string; sha256: string; sha512: string }]
+>({
+  exec: async (t, vector) => {
+    const sha256 = await sha256Promise;
+    const sha512 = await sha512Promise;
+    t.deepEqual(
+      hmacSha256(sha256, hexToBin(vector.secret), hexToBin(vector.message)),
+      hexToBin(vector.sha256)
+    );
+    t.deepEqual(
+      hmacSha512(sha512, hexToBin(vector.secret), hexToBin(vector.message)),
+      hexToBin(vector.sha512)
+    );
+  },
+  title: (title) => `[crypto] HMAC Test Vector #${title ?? '?'} (RFC 4231)`,
+});
 
 test('1', vectors, {
   message: '4869205468657265',

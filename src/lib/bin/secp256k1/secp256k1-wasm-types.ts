@@ -4,7 +4,7 @@
  * bitflags used in secp256k1's public API (translated from secp256k1.h)
  */
 
-/* eslint-disable no-bitwise, @typescript-eslint/no-magic-numbers */
+/* eslint-disable no-bitwise, @typescript-eslint/no-magic-numbers, @typescript-eslint/prefer-literal-enum-member */
 /** All flags' lower 8 bits indicate what they're for. Do not use directly. */
 // const SECP256K1_FLAGS_TYPE_MASK = (1 << 8) - 1;
 const SECP256K1_FLAGS_TYPE_CONTEXT = 1 << 0;
@@ -53,7 +53,7 @@ export enum CompressionFlag {
   COMPRESSED = SECP256K1_EC_COMPRESSED as 258,
   UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED as 2,
 }
-/* eslint-enable no-bitwise, @typescript-eslint/no-magic-numbers */
+/* eslint-enable no-bitwise, @typescript-eslint/no-magic-numbers, @typescript-eslint/prefer-literal-enum-member */
 
 /**
  * An object which wraps the WebAssembly implementation of `libsecp256k1`.
@@ -101,7 +101,7 @@ export interface Secp256k1Wasm {
    * @param contextPtr - pointer to a context object
    * @param seedPtr - pointer to a 32-byte random seed
    */
-  readonly contextRandomize: (contextPtr: number, seedPtr: number) => 1 | 0;
+  readonly contextRandomize: (contextPtr: number, seedPtr: number) => 0 | 1;
 
   /**
    * Frees a pointer allocated by the `malloc` method.
@@ -109,7 +109,6 @@ export interface Secp256k1Wasm {
    */
   readonly free: (pointer: number) => number;
 
-  // eslint-disable-next-line functional/no-mixed-type
   readonly heapU32: Uint32Array;
   readonly heapU8: Uint8Array;
   readonly instance: WebAssembly.Instance;
@@ -118,7 +117,7 @@ export interface Secp256k1Wasm {
    * Allocates the given number of bytes in WebAssembly memory.
    * @param malloc - the number of bytes to allocate
    */
-  // eslint-disable-next-line functional/no-mixed-type
+
   readonly malloc: (bytes: number) => number;
 
   /**
@@ -149,7 +148,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     secretKeyPtr: number,
     tweakNum256Ptr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Tweak a _privateKey_ by multiplying _tweak_ to it.
@@ -163,7 +162,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     secretKeyPtr: number,
     tweakNum256Ptr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Compute the public key for a secret key.
@@ -179,7 +178,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     publicKeyPtr: number,
     secretKeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Parse a variable-length public key into the pubkey object.
@@ -205,7 +204,7 @@ export interface Secp256k1Wasm {
     publicKeyInPtr: number,
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
     publicKeyInLength: 33 | 65
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Serialize a pubkey object into a serialized byte sequence.
@@ -242,7 +241,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     publicKeyPtr: number,
     tweakNum256Ptr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Tweak a _publicKey_ by multiplying it by a _tweak_ value.
@@ -258,7 +257,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     publicKeyPtr: number,
     tweakNum256Ptr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Read from WebAssembly memory by creating a new Uint8Array beginning at
@@ -293,7 +292,7 @@ export interface Secp256k1Wasm {
     publicKeyPtr: number,
     rSigPtr: number,
     msg32Ptr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Parse an ECDSA signature in compact (64 bytes) format with a recovery
@@ -318,7 +317,7 @@ export interface Secp256k1Wasm {
     outputRSigPtr: number,
     inputSigPtr: number,
     rid: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Serialize a recoverable ECDSA signature in compact (64 byte) format along
@@ -368,7 +367,7 @@ export interface Secp256k1Wasm {
     outputSigPtr: number,
     msg32Ptr: number,
     secretKeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Verify a Secp256k1 EC-Schnorr-SHA256 signature (BCH construction).
@@ -387,7 +386,7 @@ export interface Secp256k1Wasm {
     sigPtr: number,
     msg32Ptr: number,
     publicKeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Verify an ECDSA secret key.
@@ -397,7 +396,7 @@ export interface Secp256k1Wasm {
    * @param contextPtr - pointer to a context object
    * @param secretKeyPtr - pointer to a 32-byte secret key
    */
-  readonly seckeyVerify: (contextPtr: number, secretKeyPtr: number) => 1 | 0;
+  readonly seckeyVerify: (contextPtr: number, secretKeyPtr: number) => 0 | 1;
 
   /**
    * Create an ECDSA signature. The created signature is always in lower-S form.
@@ -421,7 +420,7 @@ export interface Secp256k1Wasm {
     outputSigPtr: number,
     msg32Ptr: number,
     secretKeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Malleate an ECDSA signature.
@@ -491,7 +490,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     outputSigPtr: number,
     inputSigPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Parse an ECDSA signature in compact (64 bytes) format. Returns 1 when the
@@ -514,7 +513,7 @@ export interface Secp256k1Wasm {
     contextPtr: number,
     sigOutPtr: number,
     compactSigInPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Parse a DER ECDSA signature.
@@ -541,7 +540,7 @@ export interface Secp256k1Wasm {
     sigOutPtr: number,
     sigDERInPtr: number,
     sigDERInLength: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Serialize an ECDSA signature in compact (64 byte) format. Always returns 1.
@@ -579,7 +578,7 @@ export interface Secp256k1Wasm {
     outputDERSigPtr: number,
     outputDERSigLengthPtr: number,
     inputSigPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Create a recoverable ECDSA signature. The created signature is always in
@@ -604,7 +603,7 @@ export interface Secp256k1Wasm {
     outputRSigPtr: number,
     msg32Ptr: number,
     secretKeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 
   /**
    * Verify an ECDSA signature.
@@ -632,5 +631,5 @@ export interface Secp256k1Wasm {
     sigPtr: number,
     msg32Ptr: number,
     pubkeyPtr: number
-  ) => 1 | 0;
+  ) => 0 | 1;
 }

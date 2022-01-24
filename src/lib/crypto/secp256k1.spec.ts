@@ -1,20 +1,20 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers, max-lines, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable max-lines, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 // cspell:ignore recid
 /* global Buffer */
 
 import { randomBytes } from 'crypto';
 
 import test from 'ava';
-import * as elliptic from 'elliptic';
-import * as fc from 'fast-check';
-import * as secp256k1Node from 'secp256k1';
+import elliptic from 'elliptic';
+import fc from 'fast-check';
+import secp256k1Node from 'secp256k1';
 
+import type { Secp256k1 } from '../lib';
 import {
   getEmbeddedSecp256k1Binary,
   instantiateSecp256k1,
   instantiateSecp256k1Bytes,
-  Secp256k1,
-} from '../lib';
+} from '../lib.js';
 
 // test vectors (from `zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong`, m/0 and m/1):
 
@@ -152,7 +152,9 @@ test('[fast-check] [crypto] secp256k1.addTweakPrivateKey', async (t) => {
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -190,7 +192,9 @@ test('[fast-check] [crypto] secp256k1.addTweakPublicKeyCompressed', async (t) =>
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -228,7 +232,9 @@ test('[fast-check] [crypto] secp256k1.addTweakPublicKeyUncompressed', async (t) 
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -460,7 +466,9 @@ test('[fast-check] [crypto] secp256k1.mulTweakPrivateKey', async (t) => {
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -498,7 +506,9 @@ test('[fast-check] [crypto] secp256k1.mulTweakPublicKeyCompressed', async (t) =>
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -536,7 +546,9 @@ test('[fast-check] [crypto] secp256k1.mulTweakPublicKeyUncompressed', async (t) 
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
   /*
    * the elliptic library doesn't implement public or private key tweaking.
    * perhaps future tests can do the math in JavaScript and compare with that.
@@ -673,7 +685,9 @@ test('[fast-check] [crypto] secp256k1.recoverPublicKeyCompressed', async (t) => 
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
 });
 
 test('[crypto] secp256k1.recoverPublicKeyUncompressed', async (t) => {
@@ -715,7 +729,9 @@ test('[fast-check] [crypto] secp256k1.recoverPublicKeyUncompressed', async (t) =
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
 });
 
 test('[crypto] secp256k1.signMessageHashCompact', async (t) => {
@@ -832,7 +848,9 @@ test('[fast-check] [crypto] secp256k1.signMessageHashRecoverableCompact', async 
       );
     }
   );
-  t.notThrows(() => fc.assert(equivalentToSecp256k1Node));
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+  });
 });
 
 test('[crypto] secp256k1.signatureCompactToDER', async (t) => {
@@ -932,9 +950,11 @@ test('[crypto] secp256k1.validatePrivateKey', async (t) => {
 
 test('[fast-check] [crypto] secp256k1.validatePrivateKey', async (t) => {
   const secp256k1 = await secp256k1Promise;
-  // eslint-disable-next-line functional/immutable-data
+
+  /**
+   * Invalid values are greater than or equal to: `0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140`
+   */
   const almostInvalid = Array(15).fill(255);
-  // invalid >= 0xFFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFE BAAE DCE6 AF48 A03B BFD2 5E8C D036 4140
   const theRest = 32 - almostInvalid.length;
   const equivalentToSecp256k1Node = fc.property(
     fc

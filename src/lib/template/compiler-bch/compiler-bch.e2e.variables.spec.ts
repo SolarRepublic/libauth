@@ -1,13 +1,12 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 
-import {
+import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  hexToBin,
 } from '../../lib';
+import { hexToBin } from '../../lib.js';
 
-import { expectCompilationResult } from './compiler-bch.e2e.spec.helper';
+import { expectCompilationResult } from './compiler-bch.e2e.spec.helper.js';
 
 test(
   '[BCH compiler] variables – AddressData',

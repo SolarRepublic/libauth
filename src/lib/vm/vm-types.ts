@@ -1,18 +1,12 @@
-import {
-  Input,
-  Output,
-  Transaction,
-  TransactionContextCommon,
-} from '../transaction/transaction-types';
+import type { Output, TransactionCommon } from '../lib';
 
-import { AuthenticationErrorCommon } from './instruction-sets/common/errors';
-import { AuthenticationInstruction } from './instruction-sets/instruction-sets-types';
+import type { AuthenticationInstruction } from './vm';
 
-export interface AuthenticationProgramStateMinimum<Opcodes = number> {
+export interface AuthenticationProgramStateMinimum {
   /**
    * The full list of instructions to be evaluated by the virtual machine.
    */
-  readonly instructions: readonly AuthenticationInstruction<Opcodes>[];
+  readonly instructions: readonly AuthenticationInstruction[];
   /**
    * Instruction Pointer – the array index of `instructions` which will be read
    * to identify the next instruction. Once `ip` exceeds the last index of
@@ -57,37 +51,28 @@ export interface AuthenticationProgramStateExecutionStack {
   executionStack: boolean[];
 }
 
-export interface AuthenticationProgramStateError<
-  InstructionSetError,
-  CommonError = AuthenticationErrorCommon
-> {
+export interface AuthenticationProgramStateError {
   /**
    * If present, the error returned by the most recent virtual machine
    * operation.
    */
-  error?: CommonError | InstructionSetError;
-}
-
-type MakeOptional<T, K extends keyof T> = Partial<Pick<T, K>> & Omit<T, K>;
-
-/**
- * A reduced version of `AuthenticationProgramCommon` including only the
- * information required to generate a `TransactionContextCommon`.
- */
-export interface AuthenticationProgramTransactionContextCommon {
-  inputIndex: number;
-  sourceOutput: Pick<Output, 'satoshis'>;
-  spendingTransaction: Transaction<MakeOptional<Input, 'unlockingBytecode'>>;
+  error?: string;
 }
 
 /**
- * A complete view of the information necessary to validate a specified input on
- * the provided transaction.
+ * A complete view of the information necessary to validate a transaction.
  */
-export interface AuthenticationProgramCommon {
+export interface ResolvedTransactionCommon {
+  sourceOutputs: Output[];
+  transaction: TransactionCommon;
+}
+
+/**
+ * A complete view of the information necessary to validate a specified input in
+ * a transaction.
+ */
+export interface AuthenticationProgramCommon extends ResolvedTransactionCommon {
   inputIndex: number;
-  sourceOutput: Output;
-  spendingTransaction: Transaction;
 }
 
 export interface AuthenticationProgramStateSignatureAnalysis {
@@ -105,21 +90,18 @@ export interface AuthenticationProgramStateSignatureAnalysis {
 }
 
 export interface AuthenticationProgramStateInternalCommon<
-  Opcodes,
-  InstructionSetError,
   StackType = Uint8Array
->
-  extends AuthenticationProgramStateMinimum<Opcodes>,
+> extends AuthenticationProgramStateMinimum,
     AuthenticationProgramStateStack<StackType>,
     AuthenticationProgramStateAlternateStack<StackType>,
     AuthenticationProgramStateExecutionStack,
-    AuthenticationProgramStateError<InstructionSetError>,
+    AuthenticationProgramStateError,
     AuthenticationProgramStateSignatureAnalysis {
   /**
    * The `lastCodeSeparator` indicates the index of the most recently executed
    * `OP_CODESEPARATOR` instruction. In each of the signing serialization
    * algorithms, the `instructions` are sliced at `lastCodeSeparator`, and the
-   * subarray is re-serialized. The resulting bytecode is called the
+   * subarray is re-encoded. The resulting bytecode is called the
    * `coveredBytecode` (A.K.A. `scriptCode`), and is part of the data hashed to
    * create the signing serialization digest.
    *
@@ -131,6 +113,7 @@ export interface AuthenticationProgramStateInternalCommon<
   signatureOperationsCount: number;
 }
 
-export interface AuthenticationProgramStateCommon<Opcodes, Errors>
-  extends AuthenticationProgramStateInternalCommon<Opcodes, Errors>,
-    TransactionContextCommon {}
+export interface AuthenticationProgramStateCommon
+  extends AuthenticationProgramStateInternalCommon {
+  program: Readonly<AuthenticationProgramCommon>;
+}

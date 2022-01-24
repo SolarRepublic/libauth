@@ -1,18 +1,17 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
 import {
   compilerOperationHelperGenerateCoveredBytecode,
   compilerOperationRequires,
   stringifyTestVector,
-} from '../lib';
+} from '../lib.js';
 
-test('attemptCompilerOperations: can skip environment property check', (t) => {
+test('attemptCompilerOperations: can skip configuration property check', (t) => {
   t.deepEqual(
     compilerOperationRequires({
       canBeSkipped: true,
+      configurationProperties: ['entityOwnership'],
       dataProperties: [],
-      environmentProperties: ['entityOwnership'],
       operation: () => ({ error: 'test failed', status: 'error' }),
     })('', {}, { scripts: {} }),
     { status: 'skip' }
@@ -21,8 +20,8 @@ test('attemptCompilerOperations: can skip environment property check', (t) => {
 
 test('compilerOperationHelperGenerateCoveredBytecode: empty sourceScriptIds', (t) => {
   const result = compilerOperationHelperGenerateCoveredBytecode({
+    configuration: { scripts: {} },
     data: {},
-    environment: { scripts: {} },
     identifier: 'test',
     sourceScriptIds: [],
     unlockingScripts: {},
@@ -31,7 +30,7 @@ test('compilerOperationHelperGenerateCoveredBytecode: empty sourceScriptIds', (t
     result,
     {
       error:
-        'Identifier "test" requires a signing serialization, but "coveredBytecode" cannot be determined because the compilation environment\'s "sourceScriptIds" is empty.',
+        'Identifier "test" requires a signing serialization, but "coveredBytecode" cannot be determined because the compiler configuration\'s "sourceScriptIds" is empty.',
       status: 'error',
     },
     stringifyTestVector(result)

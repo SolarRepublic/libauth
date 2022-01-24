@@ -1,14 +1,13 @@
 /* eslint-disable no-console, functional/no-expression-statement */
-import { stringify } from '../../format/log';
-import { authenticationTemplateP2pkh } from '../../template/template';
+import { authenticationTemplateP2pkh, stringify } from '../../lib.js';
 
-import { oneOfEightTreeSig } from './template.1-of-8-tree.spec.helper';
-import { twoOfTwoRecoverable } from './template.2-of-2-recoverable.spec.helper';
-import { twoOfThree } from './template.2-of-3.spec.helper';
-import { cashChannels } from './template.cash-channels.spec.helper';
-import { sigOfSig } from './template.sig-of-sig.spec.helper';
+import { oneOfEightTreeSig } from './template.1-of-8-tree.spec.helper.js';
+import { twoOfTwoRecoverable } from './template.2-of-2-recoverable.spec.helper.js';
+import { twoOfThree } from './template.2-of-3.spec.helper.js';
+import { cashChannels } from './template.cash-channels.spec.helper.js';
+import { sigOfSig } from './template.sig-of-sig.spec.helper.js';
 
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity, functional/no-return-void
 const printTemplate = (template: string) => {
   switch (template) {
     case 'p2pkh':
@@ -29,7 +28,7 @@ const printTemplate = (template: string) => {
     case 'cash-channels':
       console.log(stringify(cashChannels));
       return;
-    // eslint-disable-next-line functional/no-conditional-statement
+
     default:
       console.error('unknown template');
       process.exit(1);

@@ -1,4 +1,4 @@
-export enum OpcodesBCH {
+export enum OpcodesBCH2021 {
   /**
    * A.K.A. `OP_FALSE` or `OP_PUSHBYTES_0`
    */
@@ -182,13 +182,7 @@ export enum OpcodesBCH {
   OP_CHECKMULTISIG = 0xae,
   OP_CHECKMULTISIGVERIFY = 0xaf,
   OP_NOP1 = 0xb0,
-  /**
-   * Previously `OP_NOP2`
-   */
   OP_CHECKLOCKTIMEVERIFY = 0xb1,
-  /**
-   * Previously `OP_NOP2`
-   */
   OP_CHECKSEQUENCEVERIFY = 0xb2,
   OP_NOP4 = 0xb3,
   OP_NOP5 = 0xb4,
@@ -197,21 +191,9 @@ export enum OpcodesBCH {
   OP_NOP8 = 0xb7,
   OP_NOP9 = 0xb8,
   OP_NOP10 = 0xb9,
-  /**
-   * Previously `OP_UNKNOWN186`
-   */
   OP_CHECKDATASIG = 0xba,
-  /**
-   * Previously `OP_UNKNOWN187`
-   */
   OP_CHECKDATASIGVERIFY = 0xbb,
-  /**
-   * Previously `OP_UNKNOWN188`
-   */
   OP_REVERSEBYTES = 0xbc,
-  /**
-   * A.K.A. `FIRST_UNDEFINED_OP_VALUE`
-   */
   OP_UNKNOWN189 = 0xbd,
   OP_UNKNOWN190 = 0xbe,
   OP_UNKNOWN191 = 0xbf,
@@ -263,9 +245,6 @@ export enum OpcodesBCH {
   OP_UNKNOWN237 = 0xed,
   OP_UNKNOWN238 = 0xee,
   OP_UNKNOWN239 = 0xef,
-  /**
-   * A.K.A. `OP_PREFIX_BEGIN`
-   */
   OP_UNKNOWN240 = 0xf0,
   OP_UNKNOWN241 = 0xf1,
   OP_UNKNOWN242 = 0xf2,
@@ -273,9 +252,6 @@ export enum OpcodesBCH {
   OP_UNKNOWN244 = 0xf4,
   OP_UNKNOWN245 = 0xf5,
   OP_UNKNOWN246 = 0xf6,
-  /**
-   * A.K.A. `OP_PREFIX_END`
-   */
   OP_UNKNOWN247 = 0xf7,
   OP_UNKNOWN248 = 0xf8,
   OP_UNKNOWN249 = 0xf9,
@@ -285,76 +261,4 @@ export enum OpcodesBCH {
   OP_UNKNOWN253 = 0xfd,
   OP_UNKNOWN254 = 0xfe,
   OP_UNKNOWN255 = 0xff,
-}
-
-export enum OpcodeAlternateNamesBCH {
-  /**
-   * A.K.A. `OP_0`
-   */
-  OP_FALSE = 0x00,
-  /**
-   * A.K.A. `OP_0`
-   */
-  OP_PUSHBYTES_0 = 0x00,
-  /**
-   * A.K.A. `OP_1`
-   */
-  OP_TRUE = 0x51,
-  /**
-   * A.K.A. `OP_CHECKLOCKTIMEVERIFY`
-   */
-  OP_NOP2 = 0xb1,
-  /**
-   * A.K.A. `OP_CHECKSEQUENCEVERIFY`
-   */
-  OP_NOP3 = 0xb2,
-  /**
-   * A.K.A. `OP_CHECKDATASIG`
-   */
-  OP_UNKNOWN186 = 0xba,
-  /**
-   * A.K.A. `OP_CHECKDATASIGVERIFY`
-   */
-  OP_UNKNOWN187 = 0xbb,
-  /**
-   * A.K.A. `OP_UNKNOWN189`
-   */
-  FIRST_UNDEFINED_OP_VALUE = 0xbd,
-  /**
-   * A.K.A. `OP_UNKNOWN240`. Some implementations have reserved opcodes
-   * `0xf0` through `0xf7` for a future range of multi-byte opcodes, though none
-   * are yet available on the network.
-   */
-  OP_PREFIX_BEGIN = 0xf0,
-  /**
-   * A.K.A. `OP_UNKNOWN247`. Some implementations have reserved opcodes
-   * `0xf0` through `0xf7` for a future range of multi-byte opcodes, though none
-   * are yet available on the network.
-   */
-  OP_PREFIX_END = 0xf7,
-  /**
-   * `OP_SMALLINTEGER` is used internally for template matching in the C++
-   * implementation. When found on the network, it is `OP_UNKNOWN250`.
-   */
-  OP_SMALLINTEGER = 0xfa,
-  /**
-   * `OP_PUBKEYS` is used internally for template matching in the C++
-   * implementation. When found on the network, it is `OP_UNKNOWN251`.
-   */
-  OP_PUBKEYS = 0xfb,
-  /**
-   * `OP_PUBKEYHASH` is used internally for template matching in the C++
-   * implementation. When found on the network, it is `OP_UNKNOWN253`.
-   */
-  OP_PUBKEYHASH = 0xfd,
-  /**
-   * `OP_PUBKEY` is used internally for template matching in the C++
-   * implementation. When found on the network, it is `OP_UNKNOWN254`.
-   */
-  OP_PUBKEY = 0xfe,
-  /**
-   * `OP_INVALIDOPCODE` is described as such for testing in the C++
-   * implementation. When found on the network, it is `OP_UNKNOWN255`.
-   */
-  OP_INVALIDOPCODE = 0xff,
 }

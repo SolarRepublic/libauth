@@ -1,29 +1,30 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers, functional/immutable-data */
-import test, { Macro } from 'ava';
+import test from 'ava';
 import { fc, testProp } from 'ava-fast-check';
 
+import type {
+  AuthenticationInstruction,
+  AuthenticationInstructionPush,
+  ParsedAuthenticationInstructions,
+} from '../../lib';
 import {
   assembleBytecode,
   assembleBytecodeBCH,
   assembleBytecodeBTC,
-  AuthenticationInstruction,
-  AuthenticationInstructionPush,
   authenticationInstructionsAreMalformed,
   disassembleBytecode,
   disassembleBytecodeBCH,
   disassembleBytecodeBTC,
   disassembleParsedAuthenticationInstructions,
+  encodeAuthenticationInstruction,
+  encodeAuthenticationInstructions,
+  encodeParsedAuthenticationInstructions,
   generateBytecodeMap,
   hexToBin,
-  OpcodesBCH,
+  OpcodesBCH2022,
   OpcodesBTC,
   parseBytecode,
-  ParsedAuthenticationInstruction,
   range,
-  serializeAuthenticationInstruction,
-  serializeAuthenticationInstructions,
-  serializeParsedAuthenticationInstructions,
-} from '../../lib';
+} from '../../lib.js';
 
 test('Each Opcodes enum contains a single instruction for 0-255', (t) => {
   const expected = range(256);
@@ -32,7 +33,7 @@ test('Each Opcodes enum contains a single instruction for 0-255', (t) => {
   const numbers = (keys: readonly string[]) =>
     keys.map((k) => parseInt(k, 10)).filter((k) => !isNaN(k));
 
-  const bch = Object.keys(OpcodesBCH);
+  const bch = Object.keys(OpcodesBCH2022);
   t.deepEqual(numbers(bch), expected);
   t.deepEqual(names(bch).length, expected.length);
 
@@ -52,12 +53,18 @@ test('Each Opcodes enum contains a single instruction for 0-255', (t) => {
  *  - element 3 – `length`, hex-encoded (if present)
  *  - element 4 – `expectedLengthBytes`, hex-encoded (if present)
  */
-interface CommonScriptParseAndAsmTests {
-  readonly [scriptHex: string]: {
+type CommonScriptParseAndAsmTests = Readonly<{
+  [scriptHex: string]: {
     readonly asm: string;
-    readonly parse: [number, string?, number?, string?, number?][];
+    readonly parse: (
+      | [number, string, number, string, number]
+      | [number, string, number]
+      | [number, string]
+      | [number, undefined, undefined, string, number]
+      | [number]
+    )[];
   };
-}
+}>;
 
 const defToFixtures = (tests: CommonScriptParseAndAsmTests) =>
   Object.entries(tests).map((entry) => {
@@ -72,7 +79,7 @@ const defToFixtures = (tests: CommonScriptParseAndAsmTests) =>
       ...(set[2] === undefined ? undefined : { expectedDataBytes: set[2] }),
       ...(set[3] === undefined ? undefined : { length: hexToBin(set[3]) }),
       ...(set[4] === undefined ? undefined : { expectedLengthBytes: set[4] }),
-    }));
+    })) as ParsedAuthenticationInstructions;
     return { asm, hex, object, script };
   });
 
@@ -82,28 +89,26 @@ const wellFormedScripts: CommonScriptParseAndAsmTests = {
     parse: [[0, '']],
   },
   '0x0001010202020303030376': {
-    asm:
-      'OP_0 OP_PUSHBYTES_1 0x01 OP_PUSHBYTES_2 0x0202 OP_PUSHBYTES_3 0x030303 OP_DUP',
+    asm: 'OP_0 OP_PUSHBYTES_1 0x01 OP_PUSHBYTES_2 0x0202 OP_PUSHBYTES_3 0x030303 OP_DUP',
     parse: [[0, ''], [1, '01'], [2, '0202'], [3, '030303'], [118]],
   },
-  '0x410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac': {
-    asm:
-      'OP_PUSHBYTES_65 0x0411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3 OP_CHECKSIG',
-    parse: [
-      [
-        0x41,
-        '0411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3',
+  '0x410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac':
+    {
+      asm: 'OP_PUSHBYTES_65 0x0411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3 OP_CHECKSIG',
+      parse: [
+        [
+          0x41,
+          '0411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3',
+        ],
+        [0xac],
       ],
-      [0xac],
-    ],
-  },
+    },
   '0x4c020304': {
     asm: 'OP_PUSHDATA_1 2 0x0304',
     parse: [[0x4c, '0304']],
   },
   '0x76a91411b366edfc0a8b66feebae5c2e25a7b6a5d1cf3188ac': {
-    asm:
-      'OP_DUP OP_HASH160 OP_PUSHBYTES_20 0x11b366edfc0a8b66feebae5c2e25a7b6a5d1cf31 OP_EQUALVERIFY OP_CHECKSIG',
+    asm: 'OP_DUP OP_HASH160 OP_PUSHBYTES_20 0x11b366edfc0a8b66feebae5c2e25a7b6a5d1cf31 OP_EQUALVERIFY OP_CHECKSIG',
     parse: [
       [0x76],
       [0xa9],
@@ -169,56 +174,49 @@ const malFormedPushes: CommonScriptParseAndAsmTests = {
   },
 };
 
-const parse: Macro<[Uint8Array, readonly ParsedAuthenticationInstruction[]]> = (
-  t,
-  input,
-  expected
-) => {
-  t.deepEqual(parseBytecode(input), expected);
-};
-parse.title = (title) => `parse script: ${title ?? ''}`.trim();
+const parse = test.macro<[Uint8Array, ParsedAuthenticationInstructions]>({
+  exec: (t, input, expected) => {
+    t.deepEqual(parseBytecode(input), expected);
+  },
+  title: (title) => `parse script: ${title ?? ''}`.trim(),
+});
 
-const disassemble: Macro<[
-  readonly ParsedAuthenticationInstruction[],
-  string
-]> = (t, input, expected) => {
-  t.deepEqual(
-    disassembleParsedAuthenticationInstructions(OpcodesBCH, input),
-    expected
-  );
-};
-disassemble.title = (title) => `disassemble script: ${title ?? ''}`.trim();
+const disassemble = test.macro<[ParsedAuthenticationInstructions, string]>({
+  exec: (t, input, expected) => {
+    t.deepEqual(
+      disassembleParsedAuthenticationInstructions(OpcodesBCH2022, input),
+      expected
+    );
+  },
+  title: (title) => `disassemble script: ${title ?? ''}`.trim(),
+});
 
-const serialize: Macro<[readonly AuthenticationInstruction[], Uint8Array]> = (
-  t,
-  input,
-  expected
-) => {
-  t.deepEqual(serializeAuthenticationInstructions(input), expected);
-};
-serialize.title = (title) => `serialize script: ${title ?? ''}`.trim();
+const encode = test.macro<[readonly AuthenticationInstruction[], Uint8Array]>({
+  exec: (t, input, expected) => {
+    t.deepEqual(encodeAuthenticationInstructions(input), expected);
+  },
+  title: (title) => `encode script: ${title ?? ''}`.trim(),
+});
 
-const reSerialize: Macro<[
-  readonly ParsedAuthenticationInstruction[],
-  Uint8Array
-]> = (t, input, expected) => {
-  t.deepEqual(serializeParsedAuthenticationInstructions(input), expected);
-};
-reSerialize.title = (title) =>
-  `re-serialize parsed script: ${title ?? ''}`.trim();
+const reEncode = test.macro<[ParsedAuthenticationInstructions, Uint8Array]>({
+  exec: (t, input, expected) => {
+    t.deepEqual(encodeParsedAuthenticationInstructions(input), expected);
+  },
+  title: (title) => `re-encode parsed script: ${title ?? ''}`.trim(),
+});
 
 defToFixtures(wellFormedScripts).map(({ asm, hex, script, object }) => {
   test(`0x${hex}`, parse, script, object);
   test(`0x${hex}`, disassemble, object, asm);
-  test(`0x${hex}`, serialize, object, script);
-  test(`0x${hex}`, reSerialize, object, script);
+  test(`0x${hex}`, encode, object, script);
+  test(`0x${hex}`, reEncode, object, script);
   return undefined;
 });
 
 defToFixtures(malFormedPushes).map(({ asm, hex, script, object }) => {
   test(`0x${hex}`, parse, script, object);
   test(`0x${hex}`, disassemble, object, asm);
-  test(`0x${hex}`, reSerialize, object, script);
+  test(`0x${hex}`, reEncode, object, script);
   return undefined;
 });
 
@@ -235,33 +233,33 @@ test('generateBytecodeMap', (t) => {
   });
 });
 
-test('serializeAuthenticationInstruction', (t) => {
+test('encodeAuthenticationInstruction', (t) => {
   const OP_PUSHDATA_1 = 0x4c;
   const pushData1Expected = new Uint8Array(102);
   pushData1Expected.set([OP_PUSHDATA_1, 100]);
-  const pushData1Serialized = serializeAuthenticationInstruction({
+  const pushData1Encoded = encodeAuthenticationInstruction({
     data: new Uint8Array(100),
     opcode: OP_PUSHDATA_1,
   });
-  t.deepEqual(pushData1Serialized, pushData1Expected);
+  t.deepEqual(pushData1Encoded, pushData1Expected);
 
   const OP_PUSHDATA_2 = 0x4d;
   const pushData2Expected = new Uint8Array(259);
   pushData2Expected.set([OP_PUSHDATA_2, 0, 1]);
-  const pushData2Serialized = serializeAuthenticationInstruction({
+  const pushData2Encoded = encodeAuthenticationInstruction({
     data: new Uint8Array(256),
     opcode: OP_PUSHDATA_2,
   });
-  t.deepEqual(pushData2Serialized, pushData2Expected);
+  t.deepEqual(pushData2Encoded, pushData2Expected);
 
   const OP_PUSHDATA_4 = 0x4e;
   const pushData4Expected = new Uint8Array(65541);
   pushData4Expected.set([OP_PUSHDATA_4, 0, 0, 1, 0]);
-  const pushData4Serialized = serializeAuthenticationInstruction({
+  const pushData4Encoded = encodeAuthenticationInstruction({
     data: new Uint8Array(65536),
     opcode: OP_PUSHDATA_4,
   });
-  t.deepEqual(pushData4Serialized, pushData4Expected);
+  t.deepEqual(pushData4Encoded, pushData4Expected);
 });
 
 enum TestOpcodes {
@@ -324,32 +322,34 @@ testProp(
   '[fast-check] disassembleBytecodeBCH <-> assembleBytecodeBCH',
   [fcUint8Array(0, maxBinLength)],
   (t, randomBytecode: Uint8Array) => {
-    const parsed = parseBytecode<OpcodesBCH>(randomBytecode);
-    const instructions = (authenticationInstructionsAreMalformed(parsed)
-      ? parsed.slice(0, -1)
-      : parsed) as AuthenticationInstruction<OpcodesBCH>[];
+    const parsed = parseBytecode(randomBytecode);
+    const instructions = (
+      authenticationInstructionsAreMalformed(parsed)
+        ? parsed.slice(0, -1)
+        : parsed
+    ) as AuthenticationInstruction[];
     const minimalPush = instructions.map((instruction) =>
-      [OpcodesBCH.OP_PUSHDATA_2, OpcodesBCH.OP_PUSHDATA_4].includes(
+      [OpcodesBCH2022.OP_PUSHDATA_2, OpcodesBCH2022.OP_PUSHDATA_4].includes(
         instruction.opcode
       )
-        ? { opcode: OpcodesBCH.OP_1 }
-        : instruction.opcode === OpcodesBCH.OP_PUSHDATA_1 &&
+        ? { opcode: OpcodesBCH2022.OP_1 }
+        : instruction.opcode === OpcodesBCH2022.OP_PUSHDATA_1 &&
           (instruction as AuthenticationInstructionPush).data.length < 76
         ? {
             data: new Uint8Array(76),
-            opcode: OpcodesBCH.OP_PUSHDATA_1,
+            opcode: OpcodesBCH2022.OP_PUSHDATA_1,
           }
         : instruction
     );
-    const serialized = serializeAuthenticationInstructions(minimalPush);
+    const encoded = encodeAuthenticationInstructions(minimalPush);
 
-    const disassembled = disassembleBytecodeBCH(serialized);
+    const disassembled = disassembleBytecodeBCH(encoded);
     const reassembled = assembleBytecodeBCH(disassembled);
     if (!reassembled.success) {
       t.fail();
       return;
     }
-    t.deepEqual(serialized, reassembled.bytecode);
+    t.deepEqual(encoded, reassembled.bytecode);
   }
 );
 
@@ -357,10 +357,12 @@ testProp(
   '[fast-check] disassembleBytecodeBTC <-> assembleBytecodeBTC',
   [fcUint8Array(0, maxBinLength)],
   (t, randomBytecode: Uint8Array) => {
-    const parsed = parseBytecode<OpcodesBTC>(randomBytecode);
-    const instructions = (authenticationInstructionsAreMalformed(parsed)
-      ? parsed.slice(0, -1)
-      : parsed) as AuthenticationInstruction<OpcodesBTC>[];
+    const parsed = parseBytecode(randomBytecode);
+    const instructions = (
+      authenticationInstructionsAreMalformed(parsed)
+        ? parsed.slice(0, -1)
+        : parsed
+    ) as AuthenticationInstruction[];
     const minimalPush = instructions.map((instruction) =>
       [OpcodesBTC.OP_PUSHDATA_2, OpcodesBTC.OP_PUSHDATA_4].includes(
         instruction.opcode
@@ -374,14 +376,14 @@ testProp(
           }
         : instruction
     );
-    const serialized = serializeAuthenticationInstructions(minimalPush);
+    const encoded = encodeAuthenticationInstructions(minimalPush);
 
-    const disassembled = disassembleBytecodeBTC(serialized);
+    const disassembled = disassembleBytecodeBTC(encoded);
     const reassembled = assembleBytecodeBTC(disassembled);
     if (!reassembled.success) {
       t.fail();
       return;
     }
-    t.deepEqual(serialized, reassembled.bytecode);
+    t.deepEqual(encoded, reassembled.bytecode);
   }
 );

@@ -1,4 +1,4 @@
-import { binToHex } from './hex';
+import { binToHex } from './format.js';
 
 const defaultStringifySpacing = 2;
 
@@ -10,7 +10,7 @@ const defaultStringifySpacing = 2;
  * Without modifications, `JSON.stringify` has several shortcomings in
  * debugging and logging usage:
  * - throws when serializing anything containing a `bigint`
- * - `Uint8Array`s are often serialized in base 10 with newlines between each
+ * - `Uint8Array`s are often encoded in base 10 with newlines between each
  *   index item
  * - `functions` and `symbols` are not clearly marked
  *
@@ -20,7 +20,7 @@ const defaultStringifySpacing = 2;
  * - `function`: `(x) => x * 2` → `<function: (x) => x * 2>`
  * - `symbol`: `Symbol(A)` → `<symbol: Symbol(A)>`
  *
- * @param value - the data to serialize
+ * @param value - the data to stringify
  * @param spacing - the number of spaces to use in
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +42,7 @@ export const stringify = (value: any, spacing = defaultStringifySpacing) =>
         case 'function':
         case 'symbol':
           // eslint-disable-next-line @typescript-eslint/ban-types
-          return `<${name}: ${(item as symbol | Function).toString()}>`;
+          return `<${name}: ${(item as Function | symbol).toString()}>`;
         default:
           return item;
       }

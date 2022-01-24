@@ -1,6 +1,5 @@
-import { ConsensusBCH } from '../bch/bch';
-
-import { isDefinedSigningSerializationType } from './signing-serialization';
+import { ConsensusCommon } from './common.js';
+import { isDefinedSigningSerializationType } from './signing-serialization.js';
 
 const enum PublicKey {
   uncompressedByteLength = 65,
@@ -42,12 +41,12 @@ const enum DER {
   sequenceLengthByte = 1,
   integerTagByte = 1,
   integerLengthByte = 1,
-  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+  // eslint-disable-next-line @typescript-eslint/prefer-literal-enum-member, @typescript-eslint/restrict-plus-operands
   sequenceMetadataBytes = sequenceTagByte + sequenceLengthByte,
-  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+  // eslint-disable-next-line @typescript-eslint/prefer-literal-enum-member, @typescript-eslint/restrict-plus-operands
   integerMetadataBytes = integerTagByte + integerLengthByte,
   minimumSValueBytes = 1,
-  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+  // eslint-disable-next-line @typescript-eslint/prefer-literal-enum-member, @typescript-eslint/restrict-plus-operands
   minimumNonRValueBytes = sequenceMetadataBytes +
     integerMetadataBytes +
     integerMetadataBytes +
@@ -160,7 +159,7 @@ export const isValidSignatureEncodingBCHTransaction = (
   transactionSignature: Uint8Array
 ) =>
   transactionSignature.length === 0 ||
-  transactionSignature.length === ConsensusBCH.schnorrSignatureLength + 1 ||
+  transactionSignature.length === ConsensusCommon.schnorrSignatureLength + 1 ||
   (isDefinedSigningSerializationType(
     transactionSignature[transactionSignature.length - 1]
   ) &&

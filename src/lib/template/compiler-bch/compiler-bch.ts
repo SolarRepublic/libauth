@@ -1,46 +1,36 @@
-import {
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha1,
-  instantiateSha256,
-  instantiateSha512,
-  Sha256,
-} from '../../crypto/crypto';
-import { TransactionContextCommon } from '../../transaction/transaction-types';
-import {
-  generateSigningSerializationBCH,
-  SigningSerializationFlag,
-} from '../../vm/instruction-sets/common/signing-serialization';
-import {
+import type {
+  AnyCompilerConfiguration,
   AuthenticationProgramStateBCH,
-  createInstructionSetBCH,
-  generateBytecodeMap,
-  getFlagsForInstructionSetBCH,
-  instructionSetBCHCurrentStrict,
-  OpcodesBCH,
-} from '../../vm/instruction-sets/instruction-sets';
-import { createAuthenticationVirtualMachine } from '../../vm/virtual-machine';
+  AuthenticationTemplate,
+  CompilationContextBCH,
+  CompilationData,
+  CompilerConfiguration,
+  CompilerOperationResult,
+  Sha256,
+} from '../../lib.js';
 import {
-  authenticationTemplateToCompilationEnvironment,
-  createAuthenticationProgramEvaluationCommon,
-  createCompiler,
-} from '../compiler';
-import {
-  attemptCompilerOperations,
+  authenticationTemplateToCompilerConfiguration,
   compilerOperationAttemptBytecodeResolution,
   compilerOperationHelperCompileScript,
   compilerOperationHelperDeriveHdKeyPrivate,
   compilerOperationHelperGenerateCoveredBytecode,
   compilerOperationRequires,
-} from '../compiler-operation-helpers';
-import { compilerOperationsCommon } from '../compiler-operations';
-import {
-  AnyCompilationEnvironment,
-  CompilationData,
-  CompilationEnvironment,
-  CompilerOperationResult,
-} from '../compiler-types';
-import { AuthenticationTemplate } from '../template-types';
+  createAuthenticationProgramEvaluationCommon,
+  createAuthenticationVirtualMachine,
+  createCompiler,
+  createInstructionSetBCH,
+  generateBytecodeMap,
+  generateSigningSerializationBCH,
+  instantiateRipemd160,
+  instantiateSecp256k1,
+  instantiateSha1,
+  instantiateSha256,
+  instantiateSha512,
+  OpcodesBCH2022,
+  SigningSerializationFlag,
+} from '../../lib.js';
+import { attemptCompilerOperations } from '../compiler-operation-helpers.js';
+import { compilerOperationsCommon } from '../compiler-operations.js';
 
 export type CompilerOperationsKeyBCH =
   | 'data_signature'
@@ -127,7 +117,7 @@ const getSigningSerializationType = (
 export const compilerOperationHelperComputeSignatureBCH = ({
   coveredBytecode,
   identifier,
-  transactionContext,
+  compilationContext,
   operationName,
   privateKey,
   sha256,
@@ -136,7 +126,7 @@ export const compilerOperationHelperComputeSignatureBCH = ({
   coveredBytecode: Uint8Array;
   identifier: string;
   privateKey: Uint8Array;
-  transactionContext: TransactionContextCommon;
+  compilationContext: CompilationContextBCH;
   operationName: string;
   sign: (privateKey: Uint8Array, messageHash: Uint8Array) => Uint8Array;
   sha256: { hash: Sha256['hash'] };
@@ -166,22 +156,11 @@ export const compilerOperationHelperComputeSignatureBCH = ({
       status: 'error',
     };
   }
-
-  const serialization = generateSigningSerializationBCH({
-    correspondingOutput: transactionContext.correspondingOutput,
-    coveredBytecode,
-    locktime: transactionContext.locktime,
-    outpointIndex: transactionContext.outpointIndex,
-    outpointTransactionHash: transactionContext.outpointTransactionHash,
-    outputValue: transactionContext.outputValue,
-    sequenceNumber: transactionContext.sequenceNumber,
+  const serialization = generateSigningSerializationBCH(
     sha256,
-    signingSerializationType,
-    transactionOutpoints: transactionContext.transactionOutpoints,
-    transactionOutputs: transactionContext.transactionOutputs,
-    transactionSequenceNumbers: transactionContext.transactionSequenceNumbers,
-    version: transactionContext.version,
-  });
+    compilationContext,
+    { coveredBytecode, signingSerializationType }
+  );
   const digest = sha256.hash(sha256.hash(serialization));
   const bitcoinEncodedSignature = Uint8Array.from([
     ...sign(privateKey, digest),
@@ -199,14 +178,13 @@ export const compilerOperationHelperHdKeySignatureBCH = ({
   secp256k1Method,
 }: {
   operationName: string;
-  secp256k1Method: keyof NonNullable<CompilationEnvironment['secp256k1']>;
+  secp256k1Method: keyof NonNullable<CompilerConfiguration['secp256k1']>;
 }) =>
   attemptCompilerOperations(
     [compilerOperationAttemptBytecodeResolution],
     compilerOperationRequires({
       canBeSkipped: false,
-      dataProperties: ['hdKeys', 'transactionContext'],
-      environmentProperties: [
+      configurationProperties: [
         'entityOwnership',
         'ripemd160',
         'secp256k1',
@@ -216,25 +194,22 @@ export const compilerOperationHelperHdKeySignatureBCH = ({
         'sourceScriptIds',
         'unlockingScripts',
       ],
-      operation: (identifier, data, environment): CompilerOperationResult => {
-        const { hdKeys, transactionContext } = data;
-        const {
-          secp256k1,
-          sha256,
-          sourceScriptIds,
-          unlockingScripts,
-        } = environment;
+      dataProperties: ['hdKeys', 'compilationContext'],
+      operation: (identifier, data, configuration): CompilerOperationResult => {
+        const { hdKeys, compilationContext } = data;
+        const { secp256k1, sha256, sourceScriptIds, unlockingScripts } =
+          configuration;
 
         const derivationResult = compilerOperationHelperDeriveHdKeyPrivate({
-          environment,
+          configuration,
           hdKeys,
           identifier,
         });
         if (derivationResult.status === 'error') return derivationResult;
 
         const result = compilerOperationHelperGenerateCoveredBytecode({
+          configuration,
           data,
-          environment,
           identifier,
           sourceScriptIds,
           unlockingScripts,
@@ -245,57 +220,51 @@ export const compilerOperationHelperHdKeySignatureBCH = ({
         }
 
         return compilerOperationHelperComputeSignatureBCH({
+          compilationContext,
           coveredBytecode: result,
           identifier,
           operationName,
           privateKey: derivationResult.bytecode,
           sha256,
           sign: secp256k1[secp256k1Method],
-          transactionContext,
         });
       },
     })
   );
 
-export const compilerOperationHdKeyEcdsaSignatureBCH = compilerOperationHelperHdKeySignatureBCH(
-  {
+export const compilerOperationHdKeyEcdsaSignatureBCH =
+  compilerOperationHelperHdKeySignatureBCH({
     operationName: 'signature',
     secp256k1Method: 'signMessageHashDER',
-  }
-);
-export const compilerOperationHdKeySchnorrSignatureBCH = compilerOperationHelperHdKeySignatureBCH(
-  {
+  });
+export const compilerOperationHdKeySchnorrSignatureBCH =
+  compilerOperationHelperHdKeySignatureBCH({
     operationName: 'schnorr_signature',
     secp256k1Method: 'signMessageHashSchnorr',
-  }
-);
+  });
 
 export const compilerOperationHelperKeySignatureBCH = ({
   operationName,
   secp256k1Method,
 }: {
   operationName: string;
-  secp256k1Method: keyof NonNullable<CompilationEnvironment['secp256k1']>;
+  secp256k1Method: keyof NonNullable<CompilerConfiguration['secp256k1']>;
 }) =>
   attemptCompilerOperations(
     [compilerOperationAttemptBytecodeResolution],
     compilerOperationRequires({
       canBeSkipped: false,
-      dataProperties: ['keys', 'transactionContext'],
-      environmentProperties: [
+      configurationProperties: [
         'sha256',
         'secp256k1',
         'unlockingScripts',
         'sourceScriptIds',
       ],
-      operation: (identifier, data, environment): CompilerOperationResult => {
-        const { keys, transactionContext } = data;
-        const {
-          secp256k1,
-          sha256,
-          unlockingScripts,
-          sourceScriptIds,
-        } = environment;
+      dataProperties: ['keys', 'compilationContext'],
+      operation: (identifier, data, configuration): CompilerOperationResult => {
+        const { keys, compilationContext } = data;
+        const { secp256k1, sha256, unlockingScripts, sourceScriptIds } =
+          configuration;
         const { privateKeys } = keys;
         const [variableId] = identifier.split('.');
 
@@ -311,8 +280,8 @@ export const compilerOperationHelperKeySignatureBCH = ({
         }
 
         const result = compilerOperationHelperGenerateCoveredBytecode({
+          configuration,
           data,
-          environment,
           identifier,
           sourceScriptIds,
           unlockingScripts,
@@ -323,37 +292,35 @@ export const compilerOperationHelperKeySignatureBCH = ({
         }
 
         return compilerOperationHelperComputeSignatureBCH({
+          compilationContext,
           coveredBytecode: result,
           identifier,
           operationName,
           privateKey,
           sha256,
           sign: secp256k1[secp256k1Method],
-          transactionContext,
         });
       },
     })
   );
 
-export const compilerOperationKeyEcdsaSignatureBCH = compilerOperationHelperKeySignatureBCH(
-  {
+export const compilerOperationKeyEcdsaSignatureBCH =
+  compilerOperationHelperKeySignatureBCH({
     operationName: 'signature',
     secp256k1Method: 'signMessageHashDER',
-  }
-);
-export const compilerOperationKeySchnorrSignatureBCH = compilerOperationHelperKeySignatureBCH(
-  {
+  });
+export const compilerOperationKeySchnorrSignatureBCH =
+  compilerOperationHelperKeySignatureBCH({
     operationName: 'schnorr_signature',
     secp256k1Method: 'signMessageHashSchnorr',
-  }
-);
+  });
 
 export const compilerOperationHelperComputeDataSignatureBCH = <
   Data extends CompilationData,
-  Environment extends AnyCompilationEnvironment<TransactionContextCommon>
+  Configuration extends AnyCompilerConfiguration<CompilationContextBCH>
 >({
   data,
-  environment,
+  configuration,
   identifier,
   operationName,
   privateKey,
@@ -361,7 +328,7 @@ export const compilerOperationHelperComputeDataSignatureBCH = <
   sign,
 }: {
   data: Data;
-  environment: Environment;
+  configuration: Configuration;
   identifier: string;
   privateKey: Uint8Array;
   operationName: string;
@@ -390,8 +357,8 @@ export const compilerOperationHelperComputeDataSignatureBCH = <
   }
 
   const result = compilerOperationHelperCompileScript({
+    configuration,
     data,
-    environment,
     targetScriptId: scriptId,
   });
 
@@ -419,17 +386,17 @@ export const compilerOperationHelperKeyDataSignatureBCH = ({
   secp256k1Method,
 }: {
   operationName: string;
-  secp256k1Method: keyof NonNullable<CompilationEnvironment['secp256k1']>;
+  secp256k1Method: keyof NonNullable<CompilerConfiguration['secp256k1']>;
 }) =>
   attemptCompilerOperations(
     [compilerOperationAttemptBytecodeResolution],
     compilerOperationRequires({
       canBeSkipped: false,
+      configurationProperties: ['sha256', 'secp256k1'],
       dataProperties: ['keys'],
-      environmentProperties: ['sha256', 'secp256k1'],
-      operation: (identifier, data, environment): CompilerOperationResult => {
+      operation: (identifier, data, configuration): CompilerOperationResult => {
         const { keys } = data;
-        const { secp256k1, sha256 } = environment;
+        const { secp256k1, sha256 } = configuration;
         const { privateKeys } = keys;
         const [variableId] = identifier.split('.');
 
@@ -446,10 +413,10 @@ export const compilerOperationHelperKeyDataSignatureBCH = ({
 
         return compilerOperationHelperComputeDataSignatureBCH<
           typeof data,
-          typeof environment
+          typeof configuration
         >({
+          configuration,
           data,
-          environment,
           identifier,
           operationName,
           privateKey,
@@ -460,32 +427,29 @@ export const compilerOperationHelperKeyDataSignatureBCH = ({
     })
   );
 
-export const compilerOperationKeyEcdsaDataSignatureBCH = compilerOperationHelperKeyDataSignatureBCH(
-  {
+export const compilerOperationKeyEcdsaDataSignatureBCH =
+  compilerOperationHelperKeyDataSignatureBCH({
     operationName: 'data_signature',
     secp256k1Method: 'signMessageHashDER',
-  }
-);
-export const compilerOperationKeySchnorrDataSignatureBCH = compilerOperationHelperKeyDataSignatureBCH(
-  {
+  });
+export const compilerOperationKeySchnorrDataSignatureBCH =
+  compilerOperationHelperKeyDataSignatureBCH({
     operationName: 'schnorr_data_signature',
     secp256k1Method: 'signMessageHashSchnorr',
-  }
-);
+  });
 
 export const compilerOperationHelperHdKeyDataSignatureBCH = ({
   operationName,
   secp256k1Method,
 }: {
   operationName: string;
-  secp256k1Method: keyof NonNullable<CompilationEnvironment['secp256k1']>;
+  secp256k1Method: keyof NonNullable<CompilerConfiguration['secp256k1']>;
 }) =>
   attemptCompilerOperations(
     [compilerOperationAttemptBytecodeResolution],
     compilerOperationRequires({
       canBeSkipped: false,
-      dataProperties: ['hdKeys'],
-      environmentProperties: [
+      configurationProperties: [
         'entityOwnership',
         'ripemd160',
         'secp256k1',
@@ -493,12 +457,13 @@ export const compilerOperationHelperHdKeyDataSignatureBCH = ({
         'sha512',
         'variables',
       ],
-      operation: (identifier, data, environment) => {
+      dataProperties: ['hdKeys'],
+      operation: (identifier, data, configuration) => {
         const { hdKeys } = data;
-        const { secp256k1, sha256 } = environment;
+        const { secp256k1, sha256 } = configuration;
 
         const derivationResult = compilerOperationHelperDeriveHdKeyPrivate({
-          environment,
+          configuration,
           hdKeys,
           identifier,
         });
@@ -506,10 +471,10 @@ export const compilerOperationHelperHdKeyDataSignatureBCH = ({
 
         return compilerOperationHelperComputeDataSignatureBCH<
           typeof data,
-          typeof environment
+          typeof configuration
         >({
+          configuration,
           data,
-          environment,
           identifier,
           operationName,
           privateKey: derivationResult.bytecode,
@@ -520,25 +485,23 @@ export const compilerOperationHelperHdKeyDataSignatureBCH = ({
     })
   );
 
-export const compilerOperationHdKeyEcdsaDataSignatureBCH = compilerOperationHelperHdKeyDataSignatureBCH(
-  {
+export const compilerOperationHdKeyEcdsaDataSignatureBCH =
+  compilerOperationHelperHdKeyDataSignatureBCH({
     operationName: 'data_signature',
     secp256k1Method: 'signMessageHashDER',
-  }
-);
-export const compilerOperationHdKeySchnorrDataSignatureBCH = compilerOperationHelperHdKeyDataSignatureBCH(
-  {
+  });
+export const compilerOperationHdKeySchnorrDataSignatureBCH =
+  compilerOperationHelperHdKeyDataSignatureBCH({
     operationName: 'schnorr_data_signature',
     secp256k1Method: 'signMessageHashSchnorr',
-  }
-);
+  });
 
-export const compilerOperationSigningSerializationFullBCH = compilerOperationRequires(
-  {
+export const compilerOperationSigningSerializationFullBCH =
+  compilerOperationRequires({
     canBeSkipped: false,
-    dataProperties: ['transactionContext'],
-    environmentProperties: ['sha256', 'sourceScriptIds', 'unlockingScripts'],
-    operation: (identifier, data, environment): CompilerOperationResult => {
+    configurationProperties: ['sha256', 'sourceScriptIds', 'unlockingScripts'],
+    dataProperties: ['compilationContext'],
+    operation: (identifier, data, configuration): CompilerOperationResult => {
       const [, algorithmOrComponent, unknownPart] = identifier.split('.') as (
         | string
         | undefined
@@ -569,10 +532,10 @@ export const compilerOperationSigningSerializationFullBCH = compilerOperationReq
         };
       }
 
-      const { sha256, sourceScriptIds, unlockingScripts } = environment;
+      const { sha256, sourceScriptIds, unlockingScripts } = configuration;
       const result = compilerOperationHelperGenerateCoveredBytecode({
+        configuration,
         data,
-        environment,
         identifier,
         sourceScriptIds,
         unlockingScripts,
@@ -582,29 +545,16 @@ export const compilerOperationSigningSerializationFullBCH = compilerOperationReq
         return result;
       }
 
-      const { transactionContext } = data;
+      const { compilationContext } = data;
       return {
-        bytecode: generateSigningSerializationBCH({
-          correspondingOutput: transactionContext.correspondingOutput,
+        bytecode: generateSigningSerializationBCH(sha256, compilationContext, {
           coveredBytecode: result,
-          locktime: transactionContext.locktime,
-          outpointIndex: transactionContext.outpointIndex,
-          outpointTransactionHash: transactionContext.outpointTransactionHash,
-          outputValue: transactionContext.outputValue,
-          sequenceNumber: transactionContext.sequenceNumber,
-          sha256,
           signingSerializationType,
-          transactionOutpoints: transactionContext.transactionOutpoints,
-          transactionOutputs: transactionContext.transactionOutputs,
-          transactionSequenceNumbers:
-            transactionContext.transactionSequenceNumbers,
-          version: transactionContext.version,
         }),
         status: 'success',
       };
     },
-  }
-);
+  });
 
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
 export const compilerOperationsBCH = {
@@ -628,35 +578,35 @@ export const compilerOperationsBCH = {
     full_all_outputs: compilerOperationSigningSerializationFullBCH,
     full_all_outputs_single_input: compilerOperationSigningSerializationFullBCH,
     full_corresponding_output: compilerOperationSigningSerializationFullBCH,
-    full_corresponding_output_single_input: compilerOperationSigningSerializationFullBCH,
+    full_corresponding_output_single_input:
+      compilerOperationSigningSerializationFullBCH,
     full_no_outputs: compilerOperationSigningSerializationFullBCH,
     full_no_outputs_single_input: compilerOperationSigningSerializationFullBCH,
   },
 };
 /* eslint-enable camelcase, @typescript-eslint/naming-convention */
 
-export type TransactionContextBCH = TransactionContextCommon;
-export type CompilationEnvironmentBCH = CompilationEnvironment<
-  TransactionContextBCH,
+export type CompilerConfigurationBCH = CompilerConfiguration<
+  CompilationContextBCH,
   CompilerOperationsKeyBCH
 >;
 
 /**
- * Create a compiler using the default BCH environment.
+ * Create a compiler using the default BCH compiler configuration.
  *
  * Internally instantiates the necessary crypto and VM implementations – use
  * `createCompiler` for more control.
  *
- * @param scriptsAndOverrides - a compilation environment from which properties
- * will be used to override properties of the default BCH environment – must
+ * @param scriptsAndOverrides - a compiler configuration from which properties
+ * will be used to override properties of the default BCH configuration – must
  * include the `scripts` property
  */
 export const createCompilerBCH = async <
-  TransactionContext extends TransactionContextCommon,
-  Environment extends AnyCompilationEnvironment<TransactionContext>,
+  CompilationContext extends CompilationContextBCH,
+  Configuration extends AnyCompilerConfiguration<CompilationContext>,
   ProgramState extends AuthenticationProgramStateBCH
 >(
-  scriptsAndOverrides: Environment
+  scriptsAndOverrides: Configuration
 ) => {
   const [sha1, sha256, sha512, ripemd160, secp256k1] = await Promise.all([
     instantiateSha1(),
@@ -667,22 +617,16 @@ export const createCompilerBCH = async <
   ]);
   const vm = createAuthenticationVirtualMachine(
     createInstructionSetBCH({
-      flags: getFlagsForInstructionSetBCH(instructionSetBCHCurrentStrict),
       ripemd160,
       secp256k1,
       sha1,
       sha256,
     })
   );
-  return createCompiler<
-    TransactionContext,
-    Environment,
-    OpcodesBCH,
-    ProgramState
-  >({
+  return createCompiler<CompilationContext, Configuration, ProgramState>({
     ...{
       createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
-      opcodes: generateBytecodeMap(OpcodesBCH),
+      opcodes: generateBytecodeMap(OpcodesBCH2022),
       operations: compilerOperationsBCH,
       ripemd160,
       secp256k1,
@@ -699,18 +643,18 @@ export const createCompilerBCH = async <
  * of overrides.
  * @param template - the `AuthenticationTemplate` from which to create the BCH
  * compiler
- * @param overrides - a compilation environment from which properties will be
- * used to override properties of the default BCH environment
+ * @param overrides - a compiler configuration from which properties will be
+ * used to override properties of the default BCH configuration
  */
 export const authenticationTemplateToCompilerBCH = async <
-  TransactionContext extends TransactionContextCommon,
-  Environment extends AnyCompilationEnvironment<TransactionContext>,
+  CompilationContext extends CompilationContextBCH,
+  Environment extends AnyCompilerConfiguration<CompilationContext>,
   ProgramState extends AuthenticationProgramStateBCH
 >(
   template: AuthenticationTemplate,
-  overrides?: CompilationEnvironment<TransactionContext>
+  overrides?: CompilerConfiguration<CompilationContext>
 ) =>
-  createCompilerBCH<TransactionContext, Environment, ProgramState>({
+  createCompilerBCH<CompilationContext, Environment, ProgramState>({
     ...overrides,
-    ...authenticationTemplateToCompilationEnvironment(template),
+    ...authenticationTemplateToCompilerConfiguration(template),
   } as Environment);

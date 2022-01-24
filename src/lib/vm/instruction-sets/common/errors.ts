@@ -1,4 +1,4 @@
-import { AuthenticationProgramStateError } from '../../vm-types';
+import type { AuthenticationProgramStateError } from '../../vm';
 
 export enum AuthenticationErrorCommon {
   calledReserved = 'Program called an unassigned, reserved operation.',
@@ -6,11 +6,14 @@ export enum AuthenticationErrorCommon {
   calledUpgradableNop = 'Program called a disallowed upgradable non-operation (OP_NOP1-OP_NOP10).',
   checkSequenceUnavailable = 'Program called an OP_CHECKSEQUENCEVERIFY operation, but OP_CHECKSEQUENCEVERIFY requires transaction version 2 or higher.',
   disabledOpcode = 'Program contains a disabled opcode.',
+  divisionByZero = 'Program attempted to divide a number by zero.',
   emptyAlternateStack = 'Tried to read from an empty alternate stack.',
   emptyStack = 'Tried to read from an empty stack.',
   exceededMaximumBytecodeLengthLocking = 'The provided locking bytecode exceeds the maximum bytecode length (10,000 bytes).',
   exceededMaximumBytecodeLengthUnlocking = 'The provided unlocking bytecode exceeds the maximum bytecode length (10,000 bytes).',
+  exceededMaximumScriptNumberLength = 'Program attempted an OP_BIN2NUM operation on a byte sequence which cannot be encoded within the maximum Script Number length (4 bytes).',
   exceededMaximumStackDepth = 'Program exceeded the maximum stack depth (1,000 items).',
+  exceededMaximumStackItemLength = 'Program attempted to push a stack item which exceeded the maximum stack item length (520 bytes).',
   exceededMaximumOperationCount = 'Program exceeded the maximum operation count (201 operations).',
   exceedsMaximumMultisigPublicKeyCount = 'Program called an OP_CHECKMULTISIG which exceeds the maximum public key count (20 public keys).',
   exceedsMaximumPush = 'Push exceeds the push size limit of 520 bytes.',
@@ -18,14 +21,18 @@ export enum AuthenticationErrorCommon {
   invalidStackIndex = 'Tried to read from an invalid stack index.',
   incompatibleLocktimeType = 'Program called an OP_CHECKLOCKTIMEVERIFY operation with an incompatible locktime type. The transaction locktime and required locktime must both refer to either a block height or a block time.',
   incompatibleSequenceType = 'Program called an OP_CHECKSEQUENCEVERIFY operation with an incompatible sequence type flag. The input sequence number and required sequence number must both use the same sequence locktime type.',
+  insufficientLength = 'Program called an OP_NUM2BIN operation with an insufficient byte length to re-encode the provided number.',
   insufficientPublicKeys = 'Program called an OP_CHECKMULTISIG operation which requires signatures from more public keys than are provided.',
   invalidNaturalNumber = 'Invalid input: the key/signature count inputs for OP_CHECKMULTISIG require a natural number (n > 0).',
   invalidProtocolBugValue = 'The OP_CHECKMULTISIG protocol bug value must be a Script Number 0 (to comply with the "NULLDUMMY" rule).',
   invalidPublicKeyEncoding = 'Encountered an improperly encoded public key.',
   invalidScriptNumber = 'Invalid input: this operation requires a valid Script Number.',
   invalidSignatureEncoding = 'Encountered an improperly encoded signature.',
+  invalidSplitIndex = 'Program called an OP_SPLIT operation with an invalid index.',
   locktimeDisabled = 'Program called an OP_CHECKLOCKTIMEVERIFY operation, but locktime is disabled for this transaction.',
+  mismatchedBitwiseOperandLength = 'Program attempted a bitwise operation on operands of different lengths.',
   malformedLockingBytecode = 'The provided locking bytecode is malformed.',
+  malformedP2shBytecode = 'Redeem bytecode was malformed prior to P2SH evaluation.',
   malformedPush = 'Program must be long enough to push the requested number of bytes.',
   malformedUnlockingBytecode = 'The provided unlocking bytecode is malformed.',
   negativeLocktime = 'Program called an OP_CHECKLOCKTIMEVERIFY or OP_CHECKSEQUENCEVERIFY operation with a negative locktime.',
@@ -33,6 +40,7 @@ export enum AuthenticationErrorCommon {
   nonMinimalPush = 'Push operations must use the smallest possible encoding.',
   nonNullSignatureFailure = 'Program failed a signature verification with a non-null signature (violating the "NULLFAIL" rule).',
   requiresCleanStack = 'Program completed with an unexpected number of items on the stack (must be exactly 1).',
+  requiresPushOnly = 'Unlocking bytecode may contain only push operations.',
   schnorrSizedSignatureInCheckMultiSig = 'Program used a schnorr-sized signature (65 bytes) in an OP_CHECKMULTISIG operation.',
   unexpectedElse = 'Encountered an OP_ELSE outside of an OP_IF ... OP_ENDIF block.',
   unexpectedEndIf = 'Encountered an OP_ENDIF which is not following a matching OP_IF.',
@@ -51,11 +59,8 @@ export enum AuthenticationErrorCommon {
  * (Evaluation should end after the first encountered error, so further errors
  * aren't relevant.)
  */
-export const applyError = <
-  State extends AuthenticationProgramStateError<Errors>,
-  Errors
->(
-  error: AuthenticationErrorCommon | Errors,
+export const applyError = <State extends AuthenticationProgramStateError>(
+  error: string,
   state: State
 ): State => ({
   ...state,

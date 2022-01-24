@@ -1,11 +1,12 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers, functional/no-expression-statement */
-import test, { Macro } from 'ava';
-import * as fc from 'fast-check';
+import test from 'ava';
+import fc from 'fast-check';
 
-import {
-  attemptCashAddressFormatErrorCorrection,
+import type {
   CashAddressAvailableSizesInBits,
   CashAddressAvailableTypes,
+} from '../lib.js';
+import {
+  attemptCashAddressFormatErrorCorrection,
   CashAddressCorrectionError,
   CashAddressDecodingError,
   CashAddressEncodingError,
@@ -25,9 +26,10 @@ import {
   instantiateSha256,
   maskCashAddressPrefix,
   splitEvery,
-} from '../lib';
+} from '../lib.js';
 
-import * as cashAddrJson from './fixtures/cashaddr.json';
+// eslint-disable-next-line import/no-restricted-paths, import/no-internal-modules
+import cashAddrJson from './fixtures/cashaddr.json' assert { type: 'json' };
 
 const maxUint8Number = 255;
 const fcUint8Array = (length: number) =>
@@ -426,28 +428,28 @@ test('[fast-check] attemptCashAddressErrorCorrection', (t) => {
 
 const sha256Promise = instantiateSha256();
 
-const legacyVectors: Macro<[string, string]> = async (
-  t,
-  base58Address,
-  cashAddress
-) => {
-  const sha256 = await sha256Promise;
-  const decodedBase58Address = decodeBase58AddressFormat(sha256, base58Address);
-  const decodedCashAddress = decodeCashAddress(cashAddress);
-  if (
-    typeof decodedCashAddress === 'string' ||
-    typeof decodedBase58Address === 'string'
-  ) {
-    t.fail();
+const legacyVectors = test.macro<[string, string]>({
+  exec: async (t, base58Address, cashAddress) => {
+    const sha256 = await sha256Promise;
+    const decodedBase58Address = decodeBase58AddressFormat(
+      sha256,
+      base58Address
+    );
+    const decodedCashAddress = decodeCashAddress(cashAddress);
+    if (
+      typeof decodedCashAddress === 'string' ||
+      typeof decodedBase58Address === 'string'
+    ) {
+      t.fail();
+      return undefined;
+    }
+    t.deepEqual(decodedBase58Address.payload, decodedCashAddress.hash);
     return undefined;
-  }
-  t.deepEqual(decodedBase58Address.payload, decodedCashAddress.hash);
-  return undefined;
-};
+  },
 
-// eslint-disable-next-line functional/immutable-data
-legacyVectors.title = (_, base58Address) =>
-  `CashAddress <-> Legacy Base58 Vectors: ${base58Address}`;
+  title: (_, base58Address) =>
+    `CashAddress <-> Legacy Base58 Vectors: ${base58Address}`,
+});
 
 test(
   legacyVectors,

@@ -1,8 +1,8 @@
-import { AuthenticationInstruction } from '../../vm/instruction-sets/instruction-sets-types';
-import {
+import type {
+  AuthenticationInstruction,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
-} from '../../vm/vm-types';
+} from '../../lib';
 
 export interface Range {
   endColumn: number;
@@ -23,14 +23,14 @@ export interface MarkedNode {
 }
 
 type StringSegmentType =
-  | 'Comment'
-  | 'Identifier'
-  | 'UTF8Literal'
   | 'BigIntLiteral'
   | 'BinaryLiteral'
-  | 'HexLiteral';
+  | 'Comment'
+  | 'HexLiteral'
+  | 'Identifier'
+  | 'UTF8Literal';
 
-type RecursiveSegmentType = 'Push' | 'Evaluation';
+type RecursiveSegmentType = 'Evaluation' | 'Push';
 
 interface BitauthTemplatingLanguageSegment extends MarkedNode {
   name: string;
@@ -149,11 +149,11 @@ export interface ResolvedSegmentError extends ResolvedSegmentBase {
 }
 
 export type ResolvedSegment =
-  | ResolvedSegmentPush<ResolvedScript>
-  | ResolvedSegmentEvaluation<ResolvedScript>
   | ResolvedSegmentBytecode
   | ResolvedSegmentComment
-  | ResolvedSegmentError;
+  | ResolvedSegmentError
+  | ResolvedSegmentEvaluation<ResolvedScript>
+  | ResolvedSegmentPush<ResolvedScript>;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedScript extends Array<ResolvedSegment> {}
@@ -183,18 +183,18 @@ export interface ResolutionSignature {
   signature?:
     | {
         /**
+         * The raw message signed by a data signature. This message is
+         * hashed once with `sha256`, and the digest is signed.
+         */
+        message: Uint8Array;
+      }
+    | {
+        /**
          * The transaction signing serialization signed by a signature. This
          * signing serialization is hashed twice with `sha256`, and the
          * digest is signed.
          */
         serialization: Uint8Array;
-      }
-    | {
-        /**
-         * The raw message signed by a data signature. This message is
-         * hashed once with `sha256`, and the digest is signed.
-         */
-        message: Uint8Array;
       };
 }
 
@@ -203,37 +203,18 @@ export interface ResolutionSignature {
  * bytecode or an error. The string will never be empty (`''`), so resolution
  * can skip checking the string's length.
  */
-export type IdentifierResolutionFunction = (
-  identifier: string
-) =>
-  | {
-      bytecode: Uint8Array;
-      status: true;
-      type: IdentifierResolutionType.opcode;
-    }
-  | ({
-      bytecode: Uint8Array;
-      status: true;
-      type: IdentifierResolutionType.variable;
-    } & ResolutionDebug &
-      ResolutionSignature)
+export type IdentifierResolutionFunction = (identifier: string) =>
   | {
       bytecode: Uint8Array;
       source: ResolvedScript;
       status: true;
       type: IdentifierResolutionType.script;
     }
-  | ({
-      error: string;
-      type: IdentifierResolutionErrorType.variable;
-      status: false;
-      recoverable: boolean;
-      /**
-       * Only available if this variable is present in the environment's
-       * `entityOwnership`.
-       */
-      entityOwnership?: string;
-    } & ResolutionDebug)
+  | {
+      bytecode: Uint8Array;
+      status: true;
+      type: IdentifierResolutionType.opcode;
+    }
   | {
       error: string;
       type: IdentifierResolutionErrorType.script;
@@ -244,7 +225,24 @@ export type IdentifierResolutionFunction = (
       error: string;
       type: IdentifierResolutionErrorType.unknown;
       status: false;
-    };
+    }
+  | (ResolutionDebug &
+      ResolutionSignature & {
+        bytecode: Uint8Array;
+        status: true;
+        type: IdentifierResolutionType.variable;
+      })
+  | (ResolutionDebug & {
+      error: string;
+      type: IdentifierResolutionErrorType.variable;
+      status: false;
+      recoverable: boolean;
+      /**
+       * Only available if this variable is present in the configuration's
+       * `entityOwnership`.
+       */
+      entityOwnership?: string;
+    });
 
 /**
  * The result of reducing a single BTL script node.
@@ -275,10 +273,10 @@ export interface ScriptReductionTraceEvaluationNode<ProgramState>
 }
 
 export type ScriptReductionTraceChildNode<ProgramState> =
-  | ScriptReductionTraceNode
   | ScriptReductionTraceErrorNode
-  | ScriptReductionTracePushNode<ProgramState>
-  | ScriptReductionTraceEvaluationNode<ProgramState>;
+  | ScriptReductionTraceEvaluationNode<ProgramState>
+  | ScriptReductionTraceNode
+  | ScriptReductionTracePushNode<ProgramState>;
 
 /**
  * The ProgramState at a particular point in a sampled evaluation.
@@ -294,19 +292,19 @@ export interface TraceSample<ProgramState> {
  * be malformed if not evaluated together, since the `0x03` becomes
  * `OP_PUSHBYTES_3`, and the UTF8 literals compile to `0x616263`.
  */
-export interface InstructionAggregation<Opcodes> {
-  instructions: AuthenticationInstruction<Opcodes>[];
+export interface InstructionAggregation {
+  instructions: AuthenticationInstruction[];
   lastIp: number;
   range: Range;
 }
 
-export interface InstructionAggregationSuccess<Opcodes> {
-  aggregations: InstructionAggregation<Opcodes>[];
+export interface InstructionAggregationSuccess {
+  aggregations: InstructionAggregation[];
   success: true;
 }
 
-export interface InstructionAggregationError<Opcodes> {
-  aggregations: InstructionAggregation<Opcodes>[];
+export interface InstructionAggregationError {
+  aggregations: InstructionAggregation[];
   remainingBytecode: Uint8Array;
   remainingRange: Range;
   success: false;
@@ -318,7 +316,7 @@ export interface InstructionAggregationError<Opcodes> {
  * which was evaluated, the range in the source script over which the
  * instruction was defined, and the resulting program state.
  */
-export interface EvaluationSample<ProgramState, Opcodes = number> {
+export interface EvaluationSample<ProgramState> {
   /**
    * The range of the evaluation node in which this sample was generated.
    *
@@ -333,7 +331,7 @@ export interface EvaluationSample<ProgramState, Opcodes = number> {
    * instructions are executed, so its `instruction` is `undefined`. For all
    * other samples, `instruction` must be defined.
    */
-  instruction?: AuthenticationInstruction<Opcodes>;
+  instruction?: AuthenticationInstruction;
   /**
    * An ordered array of instructions and program states which occurred within
    * the range of a single reduction trace node before the final instruction and
@@ -346,7 +344,7 @@ export interface EvaluationSample<ProgramState, Opcodes = number> {
    * Usually, this will be an empty array.
    */
   internalStates: {
-    instruction: AuthenticationInstruction<Opcodes>;
+    instruction: AuthenticationInstruction;
     state: ProgramState;
   }[];
   /**
@@ -371,7 +369,7 @@ export interface CompilationResultReduce<ProgramState>
 
 export interface CompilationResultErrorBase {
   errors: CompilationError[];
-  errorType: 'parse' | 'resolve' | 'reduce';
+  errorType: 'parse' | 'reduce' | 'resolve';
   success: false;
 }
 
@@ -382,7 +380,7 @@ export type CompilationError =
 /**
  * A compilation error from which it is not possible to recover. This includes
  * problems with the authentication template, missing dependencies in the
- * compilation environment, and other errors which likely require meaningful
+ * compiler configuration, and other errors which likely require meaningful
  * software changes.
  */
 export interface CompilationErrorFatal {
@@ -442,8 +440,8 @@ export interface CompilationResultReduceError<ProgramState>
 
 export type CompilationResultError<ProgramState> =
   | CompilationResultParseError
-  | CompilationResultResolveError
-  | CompilationResultReduceError<ProgramState>;
+  | CompilationResultReduceError<ProgramState>
+  | CompilationResultResolveError;
 
 export interface CompilationResultSuccess<ProgramState>
   extends CompilationResultReduce<ProgramState> {
@@ -464,8 +462,8 @@ export interface CompilationResultSuccess<ProgramState>
 }
 
 export type CompilationResult<
-  ProgramState = AuthenticationProgramStateStack &
-    AuthenticationProgramStateMinimum
+  ProgramState = AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack
 > =
-  | CompilationResultSuccess<ProgramState>
-  | CompilationResultError<ProgramState>;
+  | CompilationResultError<ProgramState>
+  | CompilationResultSuccess<ProgramState>;

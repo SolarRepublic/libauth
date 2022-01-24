@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
 // cspell:ignore bitcoinvarint, IDE\'s
-import { AuthenticationTemplate } from '../../template/template-types';
+import type { AuthenticationTemplate } from '../../lib';
 
 export const cashChannels: AuthenticationTemplate = {
   $schema: 'https://bitauth.com/schemas/authentication-template-v0.schema.json',
@@ -107,6 +107,7 @@ export const cashChannels: AuthenticationTemplate = {
       description:
         'An example attempting to execute a payment authorization before the payment time authorized by the owner. The authorization is for "1000" in asset "USD" (described in cents, so $10.00 USD), and it authorizes a payment of a maximum of 10500 satoshis. The hypothetical UTXO being spent has a value of 20000 satoshis.',
       name: '$10.00 USD – Before Payment Time',
+      sourceOutputs: [{ valueSatoshis: 20000 }],
       transaction: {
         locktime: 1577836800,
         outputs: [
@@ -121,11 +122,10 @@ export const cashChannels: AuthenticationTemplate = {
                 },
               },
             },
-            satoshis: 10000,
+            valueSatoshis: 10000,
           },
         ],
       },
-      value: 20000,
     },
     exceeds_maximum_payment_number: {
       data: {

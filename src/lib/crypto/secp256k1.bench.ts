@@ -1,12 +1,12 @@
-/* eslint-disable functional/no-expression-statement, functional/no-let, @typescript-eslint/init-declarations, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable functional/no-let, @typescript-eslint/init-declarations, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { randomBytes } from 'crypto';
 
 import test from 'ava';
 import suite from 'chuhai';
-import * as elliptic from 'elliptic';
-import * as secp256k1Node from 'secp256k1';
+import elliptic from 'elliptic';
+import secp256k1Node from 'secp256k1';
 
-import { binToHex, generatePrivateKey, instantiateSecp256k1 } from '../lib';
+import { binToHex, generatePrivateKey, instantiateSecp256k1 } from '../lib.js';
 
 const secp256k1Promise = instantiateSecp256k1();
 
@@ -164,10 +164,9 @@ test('bench: secp256k1: create DER Low-S signature', async (t) => {
       sigDERBenchmark = secp256k1.signMessageHashDER(privKey, messageHash);
     });
     s.bench('elliptic', () => {
-      sigDERBenchmark = ellipticEc
-        .keyFromPrivate(privKey)
-        .sign(messageHash)
-        .toDER();
+      sigDERBenchmark = Uint8Array.from(
+        ellipticEc.keyFromPrivate(privKey).sign(messageHash).toDER()
+      );
     });
     s.bench('secp256k1-node', () => {
       sigDERBenchmark = secp256k1Node.signatureExport(

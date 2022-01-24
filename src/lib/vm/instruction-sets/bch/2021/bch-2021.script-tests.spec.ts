@@ -1,25 +1,26 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers, functional/immutable-data */
 import test from 'ava';
 
+import type { AuthenticationProgramStateBCH } from '../../../../lib';
 import {
-  assembleBitcoinABCScript,
-  AuthenticationProgramStateBCH,
+  assembleBitcoinSatoshiScript,
   bigIntToBinUint64LE,
   createTestAuthenticationProgramBCH,
   disassembleBytecodeBCH,
   instantiateSha256,
-  instantiateVirtualMachineBCH,
-  InstructionSetBCH,
+  instantiateVirtualMachineBCH2021,
   stackItemIsTruthy,
-} from '../../../lib';
+  stringify,
+} from '../../../../lib.js';
 
-import * as scriptTestsAddendum from './fixtures/bitcoin-abc/script-tests-addendum.json';
-import * as scriptTests from './fixtures/bitcoin-abc/script_tests.json';
+// eslint-disable-next-line import/no-restricted-paths, import/no-internal-modules
+import scriptTestsAddendum from './fixtures/bchn/script-tests-addendum.json' assert { type: 'json' };
+// eslint-disable-next-line import/no-restricted-paths, import/no-internal-modules
+import scriptTests from './fixtures/bchn/script_tests.json' assert { type: 'json' };
 
 const tests = Object.values(scriptTests)
   .filter((e) => e.length !== 1 && e.length < 7)
   .map((expectation, testIndex) => {
-    const satoshis =
+    const valueSatoshis =
       typeof expectation[0] === 'string'
         ? 0
         : (expectation.shift() as number[])[0] * 1e8;
@@ -29,19 +30,20 @@ const tests = Object.values(scriptTests)
       flags: { dirtyStack: false, failRequiresReview: false, useStrict: false },
       lockingBytecodeText: expectation[1] as string,
       message: expectation[4] as string | undefined,
-      satoshis,
       testIndex,
       unlockingBytecodeText: expectation[0] as string,
+      valueSatoshis,
     };
   });
 
 const failRequiresReviewTests = scriptTestsAddendum.failRequiresReview;
+const { requiresMinimalEncoding } = scriptTestsAddendum;
 const invalidUnlockTests = scriptTestsAddendum.invalidUnlock;
 const dirtyStackTests = scriptTestsAddendum.dirtyStack;
 const strictTests = scriptTestsAddendum.useStrict;
-const expectedFailureTests = scriptTestsAddendum.fail.concat(
-  failRequiresReviewTests
-);
+const expectedFailureTests = scriptTestsAddendum.fail
+  .concat(failRequiresReviewTests)
+  .concat(requiresMinimalEncoding);
 /**
  * BCH doesn't currently use the `SCRIPT_VERIFY_MINIMALIF` flag (even in "strict
  * mode"), so there's no reason to implement or test it here.
@@ -55,34 +57,27 @@ invalidUnlockTests.map((index) => {
   tests[index].unlockingBytecodeText = '';
   return undefined;
 });
-failRequiresReviewTests.map((index) => {
+failRequiresReviewTests.forEach((index) => {
   tests[index].flags.failRequiresReview = true;
-  return undefined;
 });
-dirtyStackTests.map((index) => {
+dirtyStackTests.forEach((index) => {
   tests[index].flags.dirtyStack = true;
-  return undefined;
 });
-strictTests.map((index) => {
+strictTests.forEach((index) => {
   tests[index].flags.useStrict = true;
-  return undefined;
 });
-expectedFailureTests.map((index) => {
+expectedFailureTests.forEach((index) => {
   tests[index].expectedError = 'OVERRIDDEN_FAIL';
-  return undefined;
 });
-expectedPassTests.map((index) => {
+expectedPassTests.forEach((index) => {
   tests[index].expectedError = false;
-  return undefined;
 });
 const { overrides } = scriptTestsAddendum;
-Object.entries(overrides.unlocking).map(([index, script]) => {
+Object.entries(overrides.unlocking).forEach(([index, script]) => {
   tests[Number(index)].unlockingBytecodeText = script;
-  return undefined;
 });
-Object.entries(overrides.locking).map(([index, script]) => {
+Object.entries(overrides.locking).forEach(([index, script]) => {
   tests[Number(index)].lockingBytecodeText = script;
-  return undefined;
 });
 
 const validateDirtyStackState = (state: AuthenticationProgramStateBCH) =>
@@ -92,16 +87,14 @@ const validateDirtyStackState = (state: AuthenticationProgramStateBCH) =>
 /**
  * Isolate a single test for debugging
  */
-// const pendingTests = tests.filter(e => e.testIndex === 1399);
+// const pendingTests = tests.filter((e) => e.testIndex === 436);
 const pendingTests = tests;
 
 const elide = (text: string, length: number) =>
   text.length > length ? `${text.slice(0, length)}...` : text;
 
-const vmPromise = instantiateVirtualMachineBCH(InstructionSetBCH.BCH_2020_05);
-const vmStrictPromise = instantiateVirtualMachineBCH(
-  InstructionSetBCH.BCH_2020_05_STRICT
-);
+const vmNonStandardPromise = instantiateVirtualMachineBCH2021(false);
+const vmStandardPromise = instantiateVirtualMachineBCH2021(true);
 const sha256Promise = instantiateSha256();
 
 pendingTests.map((expectation) => {
@@ -110,7 +103,9 @@ pendingTests.map((expectation) => {
   } – "${elide(expectation.unlockingBytecodeText, 100)}" | "${elide(
     expectation.lockingBytecodeText,
     100
-  )}"${expectation.message === undefined ? '' : ` # ${expectation.message}`}`;
+  )}" ${
+    expectation.expectedError === false ? 'passes' : expectation.expectedError
+  } ${expectation.message === undefined ? '' : ` # ${expectation.message}`}`;
   // eslint-disable-next-line functional/no-conditional-statement
   if (expectation.flags.failRequiresReview) {
     test.todo(`Review failure: ${description}`);
@@ -119,26 +114,26 @@ pendingTests.map((expectation) => {
     description,
     // eslint-disable-next-line complexity
     async (t) => {
-      const unlockingBytecode = assembleBitcoinABCScript(
+      const unlockingBytecode = assembleBitcoinSatoshiScript(
         expectation.unlockingBytecodeText
       );
-      const lockingBytecode = assembleBitcoinABCScript(
+      const lockingBytecode = assembleBitcoinSatoshiScript(
         expectation.lockingBytecodeText
       );
       const vm = expectation.flags.useStrict
-        ? await vmStrictPromise
-        : await vmPromise;
+        ? await vmStandardPromise
+        : await vmNonStandardPromise;
       const sha256 = await sha256Promise;
       const program = createTestAuthenticationProgramBCH({
         lockingBytecode,
-        satoshis: bigIntToBinUint64LE(BigInt(expectation.satoshis)),
         sha256,
         unlockingBytecode,
+        valueSatoshis: bigIntToBinUint64LE(BigInt(expectation.valueSatoshis)),
       });
       const result = vm.evaluate(program);
       const valid = expectation.flags.dirtyStack
         ? validateDirtyStackState(result)
-        : vm.verify(result) === true;
+        : vm.stateSuccess(result) === true;
       const pass =
         (valid && expectation.expectedError === false) ||
         (!valid && expectation.expectedError !== false);
@@ -147,7 +142,8 @@ pendingTests.map((expectation) => {
         t.log(`disassembled: "${disassembleBytecodeBCH(unlockingBytecode)}"`);
         t.log(`lockingBytecodeText: "${expectation.lockingBytecodeText}"`);
         t.log(`disassembled: "${disassembleBytecodeBCH(lockingBytecode)}"`);
-        t.log('result:', result);
+        t.log('result:', stringify(result));
+        t.log('debug:', stringify(vm.debug(program)));
         if (expectation.expectedError === false) {
           t.fail('Expected a valid state, but this result is invalid.');
           return;

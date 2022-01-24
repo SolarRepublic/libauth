@@ -1,4 +1,4 @@
-import { Immutable } from '../format/format';
+import type { Immutable } from '../lib';
 
 /**
  * The list of 32 symbols used in Bech32 encoding.
@@ -116,7 +116,8 @@ export const encodeBech32 = (base32IntegerArray: readonly number[]) => {
  * @param validBech32 - the bech32-encoded string to decode
  */
 export const decodeBech32 = (validBech32: string) => {
-  const result: typeof bech32CharacterSetIndex[keyof typeof bech32CharacterSetIndex][] = [];
+  const result: typeof bech32CharacterSetIndex[keyof typeof bech32CharacterSetIndex][] =
+    [];
   // eslint-disable-next-line @typescript-eslint/prefer-for-of, functional/no-let, functional/no-loop-statement, no-plusplus
   for (let i = 0; i < validBech32.length; i++) {
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data

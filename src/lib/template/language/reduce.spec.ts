@@ -1,7 +1,6 @@
-/* eslint-disable functional/no-expression-statement */
 import test from 'ava';
 
-import { reduceScript, stringify } from '../../lib';
+import { reduceScript, stringify } from '../../lib.js';
 
 test('reduceScript: does not throw on empty array', (t) => {
   const reduced = reduceScript([]);

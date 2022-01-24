@@ -1,10 +1,10 @@
-import { Sha256 } from '../crypto/crypto';
+import type { Sha256 } from '../lib';
 import {
   base58ToBin,
   BaseConversionError,
   binToBase58,
   flattenBinArray,
-} from '../format/format';
+} from '../lib.js';
 
 /**
  * Base58 version byte values for common Base58Address format versions.
@@ -79,7 +79,7 @@ export enum Base58AddressFormatVersion {
 /**
  * The available networks for common Base58Address versions.
  */
-export type Base58AddressNetwork = 'mainnet' | 'testnet' | 'copay-bch';
+export type Base58AddressNetwork = 'copay-bch' | 'mainnet' | 'testnet';
 
 /**
  * Encode a payload using the Base58Address format, the original address format
@@ -137,12 +137,12 @@ export const encodeBase58AddressFormat = <
 export const encodeBase58Address = (
   sha256: { hash: Sha256['hash'] },
   type:
-    | 'p2pkh'
-    | 'p2sh'
-    | 'p2pkh-testnet'
-    | 'p2sh-testnet'
     | 'p2pkh-copay-bch'
-    | 'p2sh-copay-bch',
+    | 'p2pkh-testnet'
+    | 'p2pkh'
+    | 'p2sh-copay-bch'
+    | 'p2sh-testnet'
+    | 'p2sh',
   payload: Uint8Array
 ) =>
   encodeBase58AddressFormat(

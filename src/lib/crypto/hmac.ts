@@ -1,7 +1,6 @@
-import { flattenBinArray } from '../format/hex';
+import { flattenBinArray } from '../lib.js';
 
-import { Sha256 } from './sha256';
-import { Sha512 } from './sha512';
+import type { Sha256, Sha512 } from './crypto';
 
 /**
  * Instantiate a hash-based message authentication code (HMAC) function as
@@ -11,27 +10,26 @@ import { Sha512 } from './sha512';
  * compression function on blocks of data
  * @param blockByteLength - the byte-length of blocks used in `hashFunction`
  */
-export const instantiateHmacFunction = (
-  hashFunction: (input: Uint8Array) => Uint8Array,
-  blockByteLength: number
-) => (secret: Uint8Array, message: Uint8Array) => {
-  const key = new Uint8Array(blockByteLength).fill(0);
-  // eslint-disable-next-line functional/no-expression-statement
-  key.set(secret.length > blockByteLength ? hashFunction(secret) : secret, 0);
+export const instantiateHmacFunction =
+  (hashFunction: (input: Uint8Array) => Uint8Array, blockByteLength: number) =>
+  (secret: Uint8Array, message: Uint8Array) => {
+    const key = new Uint8Array(blockByteLength).fill(0);
+    // eslint-disable-next-line functional/no-expression-statement
+    key.set(secret.length > blockByteLength ? hashFunction(secret) : secret, 0);
 
-  const innerPaddingFill = 0x36;
-  const innerPadding = new Uint8Array(blockByteLength).fill(innerPaddingFill);
-  // eslint-disable-next-line no-bitwise
-  const innerPrefix = innerPadding.map((pad, index) => pad ^ key[index]);
-  const innerContent = flattenBinArray([innerPrefix, message]);
-  const innerResult = hashFunction(innerContent);
+    const innerPaddingFill = 0x36;
+    const innerPadding = new Uint8Array(blockByteLength).fill(innerPaddingFill);
+    // eslint-disable-next-line no-bitwise
+    const innerPrefix = innerPadding.map((pad, index) => pad ^ key[index]);
+    const innerContent = flattenBinArray([innerPrefix, message]);
+    const innerResult = hashFunction(innerContent);
 
-  const outerPaddingFill = 0x5c;
-  const outerPadding = new Uint8Array(blockByteLength).fill(outerPaddingFill);
-  // eslint-disable-next-line no-bitwise
-  const outerPrefix = outerPadding.map((pad, index) => pad ^ key[index]);
-  return hashFunction(flattenBinArray([outerPrefix, innerResult]));
-};
+    const outerPaddingFill = 0x5c;
+    const outerPadding = new Uint8Array(blockByteLength).fill(outerPaddingFill);
+    // eslint-disable-next-line no-bitwise
+    const outerPrefix = outerPadding.map((pad, index) => pad ^ key[index]);
+    return hashFunction(flattenBinArray([outerPrefix, innerResult]));
+  };
 
 const sha256BlockByteLength = 64;
 
