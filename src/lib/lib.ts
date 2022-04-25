@@ -4,6 +4,7 @@ export * from './crypto/crypto.js';
 export * from './default-mappings.js';
 export * from './format/format.js';
 export * from './key/key.js';
+export * from './schema/schema.js';
 export * from './template/template.js';
 export * from './transaction/transaction.js';
 export * from './vm/vm.js';

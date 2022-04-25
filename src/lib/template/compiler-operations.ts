@@ -337,7 +337,7 @@ export const compilerOperationKeyPublicKeyCommon = attemptCompilerOperations(
         return {
           bytecode: secp256k1.derivePublicKeyCompressed(
             privateKeys[variableId]
-          ),
+          ) as Uint8Array,
           status: 'success',
         };
       }
@@ -404,7 +404,7 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
           return {
             bytecode: configuration.secp256k1.derivePublicKeyCompressed(
               privateResult.bytecode
-            ),
+            ) as Uint8Array,
             status: 'success',
           };
         }
@@ -440,8 +440,8 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
         const instancePath = publicDerivationPath.replace('i', i.toString());
 
         const masterContents = decodeHdPublicKey(
-          configuration,
-          entityHdPublicKey
+          entityHdPublicKey,
+          configuration
         );
         if (typeof masterContents === 'string') {
           return {
@@ -451,9 +451,9 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
         }
 
         const instanceNode = deriveHdPath(
-          configuration,
           masterContents.node,
-          instancePath
+          instancePath,
+          configuration
         );
 
         if (typeof instanceNode === 'string') {

@@ -19,7 +19,10 @@ const stringToCharsUint8Array = (str: string) =>
 const maxUint8Number = 255;
 const fcUint8Array = (minLength: number, maxLength: number) =>
   fc
-    .array(fc.integer(0, maxUint8Number), minLength, maxLength)
+    .array(fc.integer({ max: maxUint8Number, min: 0 }), {
+      maxLength,
+      minLength,
+    })
     .map((a) => Uint8Array.from(a));
 
 export const testHashFunction = <T extends HashFunction>({
@@ -153,7 +156,7 @@ export const testHashFunction = <T extends HashFunction>({
 
     const equivalentToSinglePass = fc.property(
       fcUint8Array(1, testLength),
-      fc.integer(1, testLength),
+      fc.integer({ max: testLength, min: 1 }),
       (message, chunkSize) => {
         const chunkCount = Math.ceil(message.length / chunkSize);
         const chunks = Array.from({ length: chunkCount })

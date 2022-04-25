@@ -1,9 +1,3 @@
-import {
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha1,
-  instantiateSha256,
-} from '../../../../lib.js';
 import { createAuthenticationVirtualMachine } from '../../../virtual-machine.js';
 
 import { createInstructionSetBCH2022 } from './bch-2022-instruction-set.js';
@@ -16,20 +10,5 @@ import { createInstructionSetBCH2022 } from './bch-2022-instruction-set.js';
  * and can technically be included by miners in valid blocks, but most network
  * nodes will refuse to relay them. (Default: `true`)
  */
-export const instantiateVirtualMachineBCH2022 = async (standard = true) => {
-  const [sha1, sha256, ripemd160, secp256k1] = await Promise.all([
-    instantiateSha1(),
-    instantiateSha256(),
-    instantiateRipemd160(),
-    instantiateSecp256k1(),
-  ]);
-  return createAuthenticationVirtualMachine(
-    createInstructionSetBCH2022({
-      ripemd160,
-      secp256k1,
-      sha1,
-      sha256,
-      standard,
-    })
-  );
-};
+export const instantiateVirtualMachineBCH2022 = (standard = true) =>
+  createAuthenticationVirtualMachine(createInstructionSetBCH2022(standard));

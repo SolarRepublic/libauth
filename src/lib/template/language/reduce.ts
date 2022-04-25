@@ -1,6 +1,6 @@
 import type {
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateError,
-  AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
   AuthenticationVirtualMachine,
 } from '../../lib';
@@ -25,9 +25,9 @@ const emptyReductionTraceNode = (range: Range) => ({
 });
 
 /**
- * Perform the standard verification of BTL evaluation results. This ensures
- * that evaluations complete as expected: if an error occurs while computing an
- * evaluation, script compilation should fail.
+ * Perform the standard verification of CashAssembly evaluation results. This
+ * ensures that evaluations complete as expected: if an error occurs while
+ * computing an evaluation, script compilation should fail.
  *
  * Three requirements are enforced:
  * - the evaluation may not produce an `error`
@@ -40,9 +40,9 @@ const emptyReductionTraceNode = (range: Range) => ({
  *
  * @param state - the final program state to verify
  */
-export const verifyBtlEvaluationState = <
-  ProgramState extends AuthenticationProgramStateError &
-    AuthenticationProgramStateExecutionStack &
+export const verifyCashAssemblyEvaluationState = <
+  ProgramState extends AuthenticationProgramStateControlStack &
+    AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
   state: ProgramState
@@ -50,8 +50,8 @@ export const verifyBtlEvaluationState = <
   if (state.error !== undefined) {
     return state.error;
   }
-  if (state.executionStack.length !== 0) {
-    return AuthenticationErrorCommon.nonEmptyExecutionStack;
+  if (state.controlStack.length !== 0) {
+    return AuthenticationErrorCommon.nonEmptyControlStack;
   }
   if (state.stack.length !== 1) {
     return AuthenticationErrorCommon.requiresCleanStack;
@@ -72,8 +72,8 @@ export const verifyBtlEvaluationState = <
  * of an evaluation and returns the authentication program used to evaluate it
  */
 export const reduceScript = <
-  ProgramState extends AuthenticationProgramStateError &
-    AuthenticationProgramStateExecutionStack &
+  ProgramState extends AuthenticationProgramStateControlStack &
+    AuthenticationProgramStateError &
     AuthenticationProgramStateStack,
   AuthenticationProgram,
   ResolvedTransaction
@@ -140,7 +140,7 @@ export const reduceScript = <
          * `vm.debug` should always return at least one state.
          */
         const lastState = trace[trace.length - 1];
-        const result = verifyBtlEvaluationState(lastState);
+        const result = verifyCashAssemblyEvaluationState(lastState);
         const bytecode = lastState.stack[lastState.stack.length - 1];
 
         return {
@@ -168,7 +168,7 @@ export const reduceScript = <
         return {
           errors: [
             {
-              error: `Tried to reduce a BTL script with resolution errors: ${segment.value}`,
+              error: `Tried to reduce a CashAssembly script with resolution errors: ${segment.value}`,
               range: segment.range,
             },
           ],

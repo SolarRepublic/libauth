@@ -1,6 +1,6 @@
 import type {
   AuthenticationInstruction,
-  AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateControlStack,
   ParsedAuthenticationInstruction,
   ParsedAuthenticationInstructionMalformed,
 } from '../../lib';
@@ -114,26 +114,27 @@ export const containsRange = (
 };
 
 /**
- * Perform a simplified compilation on a Bitauth Templating Language (BTL)
- * script containing only hex literals, bigint literals, UTF8 literals, and push
- * statements. Scripts may not contain variables/operations, evaluations, or
- * opcode identifiers (use hex literals instead).
+ * Perform a simplified compilation on a CashAssembly script containing only hex
+ * literals, bigint literals, UTF8 literals, and push statements. Scripts may
+ * not contain variables/operations, evaluations, or opcode identifiers (use hex
+ * literals instead).
  *
  * This is useful for accepting complex user input in advanced interfaces,
  * especially for `AddressData` and `WalletData`.
  *
  * Returns the compiled bytecode as a `Uint8Array`, or throws an error message.
  *
- * @param script - a simple BTL script containing no variables or evaluations
+ * @param script - a simple CashAssembly script containing no variables or
+ * evaluations
  */
-export const compileBtl = (script: string) => {
+export const compileCashAssembly = (script: string) => {
   const result = createCompilerCommonSynchronous({
     scripts: { script },
-  }).generateBytecode('script', {});
+  }).generateBytecode({ data: {}, scriptId: 'script' });
   if (result.success) {
     return result.bytecode;
   }
-  return `BTL compilation error:${result.errors.reduce(
+  return `CashAssembly compilation error:${result.errors.reduce(
     (all, { error, range }) =>
       `${all} [${range.startLineNumber}, ${range.startColumn}]: ${error}`,
     ''
@@ -194,7 +195,7 @@ export const allErrorsAreRecoverable = (
  * A single resolution for a `ResolvedSegment`. The `variable`, `script`, or
  * `opcode` property contains the full identifier which resolved to `bytecode`.
  */
-export interface BtlResolution {
+export interface CashAssemblyResolution {
   bytecode: Uint8Array;
   type: ResolvedSegmentLiteralType | 'opcode' | 'script' | 'variable';
   text: string;
@@ -206,9 +207,9 @@ export interface BtlResolution {
  */
 export const extractBytecodeResolutions = (
   resolvedScript: ResolvedScript
-): BtlResolution[] =>
+): CashAssemblyResolution[] =>
   // eslint-disable-next-line complexity
-  resolvedScript.reduce<BtlResolution[]>((all, segment) => {
+  resolvedScript.reduce<CashAssemblyResolution[]>((all, segment) => {
     switch (segment.type) {
       case 'push':
       case 'evaluation':
@@ -324,10 +325,11 @@ export interface SampleExtractionResult<ProgramState> {
 }
 
 /**
- * Extract a set of "evaluation samples" from the result of a BTL compilation
- * and a matching debug trace (from `vm.debug`), pairing program states with the
- * source ranges which produced them – like a "source map" for complete
- * evaluations. This is useful for omniscient debuggers like Bitauth IDE.
+ * Extract a set of "evaluation samples" from the result of a CashAssembly
+ * compilation and a matching debug trace (from `vm.debug`), pairing program
+ * states with the source ranges which produced them – like a "source map" for
+ * complete evaluations. This is useful for omniscient debuggers like
+ * Bitauth IDE.
  *
  * Returns an array of samples and an array of unmatched program states
  * remaining if `nodes` doesn't contain enough instructions to consume all
@@ -627,14 +629,14 @@ export const extractEvaluationSamples = <ProgramState>({
  * Similar to `extractEvaluationSamples`, but recursively extracts samples from
  * evaluations within the provided array of nodes.
  *
- * Because BTL evaluations are fully self-contained, there should never be
- * unmatched states from evaluations within a script reduction trace tree. (For
- * this reason, this method does not return the `unmatchedStates` from nested
- * evaluations.)
+ * Because CashAssembly evaluations are fully self-contained, there should never
+ * be unmatched states from evaluations within a script reduction trace tree.
+ * (For this reason, this method does not return the `unmatchedStates` from
+ * nested evaluations.)
  *
  * Returned samples are ordered by the ending position (line and column) of
- * their range. Samples from BTL evaluations which occur within an outer
- * evaluation appear before their parent sample (which uses their result).
+ * their range. Samples from CashAssembly evaluations which occur within an
+ * outer evaluation appear before their parent sample (which uses their result).
  *
  * @param evaluationRange - the range of the script node which was evaluated to
  * produce the `trace`
@@ -712,8 +714,8 @@ export const extractEvaluationSamplesRecursive = <ProgramState>({
   };
 };
 
-const stateIsExecuting = (state: AuthenticationProgramStateExecutionStack) =>
-  state.executionStack.every((item) => item);
+const stateIsExecuting = (state: AuthenticationProgramStateControlStack) =>
+  state.controlStack.every((item) => item);
 
 /**
  * Extract an array of ranges which were unused by an evaluation. This is useful
@@ -744,7 +746,7 @@ const stateIsExecuting = (state: AuthenticationProgramStateExecutionStack) =>
  * executing), defaults to `1,1`
  */
 export const extractUnexecutedRanges = <
-  ProgramState extends AuthenticationProgramStateExecutionStack
+  ProgramState extends AuthenticationProgramStateControlStack
 >(
   samples: EvaluationSample<ProgramState>[],
   evaluationBegins = '1,1'

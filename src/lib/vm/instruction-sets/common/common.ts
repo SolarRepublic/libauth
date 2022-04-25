@@ -14,7 +14,6 @@ export * from './format.js';
 export * from './nop.js';
 export * from './push.js';
 export * from './signing-serialization.js';
-export * from './splice.js';
 export * from './stack.js';
 export * from './time.js';
 export * from './types.js';

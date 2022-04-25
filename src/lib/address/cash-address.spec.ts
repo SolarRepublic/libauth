@@ -23,7 +23,6 @@ import {
   encodeCashAddressFormat,
   encodeCashAddressVersionByte,
   hexToBin,
-  instantiateSha256,
   maskCashAddressPrefix,
   splitEvery,
 } from '../lib.js';
@@ -53,20 +52,20 @@ test('maskCashAddressPrefix', (t) => {
 test('encodeCashAddressVersionByte', (t) => {
   t.deepEqual(
     encodeCashAddressVersionByte(0, 160),
-    CashAddressVersionByte.P2PKH
+    CashAddressVersionByte.p2pkh
   );
   t.deepEqual(
     encodeCashAddressVersionByte(1, 160),
-    CashAddressVersionByte.P2SH
+    CashAddressVersionByte.p2sh20
   );
 });
 
 test('decodeCashAddressVersionByte', (t) => {
-  t.deepEqual(decodeCashAddressVersionByte(CashAddressVersionByte.P2PKH), {
+  t.deepEqual(decodeCashAddressVersionByte(CashAddressVersionByte.p2pkh), {
     bitLength: 160,
     type: 0,
   });
-  t.deepEqual(decodeCashAddressVersionByte(CashAddressVersionByte.P2SH), {
+  t.deepEqual(decodeCashAddressVersionByte(CashAddressVersionByte.p2sh20), {
     bitLength: 160,
     type: 1,
   });
@@ -91,7 +90,7 @@ test('encodeCashAddress: works', (t) => {
   t.deepEqual(
     encodeCashAddress(
       CashAddressNetworkPrefix.testnet,
-      CashAddressVersionByte.P2PKH,
+      CashAddressVersionByte.p2pkh,
       hash
     ),
     'bchtest:qq2azmyyv6dtgczexyalqar70q036yund53jvfde0x'
@@ -104,7 +103,7 @@ test('encodeCashAddress: works', (t) => {
   t.deepEqual(
     encodeCashAddress(
       CashAddressNetworkPrefix.mainnet,
-      CashAddressVersionByte.P2PKH,
+      CashAddressVersionByte.p2pkh,
       hash
     ),
     'bitcoincash:qq2azmyyv6dtgczexyalqar70q036yund54qgw0wg6'
@@ -117,7 +116,7 @@ test('encodeCashAddress: works', (t) => {
   t.deepEqual(
     encodeCashAddress(
       CashAddressNetworkPrefix.regtest,
-      CashAddressVersionByte.P2PKH,
+      CashAddressVersionByte.p2pkh,
       hash
     ),
     'bchreg:qq2azmyyv6dtgczexyalqar70q036yund5tw6gw2vq'
@@ -160,7 +159,7 @@ test('decodeCashAddress: works', (t) => {
     {
       hash,
       prefix: CashAddressNetworkPrefix.testnet,
-      type: CashAddressType.P2PKH,
+      type: CashAddressType.p2pkh,
     }
   );
 
@@ -169,7 +168,7 @@ test('decodeCashAddress: works', (t) => {
     {
       hash,
       prefix: CashAddressNetworkPrefix.mainnet,
-      type: CashAddressType.P2PKH,
+      type: CashAddressType.p2pkh,
     }
   );
   t.deepEqual(
@@ -182,7 +181,7 @@ test('decodeCashAddress: works', (t) => {
     {
       hash,
       prefix: CashAddressNetworkPrefix.regtest,
-      type: CashAddressType.P2PKH,
+      type: CashAddressType.p2pkh,
     }
   );
   t.deepEqual(
@@ -426,15 +425,9 @@ test('[fast-check] attemptCashAddressErrorCorrection', (t) => {
   });
 });
 
-const sha256Promise = instantiateSha256();
-
 const legacyVectors = test.macro<[string, string]>({
-  exec: async (t, base58Address, cashAddress) => {
-    const sha256 = await sha256Promise;
-    const decodedBase58Address = decodeBase58AddressFormat(
-      sha256,
-      base58Address
-    );
+  exec: (t, base58Address, cashAddress) => {
+    const decodedBase58Address = decodeBase58AddressFormat(base58Address);
     const decodedCashAddress = decodeCashAddress(cashAddress);
     if (
       typeof decodedCashAddress === 'string' ||

@@ -1,3 +1,4 @@
+import { sha256 as internalSha256 } from '../crypto/default-crypto-instances.js';
 import type { Sha256 } from '../lib';
 import { Opcodes } from '../lib.js';
 
@@ -40,10 +41,11 @@ export enum AddressType {
    */
   p2pkh = 'P2PKH',
   /**
-   * Pay to Script Hash (P2SH). An address type which locks funds to the hash of
-   * a script provided in the spending transaction. See BIP13 for details.
+   * 20-byte Pay to Script Hash (P2SH20). An address type which locks funds to
+   * the 20-byte hash of a script provided in the spending transaction. See
+   * BIPs 13 and 16 for details.
    */
-  p2sh = 'P2SH',
+  p2sh20 = 'P2SH20',
   /**
    * This `AddressType` represents an address using an unknown or uncommon
    * locking bytecode pattern for which no standardized address formats exist.
@@ -70,9 +72,9 @@ export interface AddressContents {
  * the returned `type` is `AddressType.p2pkh` and `payload` is the `HASH160` of
  * the public key.
  *
- * For a locking bytecode matching the Pay to Script Hash (P2SH) pattern, the
- * returned `type` is `AddressType.p2sh` and `payload` is the `HASH160` of the
- * redeeming bytecode, A.K.A. "redeem script hash".
+ * For a locking bytecode matching the 20-byte Pay to Script Hash (P2SH20)
+ * pattern, the returned `type` is `AddressType.p2sh20` and `payload` is the
+ * `HASH160` of the redeeming bytecode, A.K.A. "redeem script hash".
  *
  * For a locking bytecode matching the Pay to Public Key (P2PK) pattern, the
  * returned `type` is `AddressType.p2pk` and `payload` is the full public key.
@@ -100,16 +102,16 @@ export const lockingBytecodeToAddressContents = (
     return { payload: bytecode.slice(start, end), type: AddressType.p2pkh };
   }
 
-  const p2shLength = 23;
+  const p2sh20TotalLength = 23;
   if (
-    bytecode.length === p2shLength &&
+    bytecode.length === p2sh20TotalLength &&
     bytecode[0] === Opcodes.OP_HASH160 &&
     bytecode[1] === Opcodes.OP_PUSHBYTES_20 &&
     bytecode[22] === Opcodes.OP_EQUAL
   ) {
     const start = 2;
     const end = 22;
-    return { payload: bytecode.slice(start, end), type: AddressType.p2sh };
+    return { payload: bytecode.slice(start, end), type: AddressType.p2sh20 };
   }
 
   const p2pkUncompressedLength = 67;
@@ -162,7 +164,7 @@ export const addressContentsToLockingBytecode = (
       Opcodes.OP_CHECKSIG,
     ]);
   }
-  if (addressContents.type === AddressType.p2sh) {
+  if (addressContents.type === AddressType.p2sh20) {
     return Uint8Array.from([
       Opcodes.OP_HASH160,
       Opcodes.OP_PUSHBYTES_20,
@@ -190,8 +192,8 @@ export const addressContentsToLockingBytecode = (
 /**
  * Encode a locking bytecode as a CashAddress given a network prefix.
  *
- * If `bytecode` matches either the P2PKH or P2SH pattern, it is encoded using
- * the proper address type and returned as a valid CashAddress (string).
+ * If `bytecode` matches a standard pattern, it is encoded using the proper
+ * address type and returned as a valid CashAddress (string).
  *
  * If `bytecode` cannot be encoded as an address (i.e. because the pattern is
  * not standard), the resulting `AddressContents` is returned.
@@ -208,10 +210,10 @@ export const lockingBytecodeToCashAddress = <
 ) => {
   const contents = lockingBytecodeToAddressContents(bytecode);
   if (contents.type === AddressType.p2pkh) {
-    return encodeCashAddress(prefix, CashAddressType.P2PKH, contents.payload);
+    return encodeCashAddress(prefix, CashAddressType.p2pkh, contents.payload);
   }
-  if (contents.type === AddressType.p2sh) {
-    return encodeCashAddress(prefix, CashAddressType.P2SH, contents.payload);
+  if (contents.type === AddressType.p2sh20) {
+    return encodeCashAddress(prefix, CashAddressType.p2sh20, contents.payload);
   }
 
   return contents;
@@ -233,7 +235,7 @@ export const cashAddressToLockingBytecode = (address: string) => {
   const decoded = decodeCashAddress(address);
   if (typeof decoded === 'string') return decoded;
 
-  if (decoded.type === CashAddressType.P2PKH) {
+  if (decoded.type === CashAddressType.p2pkh) {
     return {
       bytecode: addressContentsToLockingBytecode({
         payload: decoded.hash,
@@ -243,11 +245,11 @@ export const cashAddressToLockingBytecode = (address: string) => {
     };
   }
 
-  if (decoded.type === CashAddressType.P2SH) {
+  if (decoded.type === CashAddressType.p2sh20) {
     return {
       bytecode: addressContentsToLockingBytecode({
         payload: decoded.hash,
-        type: AddressType.p2sh,
+        type: AddressType.p2sh20,
       }),
       prefix: decoded.prefix,
     };
@@ -259,45 +261,45 @@ export const cashAddressToLockingBytecode = (address: string) => {
 /**
  * Encode a locking bytecode as a Base58Address for a given network.
  *
- * If `bytecode` matches either the P2PKH or P2SH pattern, it is encoded using
- * the proper address type and returned as a valid Base58Address (string).
+ * If `bytecode` matches a standard pattern, it is encoded using the proper
+ * address type and returned as a valid Base58Address (string).
  *
  * If `bytecode` cannot be encoded as an address (i.e. because the pattern is
  * not standard), the resulting `AddressContents` is returned.
  *
- * @param sha256 - an implementation of sha256 (a universal implementation is
- * available via `instantiateSha256`)
  * @param bytecode - the locking bytecode to encode
  * @param network - the network for which to encode the address (`mainnet` or
+ * @param sha256 - an implementation of sha256 (defaults to the internal WASM
+ * implementation)
  * `testnet`)
  */
 export const lockingBytecodeToBase58Address = (
-  sha256: { hash: Sha256['hash'] },
   bytecode: Uint8Array,
-  network: Base58AddressNetwork
+  network: Base58AddressNetwork,
+  sha256: { hash: Sha256['hash'] } = internalSha256
 ) => {
   const contents = lockingBytecodeToAddressContents(bytecode);
 
   if (contents.type === AddressType.p2pkh) {
     return encodeBase58AddressFormat(
-      sha256,
       {
-        'copay-bch': Base58AddressFormatVersion.p2pkhCopayBCH,
+        copayBCH: Base58AddressFormatVersion.p2pkhCopayBCH,
         mainnet: Base58AddressFormatVersion.p2pkh,
         testnet: Base58AddressFormatVersion.p2pkhTestnet,
       }[network],
-      contents.payload
+      contents.payload,
+      sha256
     );
   }
-  if (contents.type === AddressType.p2sh) {
+  if (contents.type === AddressType.p2sh20) {
     return encodeBase58AddressFormat(
-      sha256,
       {
-        'copay-bch': Base58AddressFormatVersion.p2shCopayBCH,
-        mainnet: Base58AddressFormatVersion.p2sh,
-        testnet: Base58AddressFormatVersion.p2shTestnet,
+        copayBCH: Base58AddressFormatVersion.p2sh20CopayBCH,
+        mainnet: Base58AddressFormatVersion.p2sh20,
+        testnet: Base58AddressFormatVersion.p2sh20Testnet,
       }[network],
-      contents.payload
+      contents.payload,
+      sha256
     );
   }
 
@@ -313,10 +315,10 @@ export const lockingBytecodeToBase58Address = (
  * @param address - the CashAddress to convert
  */
 export const base58AddressToLockingBytecode = (
-  sha256: { hash: Sha256['hash'] },
-  address: string
+  address: string,
+  sha256: { hash: Sha256['hash'] } = internalSha256
 ) => {
-  const decoded = decodeBase58Address(sha256, address);
+  const decoded = decodeBase58Address(address, sha256);
   if (typeof decoded === 'string') return decoded;
 
   return {
@@ -328,7 +330,7 @@ export const base58AddressToLockingBytecode = (
         Base58AddressFormatVersion.p2pkhTestnet,
       ].includes(decoded.version)
         ? AddressType.p2pkh
-        : AddressType.p2sh,
+        : AddressType.p2sh20,
     }),
     version: decoded.version,
   };

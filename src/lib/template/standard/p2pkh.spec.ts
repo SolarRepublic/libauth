@@ -3,11 +3,11 @@ import test from 'ava';
 import {
   authenticationTemplateP2pkh,
   authenticationTemplateP2pkhNonHd,
-  validateAuthenticationTemplate,
+  importAuthenticationTemplate,
 } from '../../lib.js';
 
 test('authenticationTemplateP2pkh is valid', (t) => {
-  const template = validateAuthenticationTemplate(
+  const template = importAuthenticationTemplate(
     authenticationTemplateP2pkhNonHd
   );
   t.true(typeof template !== 'string');
@@ -33,6 +33,6 @@ test('authenticationTemplateP2pkh is mostly equivalent to authenticationTemplate
 });
 
 test('authenticationTemplateP2pkhHd is valid', (t) => {
-  const template = validateAuthenticationTemplate(authenticationTemplateP2pkh);
+  const template = importAuthenticationTemplate(authenticationTemplateP2pkh);
   t.true(typeof template !== 'string');
 });

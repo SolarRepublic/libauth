@@ -3,46 +3,34 @@ import test from 'ava';
 import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  CompilationContextBCH,
   CompilerConfigurationBCH,
 } from '../../lib';
 import {
+  compilerConfigurationToCompilerBCH,
   compilerOperationsBCH,
   createAuthenticationProgramEvaluationCommon,
   createCompilationContextCommonTesting,
-  createCompiler,
   generateBytecodeMap,
   hexToBin,
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha256,
-  instantiateSha512,
   instantiateVirtualMachineBCH,
   OpcodesBCH2022,
+  ripemd160,
+  secp256k1,
+  sha256,
+  sha512,
   stringify,
 } from '../../lib.js';
 
 import { hdPrivateKey, privkey } from './compiler-bch.e2e.spec.helper.js';
 
-const ripemd160Promise = instantiateRipemd160();
-const sha256Promise = instantiateSha256();
-const sha512Promise = instantiateSha512();
-const secp256k1Promise = instantiateSecp256k1();
-const vmPromise = instantiateVirtualMachineBCH();
+const vm = instantiateVirtualMachineBCH();
 
 /**
  * Uses `createCompiler` rather than `createCompilerBCH` for performance.
  */
 const testSigningSerializationAlgorithms = test.macro<[string, string]>(
-  async (t, unlockScript, bytecodeHex) => {
-    const ripemd160 = await ripemd160Promise;
-    const sha256 = await sha256Promise;
-    const sha512 = await sha512Promise;
-    const secp256k1 = await secp256k1Promise;
-    const vm = await vmPromise;
-
-    const compiler = createCompiler<
-      CompilationContextBCH,
+  (t, unlockScript, bytecodeHex) => {
+    const compiler = compilerConfigurationToCompilerBCH<
       CompilerConfigurationBCH,
       AuthenticationProgramStateBCH
     >({
@@ -79,9 +67,12 @@ const testSigningSerializationAlgorithms = test.macro<[string, string]>(
       vm,
     });
 
-    const resultUnlock = compiler.generateBytecode('unlock', {
-      compilationContext: createCompilationContextCommonTesting(),
-      keys: { privateKeys: { a: privkey } },
+    const resultUnlock = compiler.generateBytecode({
+      data: {
+        compilationContext: createCompilationContextCommonTesting(),
+        keys: { privateKeys: { a: privkey } },
+      },
+      scriptId: 'unlock',
     });
     t.deepEqual(
       resultUnlock,
@@ -93,9 +84,12 @@ const testSigningSerializationAlgorithms = test.macro<[string, string]>(
         resultUnlock
       )}`
     );
-    const resultUnlockHd = compiler.generateBytecode('unlockHd', {
-      compilationContext: createCompilationContextCommonTesting(),
-      hdKeys: { addressIndex: 0, hdPrivateKeys: { entity: hdPrivateKey } },
+    const resultUnlockHd = compiler.generateBytecode({
+      data: {
+        compilationContext: createCompilationContextCommonTesting(),
+        hdKeys: { addressIndex: 0, hdPrivateKeys: { entity: hdPrivateKey } },
+      },
+      scriptId: 'unlockHd',
     });
     t.deepEqual(
       resultUnlockHd,
@@ -194,12 +188,8 @@ test.failing(
   '413c24af0348f4eedba198f146fcfd3a099f67d4b17e690321bd038a3fd0ff8340200ab71722d2dd7fa3a513902c04362ff5ea41e4a7548e7733b377678bddcceac2210376ea9e36a75d2ecf9c93a0be76885e36f822529db22acfdc761c9b5b4544f5c5'
 );
 
-test('[BCH compiler] signing serialization algorithms – no signing serialization data', async (t) => {
-  const sha256 = await sha256Promise;
-  const secp256k1 = await secp256k1Promise;
-  const vm = await vmPromise;
-  const compiler = createCompiler<
-    CompilationContextBCH,
+test('[BCH compiler] signing serialization algorithms – no signing serialization data', (t) => {
+  const compiler = compilerConfigurationToCompilerBCH<
     CompilerConfigurationBCH,
     AuthenticationProgramStateBCH
   >({
@@ -223,9 +213,12 @@ test('[BCH compiler] signing serialization algorithms – no signing serializati
     vm,
   });
 
-  const resultUnlock = compiler.generateBytecode('unlock', {
-    compilationContext: undefined,
-    keys: { privateKeys: { a: privkey } },
+  const resultUnlock = compiler.generateBytecode({
+    data: {
+      compilationContext: undefined,
+      keys: { privateKeys: { a: privkey } },
+    },
+    scriptId: 'unlock',
   });
   t.deepEqual(resultUnlock, {
     errorType: 'resolve',

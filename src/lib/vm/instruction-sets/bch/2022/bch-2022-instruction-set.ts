@@ -1,3 +1,9 @@
+import {
+  ripemd160 as internalRipemd160,
+  secp256k1 as internalSecp256k1,
+  sha1 as internalSha1,
+  sha256 as internalSha256,
+} from '../../../../crypto/default-crypto-instances.js';
 import type { Ripemd160, Secp256k1, Sha1, Sha256 } from '../../../../lib';
 import type { InstructionSet } from '../../../vm';
 import type {
@@ -110,27 +116,41 @@ import {
  * enabled. Transactions which fail these rules are often called "non-standard"
  * and can technically be included by miners in valid blocks, but most network
  * nodes will refuse to relay them. (Default: `true`)
- * @param sha1 - a Sha1 implementation
- * @param sha256 - a Sha256 implementation
- * @param ripemd160 - a Ripemd160 implementation
- * @param secp256k1 - a Secp256k1 implementation
  */
-export const createInstructionSetBCH2022 = ({
-  ripemd160,
-  secp256k1,
-  sha1,
-  sha256,
+export const createInstructionSetBCH2022 = (
   standard = true,
-}: {
-  ripemd160: { hash: Ripemd160['hash'] };
-  secp256k1: {
-    verifySignatureSchnorr: Secp256k1['verifySignatureSchnorr'];
-    verifySignatureDERLowS: Secp256k1['verifySignatureDERLowS'];
-  };
-  sha1: { hash: Sha1['hash'] };
-  sha256: { hash: Sha256['hash'] };
-  standard?: boolean;
-}): InstructionSet<
+  {
+    ripemd160,
+    secp256k1,
+    sha1,
+    sha256,
+  }: {
+    /**
+     * a Ripemd160 implementation
+     */
+    ripemd160: { hash: Ripemd160['hash'] };
+    /**
+     * a Secp256k1 implementation
+     */
+    secp256k1: {
+      verifySignatureSchnorr: Secp256k1['verifySignatureSchnorr'];
+      verifySignatureDERLowS: Secp256k1['verifySignatureDERLowS'];
+    };
+    /**
+     * a Sha1 implementation
+     */
+    sha1: { hash: Sha1['hash'] };
+    /**
+     * a Sha256 implementation
+     */
+    sha256: { hash: Sha256['hash'] };
+  } = {
+    ripemd160: internalRipemd160,
+    secp256k1: internalSecp256k1,
+    sha1: internalSha1,
+    sha256: internalSha256,
+  }
+): InstructionSet<
   ResolvedTransactionBCH,
   AuthenticationProgramBCH,
   AuthenticationProgramStateBCH
@@ -473,8 +493,8 @@ export const createInstructionSetBCH2022 = ({
       if (state.error !== undefined) {
         return state.error;
       }
-      if (state.executionStack.length !== 0) {
-        return AuthenticationErrorCommon.nonEmptyExecutionStack;
+      if (state.controlStack.length !== 0) {
+        return AuthenticationErrorCommon.nonEmptyControlStack;
       }
       if (state.stack.length !== 1) {
         return AuthenticationErrorCommon.requiresCleanStack;

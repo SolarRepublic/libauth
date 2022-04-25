@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  An ultra-lightweight JavaScript library for Bitcoin, Bitcoin Cash, and Bitauth
+  An ultra-lightweight JavaScript library for Bitcoin Cash, Bitcoin, and Bitauth
   applications.
   <br />
   <br />
@@ -66,10 +66,9 @@ yarn add @bitauth/libauth
 And import the functionality you need:
 
 ```typescript
-import { instantiateSecp256k1 } from '@bitauth/libauth';
+import { secp256k1 } from '@bitauth/libauth';
 import { msgHash, pubkey, sig } from './somewhere';
 
-const secp256k1 = await instantiateSecp256k1();
 secp256k1.verifySignatureDERLowS(sig, pubkey, msgHash)
   ? console.log('🚀 Signature valid')
   : console.log('❌ Signature invalid');

@@ -40,7 +40,7 @@ test('reduceScript: resolution error', (t) => {
       errors: [
         {
           error:
-            'Tried to reduce a BTL script with resolution errors: Unknown identifier "unknown".',
+            'Tried to reduce a CashAssembly script with resolution errors: Unknown identifier "unknown".',
           range: {
             endColumn: 8,
             endLineNumber: 1,
@@ -61,7 +61,7 @@ test('reduceScript: resolution error', (t) => {
           errors: [
             {
               error:
-                'Tried to reduce a BTL script with resolution errors: Unknown identifier "unknown".',
+                'Tried to reduce a CashAssembly script with resolution errors: Unknown identifier "unknown".',
               range: {
                 endColumn: 8,
                 endLineNumber: 1,

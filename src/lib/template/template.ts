@@ -8,4 +8,3 @@ export * from './language/language.js';
 export * from './scenarios.js';
 export * from './standard/standard.js';
 export * from './template-types.js';
-export * from './template-validation.js';

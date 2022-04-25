@@ -1,5 +1,10 @@
 import type { HashFunction } from '../lib';
-import { base64ToBin, instantiateRustWasm, sha256Base64Bytes } from '../lib.js';
+
+import {
+  base64ToBin,
+  instantiateRustWasm,
+  sha256Base64Bytes,
+} from './dependencies.js';
 
 export interface Sha256 extends HashFunction {
   /**
@@ -80,19 +85,10 @@ export const instantiateSha256Bytes = async (
 export const getEmbeddedSha256Binary = () =>
   base64ToBin(sha256Base64Bytes).buffer;
 
-const cachedSha256: { cache?: Promise<Sha256> } = {};
-
 /**
  * An ultimately-portable (but possibly slower) version of
  * `instantiateSha256Bytes` which does not require the consumer to provide the
  * sha256 binary buffer.
  */
-export const instantiateSha256 = async (): Promise<Sha256> => {
-  if (cachedSha256.cache !== undefined) {
-    return cachedSha256.cache;
-  }
-  const result = instantiateSha256Bytes(getEmbeddedSha256Binary());
-  // eslint-disable-next-line functional/immutable-data, functional/no-expression-statement
-  cachedSha256.cache = result;
-  return result;
-};
+export const instantiateSha256 = async (): Promise<Sha256> =>
+  instantiateSha256Bytes(getEmbeddedSha256Binary());

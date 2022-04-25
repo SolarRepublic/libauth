@@ -1,7 +1,6 @@
 /* eslint-disable no-console, functional/no-expression-statement */
 import { authenticationTemplateP2pkh, stringify } from '../../lib.js';
 
-import { oneOfEightTreeSig } from './template.1-of-8-tree.spec.helper.js';
 import { twoOfTwoRecoverable } from './template.2-of-2-recoverable.spec.helper.js';
 import { twoOfThree } from './template.2-of-3.spec.helper.js';
 import { cashChannels } from './template.cash-channels.spec.helper.js';
@@ -18,9 +17,6 @@ const printTemplate = (template: string) => {
       return;
     case '2-of-2-recoverable':
       console.log(stringify(twoOfTwoRecoverable));
-      return;
-    case '1-of-8-tree':
-      console.log(stringify(oneOfEightTreeSig));
       return;
     case 'sig-of-sig':
       console.log(stringify(sigOfSig));

@@ -26,10 +26,10 @@ export const bitcoinSatoshiOpcodes = Object.entries(
  *
  * @privateRemarks
  * This method doesn't use {@link compileScript} because of a slight
- * incompatibility in the languages. In BTL, BigIntLiterals are a primitive
- * type, and must be surrounded by a push statement (e.g. `<100>`) to push a
- * number to the stack. In the `script_tests.json` text-format, numbers are
- * assumed to be pushed. We could implement a transformation after the
+ * incompatibility in the languages. In CashAssembly, BigIntLiterals are a
+ * primitive type, and must be surrounded by a push statement (e.g. `<100>`) to
+ * push a number to the stack. In the `script_tests.json` text-format, numbers
+ * are assumed to be pushed. We could implement a transformation after the
  * compiler's parse step, but because this format doesn't require any other
  * features of the compiler, we opt to implement this as a simple method.
  * @param satoshiScript - the script in the Satoshi implementation's

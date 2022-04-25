@@ -15,55 +15,56 @@ import {
 // prettier-ignore
 const privkey = new Uint8Array([0xf8, 0x5d, 0x4b, 0xd8, 0xa0, 0x3c, 0xa1, 0x06, 0xc9, 0xde, 0xb4, 0x7b, 0x79, 0x18, 0x03, 0xda, 0xc7, 0xf0, 0x33, 0x38, 0x09, 0xe3, 0xf1, 0xdd, 0x04, 0xd1, 0x82, 0xe0, 0xab, 0xa6, 0xe5, 0x53]);
 
-test.failing(
-  '[BCH compiler] createCompilerBCH: generateBytecode',
-  async (t) => {
-    const compiler = await createCompilerBCH({
-      scripts: {
-        lock: 'OP_DUP OP_HASH160 <$(<a.public_key> OP_HASH160)> OP_EQUALVERIFY OP_CHECKSIG',
-        unlock: '<a.signature.all_outputs> <a.public_key>',
+test.failing('[BCH compiler] createCompilerBCH: generateBytecode', (t) => {
+  const compiler = createCompilerBCH({
+    scripts: {
+      lock: 'OP_DUP OP_HASH160 <$(<a.public_key> OP_HASH160)> OP_EQUALVERIFY OP_CHECKSIG',
+      unlock: '<a.signature.all_outputs> <a.public_key>',
+    },
+    unlockingScripts: {
+      unlock: 'lock',
+    },
+    variables: {
+      a: {
+        type: 'Key',
       },
-      unlockingScripts: {
-        unlock: 'lock',
-      },
-      variables: {
-        a: {
-          type: 'Key',
-        },
-      },
-    });
-    const resultLock = compiler.generateBytecode('lock', {
+    },
+  });
+  const resultLock = compiler.generateBytecode({
+    data: {
       keys: { privateKeys: { a: privkey } },
-    });
-    t.deepEqual(
-      resultLock,
-      {
-        bytecode: hexToBin(
-          '76a91415d16c84669ab46059313bf0747e781f1d13936d88ac'
-        ),
-        success: true,
-      },
-      stringifyTestVector(resultLock)
-    );
+    },
+    scriptId: 'lock',
+  });
+  t.deepEqual(
+    resultLock,
+    {
+      bytecode: hexToBin('76a91415d16c84669ab46059313bf0747e781f1d13936d88ac'),
+      success: true,
+    },
+    stringifyTestVector(resultLock)
+  );
 
-    const resultUnlock = compiler.generateBytecode('unlock', {
+  const resultUnlock = compiler.generateBytecode({
+    data: {
       compilationContext: createCompilationContextCommonTesting(),
       keys: { privateKeys: { a: privkey } },
-    });
-    t.deepEqual(
-      resultUnlock,
-      {
-        bytecode: hexToBin(
-          '47304402200bda982d5b1a2a42d4568cf180ea1e4042397b02a77d5039b4b620dbc5ba1141022008f2a4f13ff538221cbf79d676f55fbe0c05617dea57877b648037b8dae939f141210376ea9e36a75d2ecf9c93a0be76885e36f822529db22acfdc761c9b5b4544f5c5'
-        ),
-        success: true,
-      },
-      stringifyTestVector(resultUnlock)
-    );
-  }
-);
+    },
+    scriptId: 'unlock',
+  });
+  t.deepEqual(
+    resultUnlock,
+    {
+      bytecode: hexToBin(
+        '47304402200bda982d5b1a2a42d4568cf180ea1e4042397b02a77d5039b4b620dbc5ba1141022008f2a4f13ff538221cbf79d676f55fbe0c05617dea57877b648037b8dae939f141210376ea9e36a75d2ecf9c93a0be76885e36f822529db22acfdc761c9b5b4544f5c5'
+      ),
+      success: true,
+    },
+    stringifyTestVector(resultUnlock)
+  );
+});
 
-test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
+test.failing('[BCH compiler] createCompilerBCH: debug', (t) => {
   const program = createCompilationContextCommonTesting({
     inputs: [
       {
@@ -80,7 +81,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
       program,
       stack: [],
     });
-  const compiler = await createCompilerBCH({
+  const compiler = createCompilerBCH({
     createState,
     scripts: {
       lock: 'OP_DUP OP_HASH160 <$(<a.public_key> OP_HASH160)> OP_EQUALVERIFY OP_CHECKSIG',
@@ -95,13 +96,13 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
       },
     },
   });
-  const resultLock = compiler.generateBytecode(
-    'lock',
-    {
+  const resultLock = compiler.generateBytecode({
+    data: {
       keys: { privateKeys: { a: privkey } },
     },
-    true
-  );
+    debug: true,
+    scriptId: 'lock',
+  });
   t.deepEqual(
     resultLock,
     {
@@ -400,7 +401,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
                   trace: [
                     {
                       alternateStack: [],
-                      executionStack: [],
+                      controlStack: [],
                       instructions: [],
                       ip: 0,
                       lastCodeSeparator: -1,
@@ -412,7 +413,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
                     },
                     {
                       alternateStack: [],
-                      executionStack: [],
+                      controlStack: [],
                       instructions: [
                         {
                           data: hexToBin(
@@ -434,7 +435,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
                     },
                     {
                       alternateStack: [],
-                      executionStack: [],
+                      controlStack: [],
                       instructions: [
                         {
                           data: hexToBin(
@@ -460,7 +461,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
                     },
                     {
                       alternateStack: [],
-                      executionStack: [],
+                      controlStack: [],
                       instructions: [
                         {
                           data: hexToBin(
@@ -484,7 +485,7 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
                     },
                     {
                       alternateStack: [],
-                      executionStack: [],
+                      controlStack: [],
                       instructions: [
                         {
                           data: hexToBin(
@@ -645,14 +646,14 @@ test.failing('[BCH compiler] createCompilerBCH: debug', async (t) => {
     stringifyTestVector(resultLock)
   );
 
-  const resultUnlock = compiler.generateBytecode(
-    'unlock',
-    {
+  const resultUnlock = compiler.generateBytecode({
+    data: {
       compilationContext: createCompilationContextCommonTesting(),
       keys: { privateKeys: { a: privkey } },
     },
-    true
-  );
+    debug: true,
+    scriptId: 'unlock',
+  });
   t.deepEqual(
     resultUnlock,
     {

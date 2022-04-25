@@ -10,9 +10,7 @@ import {
   stackItemIsTruthy,
 } from '../../../lib.js';
 
-/**
- * Derived from https://github.com/bitcoinjs/bitcoinjs-lib
- */
+// Derived from https://github.com/bitcoinjs/bitcoinjs-lib
 const minimallyEncodedScriptNumbers: readonly [string, bigint][] = [
   /* spell-checker:disable */
   ['', BigInt(0)],
@@ -143,7 +141,9 @@ test('parseBytesAsScriptNumber', (t) => {
     return undefined;
   });
   t.deepEqual(
-    parseBytesAsScriptNumber(hexToBin('abcdef1234')),
+    parseBytesAsScriptNumber(hexToBin('abcdef1234'), {
+      maximumScriptNumberByteLength: 4,
+    }),
     ScriptNumberError.outOfRange
   );
   t.deepEqual(

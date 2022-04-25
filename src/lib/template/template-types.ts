@@ -10,15 +10,15 @@
  */
 
 /**
- * An `AuthenticationTemplate` (A.K.A. `Bitauth Template`) specifies a set of
- * locking scripts, unlocking scripts, and other information required to use a
- * certain authentication scheme. Templates fully describe wallets and protocols
- * in a way that can be shared between software clients.
+ * An `AuthenticationTemplate` (A.K.A. `CashAssembly Template`) specifies a set
+ * of locking scripts, unlocking scripts, and other information required to use
+ * a certain authentication scheme. Templates fully describe wallets and
+ * protocols in a way that can be shared between software clients.
  */
 export interface AuthenticationTemplate {
   /**
    * The URI which identifies the JSON Schema used by this template. Try:
-   * `https://bitauth.com/schemas/authentication-template-v0.schema.json`
+   * `https://libauth.org/schemas/authentication-template-v0.schema.json`
    * to enable documentation, autocompletion, and validation in JSON documents.
    */
   $schema?: string;
@@ -165,29 +165,31 @@ export interface AuthenticationTemplateEntity {
  */
 export interface AuthenticationTemplateScenarioData {
   /**
-   * A map of full identifiers to scripts which compile to their values for this
-   * scenario.
+   * A map of full identifiers to CashAssembly scripts which compile to each
+   * identifier's value for this scenario. Allowing `bytecode` to be specified
+   * as scripts (rather than e.g. hex) offers greater power and flexibility.
    *
-   * Scripts are provided in BTL, and have access to each other and all other
-   * template scripts and defined variables. However, cyclical references will
-   * produce an error at compile time. Also, because the results of these
-   * compilations will be used to generate the compilation context for this
-   * scenario, these scripts may not use compiler operations which themselves
-   * require access to compilation context (e.g. signatures).
+   * Bytecode scripts have access to each other and all other template scripts
+   * and defined variables, however, cyclical references will produce an error
+   * at compile time. Also, because the results of these compilations will be
+   * used to generate the compilation context for this scenario, these scripts
+   * may not use compiler operations which themselves require access to
+   * compilation context (e.g. signatures).
    *
    * The provided `fullIdentifier` should match the complete identifier for
    * each item, e.g. `some_wallet_data`, `variable_id.public_key`, or
    * `variable_id.signature.all_outputs`.
    *
    * All `AddressData` and `WalletData` variables must be provided via
-   * `bytecode`, and pre-computed results for operations of other variable types
+   * `bytecode` (though the default scenario automatically includes reasonable
+   * values), and pre-computed results for operations of other variable types
    * (e.g. `key.public_key`) may also be provided via this property.
    *
    * Because each bytecode identifier may precisely match the identifier of the
    * variable it defines for this scenario, references between these scripts
-   * must refer to the target script with a `_scenario_` prefix. E.g. to
+   * must refer to the target script with a `_scenario.` prefix. E.g. to
    * reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must
-   * use the identifier `_scenario_my_foo`.
+   * use the identifier `_scenario.my_foo`.
    */
   bytecode?: { [fullIdentifier: string]: string };
   /**
@@ -270,20 +272,21 @@ export interface AuthenticationTemplateScenarioData {
  * Bytecode may be specified as either a hexadecimal-encoded string or an object
  * describing the required compilation.
  *
- * Defaults to `{}` if left undefined (which uses the default values for
- * `script` and `overrides`, respectively).
+ * For `sourceOutputs` and `transaction.inputs`, defaults to
+ * `{ script: ["copy"], overrides: {} }`. For `transaction.outputs`, defaults to
+ * `{ script: ["copy"], overrides: { "hdKeys": { "addressIndex": 1 } } }`.
  */
 export type AuthenticationTemplateScenarioBytecode =
   | string
   | {
       /**
        * The identifier of the script to compile when generating this bytecode.
-       * May also be set to `null`, which is automatically substituted for the
+       * May also be set to `["copy"]`, which is automatically replaced with the
        * identifier of the locking or unlocking script under test, respectively.
        *
-       * If undefined, defaults to `null`.
+       * If undefined, defaults to `["copy"]`.
        */
-      script?: string | null;
+      script?: string | ['copy'];
       /**
        * Scenario data which extends the scenario's top-level `data` during
        * script compilation.
@@ -389,15 +392,16 @@ export interface AuthenticationTemplateScenarioInput {
   sequenceNumber?: number;
   /**
    * The `unlockingBytecode` value of this input for this scenario. This must be
-   * either `null` – indicating that this input contains the `unlockingBytecode`
-   * under test by the scenario – or a hexadecimal-encoded bytecode value.
+   * either `["slot"]`, indicating that this input contains the
+   * `unlockingBytecode` under test by the scenario, or an
+   * `AuthenticationTemplateScenarioBytecode`.
    *
-   * For a scenario to be valid, `unlockingBytecode` must be `null` for exactly
-   * one input in the scenario.
+   * For a scenario to be valid, `unlockingBytecode` must be `["slot"]` for
+   * exactly one input in the scenario.
    *
-   * Defaults to `null`.
+   * Defaults to `["slot"]`.
    */
-  unlockingBytecode?: AuthenticationTemplateScenarioBytecode | null;
+  unlockingBytecode?: AuthenticationTemplateScenarioBytecode | ['slot'];
 }
 
 /**
@@ -409,12 +413,18 @@ export interface AuthenticationTemplateScenarioOutput<
   /**
    * The locking bytecode used to encumber this output.
    *
-   * This value may be provided as either a hexadecimal-encoded string or an
-   * object describing the required compilation. If undefined, defaults to `{}`,
-   * which uses the default values for `script` and `overrides`, respectively.
+   * `lockingBytecode` values may be provided as a hexadecimal-encoded string or
+   * as an object describing the required compilation. If undefined, defaults to
+   *  `{}`, which uses the default values for `script` and `overrides`,
+   * respectively.
+   *
+   * Only source outputs may specify a `lockingBytecode` of `["slot"]`; this
+   * identifies the source output in which the locking script under test will be
+   * placed. (To be valid, every scenario's `sourceOutputs` property must have
+   * exactly one source output slot and one input slot at the same index.)
    */
   readonly lockingBytecode?: IsSourceOutput extends true
-    ? AuthenticationTemplateScenarioBytecode | null
+    ? AuthenticationTemplateScenarioBytecode | ['slot']
     : AuthenticationTemplateScenarioBytecode;
   /**
    * The value of the output in satoshis, the smallest unit of bitcoin.
@@ -446,7 +456,7 @@ export type AuthenticationTemplateScenarioTransactionOutput =
   AuthenticationTemplateScenarioOutput<false>;
 
 /**
- * An source output used by an authentication template scenario.
+ * A source output used by an authentication template scenario.
  */
 export type AuthenticationTemplateScenarioSourceOutput =
   AuthenticationTemplateScenarioOutput<true>;
@@ -522,7 +532,7 @@ export interface AuthenticationTemplateScenario {
    * If undefined, inherits the default value for each property:
    * ```json
    * {
-   *   "inputs": [{ "unlockingBytecode": null }],
+   *   "inputs": [{ "unlockingBytecode": ['slot'] }],
    *   "locktime": 0,
    *   "outputs": [{ "lockingBytecode": {} }],
    *   "version": 2
@@ -541,14 +551,14 @@ export interface AuthenticationTemplateScenario {
    *   "outpointTransactionHash":
    *     "0000000000000000000000000000000000000000000000000000000000000000",
    *   "sequenceNumber": 0,
-   *   "unlockingBytecode": null
+   *   "unlockingBytecode": ['slot']
    * }
    * ```
    * And an output of `{}` is interpreted as:
    * ```json
    * {
    *   "lockingBytecode": {
-   *     "script": null,
+   *     "script": ['copy'],
    *     "overrides": { "hdKeys": { "addressIndex": 1 } }
    *   },
    *   "valueSatoshis": 0
@@ -561,11 +571,11 @@ export interface AuthenticationTemplateScenario {
      * scenario.
      *
      * To be valid the `inputs` property must have exactly one input with
-     * `unlockingBytecode` set to `null`. This is the input in which the
+     * `unlockingBytecode` set to `["slot"]`. This is the input in which the
      * unlocking script under test will be placed.
      *
      * If undefined, inherits the default scenario `inputs` value:
-     * `[{ "unlockingBytecode": null }]`.
+     * `[{ "unlockingBytecode": ["slot"] }]`.
      */
     inputs?: AuthenticationTemplateScenarioInput[];
     /**
@@ -635,10 +645,10 @@ export interface AuthenticationTemplateScenario {
    * index of the input which spends it.
    *
    * To be valid the `sourceOutputs` property must have exactly one source
-   * output with `lockingBytecode` set to `null`. This must be the output at the
-   * same index as the `null` `unlockingBytecode` input in `transaction.inputs`.
+   * output with `lockingBytecode` set to `["slot"]` – the output at the same
+   * index as the `["slot"]` input in `transaction.inputs`.
    *
-   * If undefined, defaults to `[{ "lockingBytecode": null }]`.
+   * If undefined, defaults to `[{ "lockingBytecode": ["slot"] }]`.
    */
   sourceOutputs?: AuthenticationTemplateScenarioSourceOutput[];
 }
@@ -654,7 +664,7 @@ export interface AuthenticationTemplateScript {
    */
   name?: string;
   /**
-   * The script definition in BTL (Bitauth Templating Language).
+   * The script definition in CashAssembly.
    */
   script: string;
 }
@@ -666,8 +676,8 @@ export interface AuthenticationTemplateScriptUnlocking
    *
    * The minimum input age required for this unlocking script to become valid.
    *
-   * This value is provided as a BTL script which must compile to the least
-   * significant 3 bytes of the minimum sequence number required for this
+   * This value is provided as a CashAssembly script which must compile to the
+   * least significant 3 bytes of the minimum sequence number required for this
    * unlocking script to be valid (the "type bit" and the 2-byte "value" – see
    * BIP68 for details). This script has access to all other template scripts
    * and variables, but cyclical references will produce an error at compile
@@ -762,15 +772,15 @@ export interface AuthenticationTemplateScriptUnlocking
 export interface AuthenticationTemplateScriptLocking
   extends AuthenticationTemplateScript {
   /**
-   * Indicates if P2SH infrastructure should be used when producing bytecode
-   * related to this script. For more information on P2SH, see BIP16.
+   * Indicates if P2SH20 infrastructure should be used when producing bytecode
+   * related to this script. For more information on P2SH20, see BIP16.
    *
-   * When compiling locking scripts of type `p2sh`, the result will be placed in
-   * a P2SH "redeem script" format:
+   * When compiling locking scripts of type `p2sh20`, the result will be placed
+   * in a P2SH20 "redeem script" format:
    * `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`
    *
    * When compiling unlocking scripts which unlock locking scripts of type
-   * `p2sh`, the result will be transformed into the P2SH unlocking format:
+   * `p2sh20`, the result will be transformed into the P2SH20 unlocking format:
    * `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the
    * compiled bytecode of the locking script, without the "redeem script"
    * transformation.)
@@ -779,7 +789,7 @@ export interface AuthenticationTemplateScriptLocking
    * locking script. It must be present on any script referenced by the
    * `unlocks` property of another script.
    */
-  lockingType: 'p2sh' | 'standard';
+  lockingType: 'p2sh20' | 'standard';
 }
 
 export interface AuthenticationTemplateScriptTested
@@ -798,9 +808,9 @@ export interface AuthenticationTemplateScriptTested
   pushed?: boolean;
   /**
    * One or more tests which can be used during development and during template
-   * validation to confirm the correctness of this inline script.
+   * validation to confirm the correctness of this tested script.
    */
-  tests: AuthenticationTemplateScriptTest[];
+  tests: { [testId: string]: AuthenticationTemplateScriptTest };
 }
 
 export interface AuthenticationTemplateScriptTest {
@@ -963,7 +973,7 @@ export interface AuthenticationTemplateHdKey
    *
    * For example, if `privateDerivationPath` is `m/0'/i`, it is not possible to
    * derive the equivalent public key with only the HD public key `M`. (The path
-   * "`M/0'/i`" is impossible). However, given the HD public key for `m/0'`, it
+   * "`M/0'/i`" is impossible.) However, given the HD public key for `m/0'`, it
    * is possible to derive the public key of `m/0'/i` for any `i`. In this case,
    * `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath`
    * would be the remaining `M/i`.
@@ -1043,7 +1053,7 @@ export interface AuthenticationTemplateAddressData
    * prompting users. This is particularly useful for sharing the result of a
    * script with other entities as a variable.
    *
-   * TODO: implement? - also requires support in data_signature and validateAuthenticationTemplate
+   * TODO: implement? - also requires support in data_signature and importAuthenticationTemplate
    */
   // source?: string;
   /**

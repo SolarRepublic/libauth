@@ -4,10 +4,10 @@
   "definitions": {
     "AuthenticationTemplate": {
       "additionalProperties": false,
-      "description": "An `AuthenticationTemplate` (A.K.A. `Bitauth Template`) specifies a set of locking scripts, unlocking scripts, and other information required to use a certain authentication scheme. Templates fully describe wallets and protocols in a way that can be shared between software clients.",
+      "description": "An `AuthenticationTemplate` (A.K.A. `CashAssembly Template`) specifies a set of locking scripts, unlocking scripts, and other information required to use a certain authentication scheme. Templates fully describe wallets and protocols in a way that can be shared between software clients.",
       "properties": {
         "$schema": {
-          "description": "The URI which identifies the JSON Schema used by this template. Try: `https://bitauth.com/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.",
+          "description": "The URI which identifies the JSON Schema used by this template. Try: `https://libauth.org/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.",
           "type": "string"
         },
         "description": {
@@ -39,13 +39,13 @@
                 "$ref": "#/definitions/AuthenticationTemplateScript"
               },
               {
-                "$ref": "#/definitions/AuthenticationTemplateScriptUnlocking"
-              },
-              {
                 "$ref": "#/definitions/AuthenticationTemplateScriptLocking"
               },
               {
                 "$ref": "#/definitions/AuthenticationTemplateScriptTested"
+              },
+              {
+                "$ref": "#/definitions/AuthenticationTemplateScriptUnlocking"
               }
             ]
           },
@@ -65,12 +65,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "entities",
-        "scripts",
-        "supported",
-        "version"
-      ],
+      "required": ["entities", "scripts", "supported", "version"],
       "type": "object"
     },
     "AuthenticationTemplateAddressData": {
@@ -90,9 +85,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "type": "object"
     },
     "AuthenticationTemplateEntity": {
@@ -148,7 +141,7 @@
           "type": "string"
         },
         "publicDerivationPath": {
-          "description": "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` which follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible). However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
+          "description": "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` which follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible.) However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
           "type": "string"
         },
         "type": {
@@ -157,9 +150,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "type": "object"
     },
     "AuthenticationTemplateKey": {
@@ -179,9 +170,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "type": "object"
     },
     "AuthenticationTemplateScenario": {
@@ -205,7 +194,7 @@
           "type": "string"
         },
         "sourceOutputs": {
-          "description": "The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input which spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `null`. This must be the output at the same index as the `null` `unlockingBytecode` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ \"lockingBytecode\": null }]`.",
+          "description": "The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input which spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `[\"slot\"]` – the output at the same index as the `[\"slot\"]` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ \"lockingBytecode\": [\"slot\"] }]`.",
           "items": {
             "$ref": "#/definitions/AuthenticationTemplateScenarioSourceOutput"
           },
@@ -213,10 +202,10 @@
         },
         "transaction": {
           "additionalProperties": false,
-          "description": "The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   \"inputs\": [{ \"unlockingBytecode\": null }],   \"locktime\": 0,   \"outputs\": [{ \"lockingBytecode\": {} }],   \"version\": 2 } ```\n\nAny `transaction` property which is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   \"outpointIndex\": 0,   \"outpointTransactionHash\":     \"0000000000000000000000000000000000000000000000000000000000000000\",   \"sequenceNumber\": 0,   \"unlockingBytecode\": null } ``` And an output of `{}` is interpreted as: ```json {   \"lockingBytecode\": {     \"script\": null,     \"overrides\": { \"hdKeys\": { \"addressIndex\": 1 } }   },   \"valueSatoshis\": 0 } ```",
+          "description": "The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   \"inputs\": [{ \"unlockingBytecode\": ['slot'] }],   \"locktime\": 0,   \"outputs\": [{ \"lockingBytecode\": {} }],   \"version\": 2 } ```\n\nAny `transaction` property which is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   \"outpointIndex\": 0,   \"outpointTransactionHash\":     \"0000000000000000000000000000000000000000000000000000000000000000\",   \"sequenceNumber\": 0,   \"unlockingBytecode\": ['slot'] } ``` And an output of `{}` is interpreted as: ```json {   \"lockingBytecode\": {     \"script\": ['copy'],     \"overrides\": { \"hdKeys\": { \"addressIndex\": 1 } }   },   \"valueSatoshis\": 0 } ```",
           "properties": {
             "inputs": {
-              "description": "The list of inputs to use when generating the transaction for this scenario.\n\nTo be valid the `inputs` property must have exactly one input with `unlockingBytecode` set to `null`. This is the input in which the unlocking script under test will be placed.\n\nIf undefined, inherits the default scenario `inputs` value: `[{ \"unlockingBytecode\": null }]`.",
+              "description": "The list of inputs to use when generating the transaction for this scenario.\n\nTo be valid the `inputs` property must have exactly one input with `unlockingBytecode` set to `[\"slot\"]`. This is the input in which the unlocking script under test will be placed.\n\nIf undefined, inherits the default scenario `inputs` value: `[{ \"unlockingBytecode\": [\"slot\"] }]`.",
               "items": {
                 "$ref": "#/definitions/AuthenticationTemplateScenarioInput"
               },
@@ -256,17 +245,27 @@
               "description": "Scenario data which extends the scenario's top-level `data` during script compilation.\n\nEach property is extended individually – to modify a property set by the top-level scenario `data`, the new value must be listed here.\n\nDefaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults to `{ \"hdKeys\": { \"addressIndex\": 1 } }` for `transaction.outputs`."
             },
             "script": {
-              "description": "The identifier of the script to compile when generating this bytecode. May also be set to `null`, which is automatically substituted for the identifier of the locking or unlocking script under test, respectively.\n\nIf undefined, defaults to `null`.",
-              "type": [
-                "string",
-                "null"
-              ]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "const": "copy",
+                    "type": "string"
+                  },
+                  "maxItems": 1,
+                  "minItems": 1,
+                  "type": "array"
+                }
+              ],
+              "description": "The identifier of the script to compile when generating this bytecode. May also be set to `[\"copy\"]`, which is automatically replaced with the identifier of the locking or unlocking script under test, respectively.\n\nIf undefined, defaults to `[\"copy\"]`."
             }
           },
           "type": "object"
         }
       ],
-      "description": "A type which describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nDefaults to `{}` if left undefined (which uses the default values for `script` and `overrides`, respectively)."
+      "description": "A type which describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nFor `sourceOutputs` and `transaction.inputs`, defaults to `{ script: [\"copy\"], overrides: {} }`. For `transaction.outputs`, defaults to `{ script: [\"copy\"], overrides: { \"hdKeys\": { \"addressIndex\": 1 } } }`."
     },
     "AuthenticationTemplateScenarioData": {
       "additionalProperties": false,
@@ -276,7 +275,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "A map of full identifiers to scripts which compile to their values for this scenario.\n\nScripts are provided in BTL, and have access to each other and all other template scripts and defined variables. However, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations which themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode`, and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario_` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario_my_foo`.",
+          "description": "A map of full identifiers to CashAssembly scripts which compile to each identifier's value for this scenario. Allowing `bytecode` to be specified as scripts (rather than e.g. hex) offers greater power and flexibility.\n\nBytecode scripts have access to each other and all other template scripts and defined variables, however, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations which themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode` (though the default scenario automatically includes reasonable values), and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario.` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario.my_foo`.",
           "type": "object"
         },
         "currentBlockHeight": {
@@ -348,13 +347,19 @@
         "unlockingBytecode": {
           "anyOf": [
             {
-              "type": "null"
+              "$ref": "#/definitions/AuthenticationTemplateScenarioBytecode"
             },
             {
-              "$ref": "#/definitions/AuthenticationTemplateScenarioBytecode"
+              "items": {
+                "const": "slot",
+                "type": "string"
+              },
+              "maxItems": 1,
+              "minItems": 1,
+              "type": "array"
             }
           ],
-          "description": "The `unlockingBytecode` value of this input for this scenario. This must be either `null` – indicating that this input contains the `unlockingBytecode` under test by the scenario – or a hexadecimal-encoded bytecode value.\n\nFor a scenario to be valid, `unlockingBytecode` must be `null` for exactly one input in the scenario.\n\nDefaults to `null`."
+          "description": "The `unlockingBytecode` value of this input for this scenario. This must be either `[\"slot\"]`, indicating that this input contains the `unlockingBytecode` under test by the scenario, or an `AuthenticationTemplateScenarioBytecode`.\n\nFor a scenario to be valid, `unlockingBytecode` must be `[\"slot\"]` for exactly one input in the scenario.\n\nDefaults to `[\"slot\"]`."
         }
       },
       "type": "object"
@@ -365,14 +370,11 @@
       "properties": {
         "lockingBytecode": {
           "$ref": "#/definitions/AuthenticationTemplateScenarioBytecode",
-          "description": "The bytecode used to encumber this transaction output for this scenario.\n\nThis value may be provided as either a hexadecimal-encoded string or an object describing the required compilation. If undefined, defaults to `{}`, which uses the default values for `script` and `overrides`, respectively."
+          "description": "The locking bytecode used to encumber this output.\n\n`lockingBytecode` values may be provided as a hexadecimal-encoded string or as an object describing the required compilation. If undefined, defaults to  `{}`, which uses the default values for `script` and `overrides`, respectively.\n\nOnly source outputs may specify a `lockingBytecode` of `[\"slot\"]`; this identifies the source output in which the locking script under test will be placed. (To be valid, every scenario's `sourceOutputs` property must have exactly one source output slot and one input slot at the same index.)"
         },
         "valueSatoshis": {
           "description": "The value of the output in satoshis, the smallest unit of bitcoin.\n\nIn a valid transaction, this is a positive integer, from `0` to the maximum number of satoshis available to the transaction.\n\nThe maximum number of satoshis in existence is about 1/4 of `Number.MAX_SAFE_INTEGER` (`9007199254740991`), so typically, this value is defined using a `number`. However, this value may also be defined using a 16-character, hexadecimal-encoded `string`, to allow for the full range of the 64-bit unsigned, little-endian integer used to encode `valueSatoshis` in the encoded output format, e.g. `\"ffffffffffffffff\"`. This is useful for representing scenarios where intentionally excessive values are provided (to ensure an otherwise properly-signed transaction can never be included in the blockchain), e.g. transaction size estimations or off-chain Bitauth signatures.\n\nIf undefined, this defaults to: `0`.",
-          "type": [
-            "number",
-            "string"
-          ]
+          "type": ["number", "string"]
         }
       },
       "type": "object"
@@ -384,30 +386,33 @@
         "lockingBytecode": {
           "anyOf": [
             {
-              "type": "null"
+              "$ref": "#/definitions/AuthenticationTemplateScenarioBytecode"
             },
             {
-              "$ref": "#/definitions/AuthenticationTemplateScenarioBytecode"
+              "items": {
+                "const": "slot",
+                "type": "string"
+              },
+              "maxItems": 1,
+              "minItems": 1,
+              "type": "array"
             }
           ],
-          "description": "The bytecode used to encumber this transaction output for this scenario.\n\nThis value may be provided as either a hexadecimal-encoded string or an object describing the required compilation. If undefined, defaults to `{}`, which uses the default values for `script` and `overrides`, respectively."
+          "description": "The locking bytecode used to encumber this output.\n\n`lockingBytecode` values may be provided as a hexadecimal-encoded string or as an object describing the required compilation. If undefined, defaults to  `{}`, which uses the default values for `script` and `overrides`, respectively.\n\nOnly source outputs may specify a `lockingBytecode` of `[\"slot\"]`; this identifies the source output in which the locking script under test will be placed. (To be valid, every scenario's `sourceOutputs` property must have exactly one source output slot and one input slot at the same index.)"
         },
         "valueSatoshis": {
           "description": "The value of the output in satoshis, the smallest unit of bitcoin.\n\nIn a valid transaction, this is a positive integer, from `0` to the maximum number of satoshis available to the transaction.\n\nThe maximum number of satoshis in existence is about 1/4 of `Number.MAX_SAFE_INTEGER` (`9007199254740991`), so typically, this value is defined using a `number`. However, this value may also be defined using a 16-character, hexadecimal-encoded `string`, to allow for the full range of the 64-bit unsigned, little-endian integer used to encode `valueSatoshis` in the encoded output format, e.g. `\"ffffffffffffffff\"`. This is useful for representing scenarios where intentionally excessive values are provided (to ensure an otherwise properly-signed transaction can never be included in the blockchain), e.g. transaction size estimations or off-chain Bitauth signatures.\n\nIf undefined, this defaults to: `0`.",
-          "type": [
-            "number",
-            "string"
-          ]
+          "type": ["number", "string"]
         }
       },
       "type": "object"
     },
     "AuthenticationTemplateScenarioSourceOutput": {
-      "$ref": "#/definitions/AuthenticationTemplateScenarioOutput%3Ctrue%3E",
-      "description": "An source output used by an authentication template scenario."
+      "$ref": "#/definitions/AuthenticationTemplateScenarioOutput<true>",
+      "description": "A source output used by an authentication template scenario."
     },
     "AuthenticationTemplateScenarioTransactionOutput": {
-      "$ref": "#/definitions/AuthenticationTemplateScenarioOutput%3Cfalse%3E",
+      "$ref": "#/definitions/AuthenticationTemplateScenarioOutput<false>",
       "description": "A transaction output used to define an authentication template scenario transaction."
     },
     "AuthenticationTemplateScript": {
@@ -419,24 +424,19 @@
           "type": "string"
         },
         "script": {
-          "description": "The script definition in BTL (Bitauth Templating Language).",
+          "description": "The script definition in CashAssembly.",
           "type": "string"
         }
       },
-      "required": [
-        "script"
-      ],
+      "required": ["script"],
       "type": "object"
     },
     "AuthenticationTemplateScriptLocking": {
       "additionalProperties": false,
       "properties": {
         "lockingType": {
-          "description": "Indicates if P2SH infrastructure should be used when producing bytecode related to this script. For more information on P2SH, see BIP16.\n\nWhen compiling locking scripts of type `p2sh`, the result will be placed in a P2SH \"redeem script\" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts which unlock locking scripts of type `p2sh`, the result will be transformed into the P2SH unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the \"redeem script\" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.",
-          "enum": [
-            "standard",
-            "p2sh"
-          ],
+          "description": "Indicates if P2SH20 infrastructure should be used when producing bytecode related to this script. For more information on P2SH20, see BIP16.\n\nWhen compiling locking scripts of type `p2sh20`, the result will be placed in a P2SH20 \"redeem script\" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts which unlock locking scripts of type `p2sh20`, the result will be transformed into the P2SH20 unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the \"redeem script\" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.",
+          "enum": ["p2sh20", "standard"],
           "type": "string"
         },
         "name": {
@@ -444,14 +444,11 @@
           "type": "string"
         },
         "script": {
-          "description": "The script definition in BTL (Bitauth Templating Language).",
+          "description": "The script definition in CashAssembly.",
           "type": "string"
         }
       },
-      "required": [
-        "lockingType",
-        "script"
-      ],
+      "required": ["lockingType", "script"],
       "type": "object"
     },
     "AuthenticationTemplateScriptTest": {
@@ -491,9 +488,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "check"
-      ],
+      "required": ["check"],
       "type": "object"
     },
     "AuthenticationTemplateScriptTested": {
@@ -508,28 +503,25 @@
           "type": "boolean"
         },
         "script": {
-          "description": "The script definition in BTL (Bitauth Templating Language).",
+          "description": "The script definition in CashAssembly.",
           "type": "string"
         },
         "tests": {
-          "description": "One or more tests which can be used during development and during template validation to confirm the correctness of this inline script.",
-          "items": {
+          "additionalProperties": {
             "$ref": "#/definitions/AuthenticationTemplateScriptTest"
           },
-          "type": "array"
+          "description": "One or more tests which can be used during development and during template validation to confirm the correctness of this tested script.",
+          "type": "object"
         }
       },
-      "required": [
-        "script",
-        "tests"
-      ],
+      "required": ["script", "tests"],
       "type": "object"
     },
     "AuthenticationTemplateScriptUnlocking": {
       "additionalProperties": false,
       "properties": {
         "ageLock": {
-          "description": "TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a BTL script which must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the \"type bit\" and the 2-byte \"value\" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains \"age-locked\" can be displayed in user interfaces (by parsing the \"type bit\" and \"value\" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.",
+          "description": "TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a CashAssembly script which must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the \"type bit\" and the 2-byte \"value\" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains \"age-locked\" can be displayed in user interfaces (by parsing the \"type bit\" and \"value\" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.",
           "type": "string"
         },
         "estimate": {
@@ -562,15 +554,12 @@
           "type": "array"
         },
         "script": {
-          "description": "The script definition in BTL (Bitauth Templating Language).",
+          "description": "The script definition in CashAssembly.",
           "type": "string"
         },
         "timeLockType": {
           "description": "The expected type of time locks in this script.\n\nBecause `OP_CHECKLOCKTIMEVERIFY` reads from a transaction's `locktime` property, every input to a given transaction must share the same time lock type. This differs from `OP_CHECKSEQUENCEVERIFY` in that each input has its own `sequenceNumber`, so compatibility is not required.\n\nIf a transaction includes multiple inputs using scripts with `timeLockType` defined, and the types are not compatible, generation should fail.\n\nThe `timestamp` type indicates that the transaction's locktime is provided as a UNIX timestamp (the `locktime` value is greater than or equal to `500000000`).\n\nThe `height` type indicates that the transaction's locktime is provided as a block height (the `locktime` value is less than `500000000`).\n\nIf `timeLockType` is undefined, the script is assumed to have no reliance on absolute time locks.",
-          "enum": [
-            "timestamp",
-            "height"
-          ],
+          "enum": ["height", "timestamp"],
           "type": "string"
         },
         "unlocks": {
@@ -578,14 +567,14 @@
           "type": "string"
         }
       },
-      "required": [
-        "script",
-        "unlocks"
-      ],
+      "required": ["script", "unlocks"],
       "type": "object"
     },
     "AuthenticationTemplateVariable": {
       "anyOf": [
+        {
+          "$ref": "#/definitions/AuthenticationTemplateAddressData"
+        },
         {
           "$ref": "#/definitions/AuthenticationTemplateHdKey"
         },
@@ -594,9 +583,6 @@
         },
         {
           "$ref": "#/definitions/AuthenticationTemplateWalletData"
-        },
-        {
-          "$ref": "#/definitions/AuthenticationTemplateAddressData"
         }
       ]
     },
@@ -617,29 +603,27 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "type": "object"
     },
     "AuthenticationVirtualMachineIdentifier": {
       "description": "Allowable identifiers for authentication virtual machine versions. The `BCH` prefix identifies the Bitcoin Cash network, the `BSV` prefix identifies the Bitcoin SV network, and the `BTC` prefix identifies the Bitcoin (Core) network.\n\nVirtual machine versions may be marked with the `SPEC` suffix to indicate that they have not yet been deployed to a main network and are therefore only a draft specification. After deployment, when template compatibility is verified, templates should update their `supported` array to indicate compatibility with the live virtual machine version.",
       "enum": [
-        "BCH_2022_11_SPEC",
-        "BCH_2022_11",
-        "BCH_2022_05_SPEC",
-        "BCH_2022_05",
-        "BCH_2021_11_SPEC",
-        "BCH_2021_11",
-        "BCH_2021_05_SPEC",
-        "BCH_2021_05",
+        "BCH_2019_05",
+        "BCH_2019_11",
+        "BCH_2020_05",
         "BCH_2020_11_SPEC",
         "BCH_2020_11",
-        "BCH_2020_05",
-        "BCH_2019_11",
-        "BCH_2019_05",
-        "BSV_2020_02",
+        "BCH_2021_05_SPEC",
+        "BCH_2021_05",
+        "BCH_2021_11_SPEC",
+        "BCH_2021_11",
+        "BCH_2022_05_SPEC",
+        "BCH_2022_05",
+        "BCH_2022_11_SPEC",
+        "BCH_2022_11",
         "BSV_2018_11",
+        "BSV_2020_02",
         "BTC_2017_08"
       ],
       "type": "string"

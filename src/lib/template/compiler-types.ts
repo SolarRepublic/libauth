@@ -1,4 +1,5 @@
 import type {
+  AuthenticationProgramCommon,
   AuthenticationTemplateScenario,
   AuthenticationTemplateVariable,
   AuthenticationVirtualMachine,
@@ -191,7 +192,7 @@ export type CompilerOperationsSigningSerializationCommon =
   | CompilerOperationsSigningSerializationFull;
 
 /**
- * The full context required to compile a given Bitauth Template script –
+ * The full context required to compile a given CashAssembly Template script –
  * everything required for the compiler to understand the CompilationData and
  * generate the compiled bytecode (targeting a specific
  * `AuthenticationVirtualMachine`).
@@ -242,10 +243,10 @@ export interface CompilerConfiguration<
   CompilerCurrentBlockTimeOperations extends string | false = false
 > {
   /**
-   * A method which accepts the compiled bytecode contents of a BTL evaluation
-   * and produces the equivalent `AuthenticationProgram` to be evaluated by the
-   * VM. This method is used internally to compute BTL evaluations. See
-   * `createAuthenticationProgramEvaluationCommon` for details.
+   * A method which accepts the compiled bytecode contents of a CashAssembly
+   * evaluation and produces the equivalent `AuthenticationProgram` to be
+   * evaluated by the VM. This method is used internally to compute CashAssembly
+   * evaluations. See `createAuthenticationProgramEvaluationCommon` for details.
    */
   createAuthenticationProgram?:
     | ((
@@ -271,24 +272,24 @@ export interface CompilerConfiguration<
 
   /**
    * An object mapping the script identifiers of locking scripts to their
-   * locking script type, either `standard` or `p2sh`.
+   * locking script type, either `standard` or `p2sh20`.
    *
    * This is used to transform compilation results into the proper structure for
-   * P2SH locking and unlocking scripts.
+   * P2SH20 locking and unlocking scripts.
    *
-   * When compiling locking scripts of type `p2sh`, the result will be placed in
-   * a P2SH "redeemScript" format:
+   * When compiling locking scripts of type `p2sh20`, the result will be placed
+   * in a P2SH20 "redeemScript" format:
    * `OP_HASH160 <$(<result> OP_HASH160)> OP_EQUAL`
    *
    * When compiling unlocking scripts which unlock locking scripts of type
-   * `p2sh`, the result will be transformed into the P2SH unlocking format:
+   * `p2sh20`, the result will be transformed into the P2SH20 unlocking format:
    * `result <locking_script>` (where `locking_script` is the compiled bytecode
    * of the locking script, without the "redeemScript" transformation.)
    *
    * By default, all scripts are assumed to have the type `standard`.
    */
   lockingScriptTypes?:
-    | { [lockingScriptId: string]: 'p2sh' | 'standard' }
+    | { [lockingScriptId: string]: 'p2sh20' | 'standard' }
     | undefined;
 
   /**
@@ -370,8 +371,7 @@ export interface CompilerConfiguration<
     | { [scriptId: string]: AuthenticationTemplateScenario }
     | undefined;
   /**
-   * An object mapping script identifiers to the text of script in Bitauth
-   * Templating Language.
+   * An object mapping script identifiers to the text of script in CashAssembly.
    *
    * To avoid compilation errors, this object must contain all scripts
    * referenced by the script being compiled (including children of children).
@@ -383,14 +383,8 @@ export interface CompilerConfiguration<
    */
   secp256k1?:
     | {
-        addTweakPrivateKey: (
-          privateKey: Uint8Array,
-          tweakValue: Uint8Array
-        ) => Uint8Array;
-        addTweakPublicKeyCompressed: (
-          publicKey: Uint8Array,
-          tweakValue: Uint8Array
-        ) => Uint8Array;
+        addTweakPrivateKey: Secp256k1['addTweakPrivateKey'];
+        addTweakPublicKeyCompressed: Secp256k1['addTweakPublicKeyCompressed'];
         derivePublicKeyCompressed: Secp256k1['derivePublicKeyCompressed'];
         signMessageHashSchnorr: Secp256k1['signMessageHashSchnorr'];
         signMessageHashDER: Secp256k1['signMessageHashDER'];
@@ -413,11 +407,11 @@ export interface CompilerConfiguration<
    * The "breadcrumb" path of script IDs currently being compiled, including the
    * current script. (E.g. `["grandparentId", "parentId", "scriptId"]`)
    *
-   * BTL identifier resolution must be acyclic. To prevent an infinite loop,
-   * `IdentifierResolutionFunction`s must abort resolution if they encounter
-   * their own `id` while resolving another identifier. Likewise, child scripts
-   * being resolved by a parent script may not reference any script which is
-   * already in the process of being resolved.
+   * CashAssembly identifier resolution must be acyclic. To prevent an infinite
+   * loop, `IdentifierResolutionFunction`s must abort resolution if they
+   * encounter their own `id` while resolving another identifier. Likewise,
+   * child scripts being resolved by a parent script may not reference any
+   * script which is already in the process of being resolved.
    */
   sourceScriptIds?: string[] | undefined;
 
@@ -459,8 +453,8 @@ export interface CompilerConfiguration<
     | { [variableId: string]: AuthenticationTemplateVariable }
     | undefined;
   /**
-   * The AuthenticationVirtualMachine on which BTL `evaluation` results will be
-   * computed.
+   * The AuthenticationVirtualMachine on which CashAssembly `evaluation` results
+   * will be computed.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vm?: AuthenticationVirtualMachine<any, any, any> | undefined;
@@ -468,7 +462,7 @@ export interface CompilerConfiguration<
 
 /**
  * Data required at compilation time to generate the bytecode for a particular
- * Bitauth Template script.
+ * CashAssembly Template script.
  */
 export interface CompilationData<CompilationContext = CompilationContextBCH> {
   /**
@@ -484,7 +478,7 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
    * `variable_id.signature.all_outputs`.
    *
    * To provide `AddressData` or `WalletData` from advanced user interfaces,
-   * consider parsing input with `compileBtl`.
+   * consider parsing input with `compileCashAssembly`.
    *
    * @remarks
    * It is security-critical that only identifiers provided by the entities
@@ -617,12 +611,37 @@ export type BytecodeGenerationResult<ProgramState> =
 
 /**
  * A fully-generated authentication template scenario. Useful for estimating
- * transactions and testing authentication templates. See
+ * transactions and testing/debugging authentication templates. See
  * `AuthenticationTemplateScenario` for details.
  */
 export interface Scenario {
   data: CompilationData;
-  program: CompilationContextBCH;
+  program: AuthenticationProgramCommon;
+}
+
+/**
+ * A scenario generation result which includes all compilation information for
+ * the scripts under test (in the scenario's "slot"s). This allows
+ * authentication template editors to display debugging information in context.
+ *
+ * Note, scenarios can also include compilations for source outputs, inputs, and
+ * outputs which are not under test – information for these compilations is included in the .
+ */
+export interface ScenarioGenerationDebuggingResult<ProgramState> {
+  /**
+   * Either the compiled scenario or an error message describing the scenario
+   * generation failure.
+   */
+  scenario: Scenario | string;
+  /**
+   * The locking script, redeem script, or virtualized locking script
+   * compilation result.
+   */
+  lockingCompilation: CompilationResult<ProgramState>;
+  /**
+   * The unlocking script or virtualized unlocking script compilation result.
+   */
+  unlockingCompilation: CompilationResult<ProgramState>;
 }
 
 /**
@@ -642,29 +661,43 @@ export interface Compiler<
    * @param data - the compilation data required to compile this script
    * @param debug - enable compilation debugging information (default: `false`)
    */
-
-  generateBytecode: <Debug extends boolean>(
-    scriptId: string,
-    data: CompilationData<CompilationContext>,
-    debug?: Debug
-  ) => Debug extends true
+  generateBytecode: <Debug extends boolean>({
+    data,
+    debug,
+    scriptId,
+  }: {
+    data: CompilationData<CompilationContext>;
+    debug?: Debug;
+    scriptId: string;
+  }) => Debug extends true
     ? CompilationResult<ProgramState>
     : BytecodeGenerationResult<ProgramState>;
   /**
-   * Generate the compilation data for a scenario specified in this compiler
-   * configuration. Returns either the full `CompilationData` for the selected
-   * scenario or an error message (as a `string`).
+   * Generate a scenario given this compiler's configuration.
    *
-   * Note, generated compilation data always uses a `CompilationContext` of type
-   * `CompilationContextCommon`.
+   * If no `scenarioId` is specified, the default scenario is used. If no
+   * `unlockingScriptId` is used, an empty script is used for all `["slot"]` and
+   * `["copy"]` locations in the generated transaction (useful for testing
+   * isolated scripts, i.e. scripts without either tests or any corresponding
+   * unlocking scripts).
    *
-   * @param scenario - the identifier of the scenario to generate
+   * @param scenarioId - the identifier of the scenario to generate
+   * @param unlockingScriptId - the identifier of the unlocking script to use in
+   * the scenario's input slot (the matching locking script will be used in the
+   * source output slot)
+   * @param debug - enable compilation debugging information (default: `false`)
    */
-  generateScenario: ({
+  generateScenario: <Debug extends boolean>({
+    debug,
     scenarioId,
     unlockingScriptId,
   }: {
+    debug?: Debug;
     scenarioId?: string | undefined;
     unlockingScriptId?: string | undefined;
-  }) => Scenario | string;
+  }) =>
+    | string
+    | (Debug extends true
+        ? ScenarioGenerationDebuggingResult<ProgramState>
+        : Scenario);
 }

@@ -67,11 +67,11 @@ export const compileOutputTemplate = <
   if ('script' in outputTemplate.lockingBytecode) {
     const directive = outputTemplate.lockingBytecode;
     const data = directive.data === undefined ? {} : directive.data;
-    const result = directive.compiler.generateBytecode(
-      directive.script,
+    const result = directive.compiler.generateBytecode({
       data,
-      true
-    );
+      debug: true,
+      scriptId: directive.script,
+    });
     return result.success
       ? {
           lockingBytecode: result.bytecode,
@@ -104,9 +104,8 @@ export const compileInputTemplate = <
 }): BytecodeGenerationErrorUnlocking | Input => {
   if ('script' in inputTemplate.unlockingBytecode) {
     const directive = inputTemplate.unlockingBytecode;
-    const result = directive.compiler.generateBytecode(
-      directive.script,
-      {
+    const result = directive.compiler.generateBytecode({
+      data: {
         ...directive.data,
         /**
          * TODO: skipped during refactor – fix when migrating to PST format/workflow
@@ -122,8 +121,9 @@ export const compileInputTemplate = <
           },
         } as unknown as CompilationContext,
       },
-      true
-    );
+      debug: true,
+      scriptId: directive.script,
+    });
     return result.success
       ? {
           outpointIndex: inputTemplate.outpointIndex,

@@ -300,10 +300,10 @@ export const disassembleBytecode = (
   disassembleParsedAuthenticationInstructions(opcodes, parseBytecode(bytecode));
 
 /**
- * Disassemble BCH authentication bytecode into its ASM representation.
+ * Disassemble BCH2022 authentication bytecode into its ASM representation.
  * @param bytecode - the authentication bytecode to disassemble
  */
-export const disassembleBytecodeBCH = (bytecode: Uint8Array) =>
+export const disassembleBytecodeBCH2022 = (bytecode: Uint8Array) =>
   disassembleParsedAuthenticationInstructions(
     OpcodesBCH2022,
     parseBytecode(bytecode)
@@ -313,7 +313,7 @@ export const disassembleBytecodeBCH = (bytecode: Uint8Array) =>
  * Disassemble BTC authentication bytecode into its ASM representation.
  * @param bytecode - the authentication bytecode to disassemble
  */
-export const disassembleBytecodeBTC = (bytecode: Uint8Array) =>
+export const disassembleBytecodeBTC2017 = (bytecode: Uint8Array) =>
   disassembleParsedAuthenticationInstructions(
     OpcodesBTC,
     parseBytecode(bytecode)
@@ -355,7 +355,7 @@ export const assembleBytecode = (
   return createCompilerCommonSynchronous<
     typeof configuration,
     AuthenticationProgramStateCommon
-  >(configuration).generateBytecode('asm', {});
+  >(configuration).generateBytecode({ data: {}, scriptId: 'asm' });
 };
 
 /**

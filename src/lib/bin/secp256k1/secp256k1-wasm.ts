@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle, max-params, @typescript-eslint/naming-convention */
 // cSpell:ignore memcpy, anyfunc
-import { base64ToBin } from '../../lib.js';
+import { base64ToBin } from '../../format/base64.js';
 
 import type { Secp256k1Wasm } from './secp256k1-wasm-types';
 import { CompressionFlag, ContextFlag } from './secp256k1-wasm-types.js';

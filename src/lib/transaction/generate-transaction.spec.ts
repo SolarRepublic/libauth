@@ -8,8 +8,8 @@ import {
   decodeTransactionCommon,
   generateTransaction,
   hexToBin,
+  importAuthenticationTemplate,
   lockingBytecodeToCashAddress,
-  validateAuthenticationTemplate,
 } from '../lib.js';
 import { privkey } from '../template/compiler-bch/compiler-bch.e2e.spec.helper.js';
 
@@ -47,17 +47,18 @@ const maybeP2pkhTemplate: unknown = {
   version: 0,
 };
 
-test.failing('createCompilerBCH: generateTransaction', async (t) => {
-  const p2pkhTemplate = validateAuthenticationTemplate(maybeP2pkhTemplate);
+test.failing('createCompilerBCH: generateTransaction', (t) => {
+  const p2pkhTemplate = importAuthenticationTemplate(maybeP2pkhTemplate);
 
   if (typeof p2pkhTemplate === 'string') {
     t.fail(p2pkhTemplate);
     return;
   }
 
-  const p2pkh = await authenticationTemplateToCompilerBCH(p2pkhTemplate);
-  const lockingBytecode = p2pkh.generateBytecode('lock', {
-    keys: { privateKeys: { owner: privkey } },
+  const p2pkh = authenticationTemplateToCompilerBCH(p2pkhTemplate);
+  const lockingBytecode = p2pkh.generateBytecode({
+    data: { keys: { privateKeys: { owner: privkey } } },
+    scriptId: 'lock',
   });
 
   if (!lockingBytecode.success) {

@@ -34,21 +34,21 @@ export interface AuthenticationProgramStateAlternateStack<
   alternateStack: StackType[];
 }
 
-export interface AuthenticationProgramStateExecutionStack {
+export interface AuthenticationProgramStateControlStack {
   /**
    * An array of boolean values representing the current execution status of the
    * program. This allows the state to track nested conditional branches.
    *
    * The `OP_IF` and `OP_NOTIF` operations push a new boolean onto the
-   * `executionStack`, `OP_ELSE` flips the top boolean, and `OP_ENDIF` removes
-   * the top boolean from the `executionStack`.
+   * `controlStack`, `OP_ELSE` flips the top boolean, and `OP_ENDIF` removes
+   * the top boolean from the `controlStack`.
    *
-   * Other instructions are only evaluated if `executionStack` contains no
+   * Other instructions are only evaluated if `controlStack` contains no
    * `false` items.
    *
    * A.K.A. `vfExec` in the C++ implementation.
    */
-  executionStack: boolean[];
+  controlStack: boolean[];
 }
 
 export interface AuthenticationProgramStateError {
@@ -94,7 +94,7 @@ export interface AuthenticationProgramStateInternalCommon<
 > extends AuthenticationProgramStateMinimum,
     AuthenticationProgramStateStack<StackType>,
     AuthenticationProgramStateAlternateStack<StackType>,
-    AuthenticationProgramStateExecutionStack,
+    AuthenticationProgramStateControlStack,
     AuthenticationProgramStateError,
     AuthenticationProgramStateSignatureAnalysis {
   /**

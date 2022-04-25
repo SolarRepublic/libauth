@@ -34,7 +34,6 @@ export const binToFixedLength = (bin: Uint8Array, bytes: number) => {
   const maxValue = 255;
   // eslint-disable-next-line functional/no-expression-statement
   bin.length > bytes ? fixedBytes.fill(maxValue) : fixedBytes.set(bin);
-  // TODO: re-enable eslint-disable-next-line @typescript-eslint/no-unused-expressions
   return fixedBytes;
 };
 

@@ -33,7 +33,7 @@ test(
 );
 
 test(
-  '[BCH compiler] transformation – unlocking script – p2sh locking type',
+  '[BCH compiler] transformation – unlocking script – p2sh20 locking type',
   expectCompilationResult,
   '',
   {},
@@ -44,7 +44,7 @@ test(
   {},
   {
     lockingScriptTypes: {
-      lock: 'p2sh',
+      lock: 'p2sh20',
     },
     scripts: {
       lock: 'OP_DROP OP_1',
@@ -81,7 +81,7 @@ test(
 );
 
 test(
-  '[BCH compiler] transformation – locking script – p2sh locking type',
+  '[BCH compiler] transformation – locking script – p2sh20 locking type',
   expectCompilationResult,
   '',
   {},
@@ -92,7 +92,7 @@ test(
   {},
   {
     lockingScriptTypes: {
-      test: 'p2sh',
+      test: 'p2sh20',
     },
     scripts: {
       test: 'OP_DROP OP_1',
@@ -105,7 +105,7 @@ test(
 );
 
 test(
-  '[BCH compiler] transformation – unlocking script – p2sh locking type - failed locking bytecode compilation',
+  '[BCH compiler] transformation – unlocking script – p2sh20 locking type - failed locking bytecode compilation',
   expectCompilationResult,
   '',
   {},
@@ -127,7 +127,7 @@ test(
   {},
   {
     lockingScriptTypes: {
-      lock: 'p2sh',
+      lock: 'p2sh20',
     },
     scripts: {
       lock: 'OP_DROP OP_1 unknown',
@@ -140,7 +140,7 @@ test(
 );
 
 test(
-  '[BCH compiler] transformation – locking script – p2sh locking type - failed raw compilation',
+  '[BCH compiler] transformation – locking script – p2sh20 locking type - failed raw compilation',
   expectCompilationResult,
   'unknown',
   {},
@@ -162,13 +162,13 @@ test(
   {},
   {
     lockingScriptTypes: {
-      test: 'p2sh',
+      test: 'p2sh20',
     },
   }
 );
 
 test(
-  '[BCH compiler] transformation – locking script – p2sh locking type - failed hash160 (bad vm)',
+  '[BCH compiler] transformation – locking script – p2sh20 locking type - failed hash160 (bad vm)',
   expectCompilationResult,
   '',
   {},
@@ -191,7 +191,7 @@ test(
   {},
   {
     lockingScriptTypes: {
-      test: 'p2sh',
+      test: 'p2sh20',
     },
     scripts: {
       test: 'OP_DROP OP_1',

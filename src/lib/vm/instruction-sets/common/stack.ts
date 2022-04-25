@@ -169,3 +169,10 @@ export const opTuck = <State extends AuthenticationProgramStateStack>(
   useTwoStackItems(state, (nextState, [a, b]) =>
     pushToStack(nextState, b.slice(), a, b)
   );
+
+export const opSize = <State extends AuthenticationProgramStateStack>(
+  state: State
+) =>
+  useOneStackItem(state, (nextState, [item]) =>
+    pushToStack(nextState, item, bigIntToScriptNumber(BigInt(item.length)))
+  );

@@ -1,7 +1,7 @@
 import { numberToBinUint16LE, numberToBinUint32LE } from '../../../lib.js';
 import type {
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateError,
-  AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
   Operation,
@@ -154,17 +154,17 @@ export const isMinimalDataPush = (opcode: number, data: Uint8Array) => {
 };
 
 const executionIsActive = <
-  State extends AuthenticationProgramStateExecutionStack
+  State extends AuthenticationProgramStateControlStack
 >(
   state: State
-) => state.executionStack.every((item) => item);
+) => state.controlStack.every((item) => item);
 
 // TODO: add tests which verify the order of operations below (are non-minimal pushes OK inside unexecuted conditionals?)
 
 export const pushOperation =
   <
-    State extends AuthenticationProgramStateError &
-      AuthenticationProgramStateExecutionStack &
+    State extends AuthenticationProgramStateControlStack &
+      AuthenticationProgramStateError &
       AuthenticationProgramStateMinimum &
       AuthenticationProgramStateStack
   >(

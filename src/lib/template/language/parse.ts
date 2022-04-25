@@ -2,7 +2,7 @@ import type { ParseResult } from './language-types';
 import { P } from './parsimmon.js';
 
 /* eslint-disable sort-keys, @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
-const authenticationScriptParser = P.createLanguage({
+const cashAssemblyParser = P.createLanguage({
   script: (r) =>
     P.seqMap(
       P.optWhitespace,
@@ -93,4 +93,4 @@ const authenticationScriptParser = P.createLanguage({
 /* eslint-enable sort-keys, @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 export const parseScript = (script: string) =>
-  authenticationScriptParser.script.parse(script) as ParseResult;
+  cashAssemblyParser.script.parse(script) as ParseResult;

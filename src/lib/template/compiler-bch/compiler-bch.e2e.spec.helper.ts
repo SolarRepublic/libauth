@@ -1,4 +1,4 @@
-/* eslint-disable functional/no-expression-statement, @typescript-eslint/no-magic-numbers */
+/* eslint-disable @typescript-eslint/no-magic-numbers */
 import test from 'ava';
 
 import type {
@@ -10,17 +10,17 @@ import type {
   CompilerConfigurationBCH,
 } from '../../lib';
 import {
+  compilerConfigurationToCompilerBCH,
   compilerOperationsBCH,
   createAuthenticationProgramEvaluationCommon,
   createCompilationContextCommonTesting,
-  createCompiler,
   generateBytecodeMap,
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha256,
-  instantiateSha512,
   instantiateVirtualMachineBCH,
   OpcodesBCH2022,
+  ripemd160,
+  secp256k1,
+  sha256,
+  sha512,
   stringifyTestVector,
 } from '../../lib.js';
 
@@ -41,11 +41,7 @@ export const hdPublicKey =
 // prettier-ignore
 export const privkey = new Uint8Array([0xf8, 0x5d, 0x4b, 0xd8, 0xa0, 0x3c, 0xa1, 0x06, 0xc9, 0xde, 0xb4, 0x7b, 0x79, 0x18, 0x03, 0xda, 0xc7, 0xf0, 0x33, 0x38, 0x09, 0xe3, 0xf1, 0xdd, 0x04, 0xd1, 0x82, 0xe0, 0xab, 0xa6, 0xe5, 0x53]);
 
-const ripemd160Promise = instantiateRipemd160();
-const sha256Promise = instantiateSha256();
-const sha512Promise = instantiateSha512();
-const secp256k1Promise = instantiateSecp256k1();
-const vmPromise = instantiateVirtualMachineBCH();
+const vm = instantiateVirtualMachineBCH();
 
 /**
  * Uses `createCompiler` rather than `createCompilerBCH` for performance.
@@ -59,7 +55,7 @@ export const expectCompilationResult = test.macro<
     Partial<CompilerConfiguration<CompilationContextBCH>>?
   ]
 >(
-  async (
+  (
     t,
     testScript,
     otherData,
@@ -68,14 +64,7 @@ export const expectCompilationResult = test.macro<
     configurationOverrides
     // eslint-disable-next-line max-params
   ) => {
-    const ripemd160 = await ripemd160Promise;
-    const sha256 = await sha256Promise;
-    const sha512 = await sha512Promise;
-    const secp256k1 = await secp256k1Promise;
-    const vm = await vmPromise;
-
-    const compiler = createCompiler<
-      CompilationContextBCH,
+    const compiler = compilerConfigurationToCompilerBCH<
       CompilerConfigurationBCH,
       AuthenticationProgramStateBCH
     >({
@@ -105,11 +94,14 @@ export const expectCompilationResult = test.macro<
       ...configurationOverrides,
     });
 
-    const resultUnlock = compiler.generateBytecode('test', {
-      compilationContext: createCompilationContextCommonTesting(),
-      ...otherData,
+    const resultUnlock = compiler.generateBytecode({
+      data: {
+        compilationContext: createCompilationContextCommonTesting(),
+        ...otherData,
+      },
+      scriptId: 'test',
     });
-    t.deepEqual(
+    return t.deepEqual(
       resultUnlock,
       expectedResult,
       `– \nResult: ${stringifyTestVector(

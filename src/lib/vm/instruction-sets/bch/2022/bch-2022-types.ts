@@ -1,3 +1,4 @@
+import { sha256 as internalSha256 } from '../../../../crypto/default-crypto-instances.js';
 import type {
   Input,
   Output,
@@ -56,18 +57,14 @@ export type CompilationContextBCH = CompilationContext<
   TransactionBCH<Input<Uint8Array | undefined>>
 >;
 
-export const createTestAuthenticationProgramBCH = ({
-  lockingBytecode,
-  valueSatoshis,
-  sha256,
-  unlockingBytecode,
-}: Output &
-  Pick<Input, 'unlockingBytecode'> & {
-    /**
-     * An implementation of sha256. Available via `instantiateSha256`.
-     */
-    sha256: { hash: Sha256['hash'] };
-  }) => {
+export const createTestAuthenticationProgramBCH = (
+  {
+    lockingBytecode,
+    valueSatoshis,
+    unlockingBytecode,
+  }: Output & Pick<Input, 'unlockingBytecode'>,
+  sha256: { hash: Sha256['hash'] } = internalSha256
+) => {
   const testFundingTransaction: TransactionBCH = {
     inputs: [
       {

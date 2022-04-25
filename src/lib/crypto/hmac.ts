@@ -1,3 +1,7 @@
+import {
+  sha256 as internalSha256,
+  sha512 as internalSha512,
+} from '../crypto/default-crypto-instances.js';
 import { flattenBinArray } from '../lib.js';
 
 import type { Sha256, Sha512 } from './crypto';
@@ -41,14 +45,14 @@ const sha256BlockByteLength = 64;
  * use, shortening their length to the minimum recommended length (32 bytes).
  * See `RFC 2104` for details.
  *
- * @param sha256 - an implementation of Sha256
  * @param secret - the secret key (recommended length: 32-64 bytes)
  * @param message - the message to authenticate
+ * @param sha256 - an implementation of Sha256
  */
 export const hmacSha256 = (
-  sha256: { hash: Sha256['hash'] },
   secret: Uint8Array,
-  message: Uint8Array
+  message: Uint8Array,
+  sha256: { hash: Sha256['hash'] } = internalSha256
 ) =>
   instantiateHmacFunction(sha256.hash, sha256BlockByteLength)(secret, message);
 
@@ -62,13 +66,13 @@ const sha512BlockByteLength = 128;
  * use, shortening their length to the minimum recommended length (64 bytes).
  * See `RFC 2104` for details.
  *
- * @param sha512 - an implementation of Sha512
  * @param secret - the secret key (recommended length: 64-128 bytes)
  * @param message - the message to authenticate
+ * @param sha512 - an implementation of Sha512
  */
 export const hmacSha512 = (
-  sha512: { hash: Sha512['hash'] },
   secret: Uint8Array,
-  message: Uint8Array
+  message: Uint8Array,
+  sha512: { hash: Sha512['hash'] } = internalSha512
 ) =>
   instantiateHmacFunction(sha512.hash, sha512BlockByteLength)(secret, message);

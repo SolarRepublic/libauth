@@ -1,4 +1,4 @@
-/* eslint-disable camelcase, @typescript-eslint/naming-convention */
+/* eslint-disable camelcase */
 
 import test from 'ava';
 
@@ -11,17 +11,17 @@ import {
   authenticationTemplateToCompilerBCH,
   bigIntToBinUint64LE,
   CashAddressNetworkPrefix,
-  compileBtl,
+  compileCashAssembly,
   dateToLocktime,
   decodeTransactionCommon,
   encodeTransactionCommon,
   extractMissingVariables,
   generateTransaction,
   hexToBin,
+  importAuthenticationTemplate,
   instantiateVirtualMachineBCH,
   lockingBytecodeToCashAddress,
   stringify,
-  validateAuthenticationTemplate,
 } from '../lib.js';
 
 import {
@@ -34,11 +34,11 @@ import {
   twoOfTwoRecoverableJson,
 } from './transaction-e2e.spec.helper.js';
 
-const vmPromise = instantiateVirtualMachineBCH();
+const vm = instantiateVirtualMachineBCH();
 
 // eslint-disable-next-line complexity
-test.failing('transaction e2e tests: 2-of-2 Recoverable Vault', async (t) => {
-  const template = validateAuthenticationTemplate(twoOfTwoRecoverableJson);
+test.failing('transaction e2e tests: 2-of-2 Recoverable Vault', (t) => {
+  const template = importAuthenticationTemplate(twoOfTwoRecoverableJson);
   if (typeof template === 'string') {
     t.fail(template);
     return;
@@ -63,14 +63,19 @@ test.failing('transaction e2e tests: 2-of-2 Recoverable Vault', async (t) => {
   ) as number;
 
   const lockingData: CompilationData<never> = {
-    bytecode: { delay_seconds: compileBtl(`${threeMonths}`) as Uint8Array },
+    bytecode: {
+      delay_seconds: compileCashAssembly(`${threeMonths}`) as Uint8Array,
+    },
     currentBlockTime: creationDate,
     hdKeys: { addressIndex: 0, hdPublicKeys },
   };
 
   const lockingScript = 'lock';
-  const compiler = await authenticationTemplateToCompilerBCH(template);
-  const lockingBytecode = compiler.generateBytecode(lockingScript, lockingData);
+  const compiler = authenticationTemplateToCompilerBCH(template);
+  const lockingBytecode = compiler.generateBytecode({
+    data: lockingData,
+    scriptId: lockingScript,
+  });
 
   if (!lockingBytecode.success) {
     t.log('lockingBytecode', stringify(lockingBytecode));
@@ -358,7 +363,6 @@ test.failing('transaction e2e tests: 2-of-2 Recoverable Vault', async (t) => {
   }
 
   const { transaction } = successfulCompilation;
-  const vm = await vmPromise;
   const result = vm.verify({
     sourceOutputs: [utxoOutput1, utxoOutput2],
     transaction,

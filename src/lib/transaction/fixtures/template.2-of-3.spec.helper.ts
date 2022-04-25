@@ -46,7 +46,7 @@ export const twoOfThree: AuthenticationTemplate = {
       unlocks: 'lock',
     },
     lock: {
-      lockingType: 'p2sh',
+      lockingType: 'p2sh20',
       name: '2-of-3 Vault',
       script:
         'OP_2\n<key1.public_key>\n<key2.public_key>\n<key3.public_key>\nOP_3\nOP_CHECKMULTISIG',

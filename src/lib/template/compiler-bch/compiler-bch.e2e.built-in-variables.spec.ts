@@ -3,20 +3,19 @@ import test from 'ava';
 import type {
   AuthenticationProgramStateBCH,
   BytecodeGenerationResult,
-  CompilationContextBCH,
   CompilerConfigurationBCH,
 } from '../../lib';
 import {
+  compilerConfigurationToCompilerBCH,
   compilerOperationsBCH,
   createAuthenticationProgramEvaluationCommon,
   createCompilationContextCommonTesting,
-  createCompiler,
   dateToLocktime,
   generateBytecodeMap,
   hexToBin,
-  instantiateSha256,
   instantiateVirtualMachineBCH,
   OpcodesBCH2022,
+  sha256,
 } from '../../lib.js';
 
 import {
@@ -703,15 +702,10 @@ test(
   } as BytecodeGenerationResult<AuthenticationProgramStateBCH>
 );
 
-const sha256Promise = instantiateSha256();
-const vmPromise = instantiateVirtualMachineBCH();
 test.failing(
   '[BCH compiler] signing_serialization.corresponding_output and signing_serialization.corresponding_output_hash – returns empty bytecode if no corresponding output',
-  async (t) => {
-    const sha256 = await sha256Promise;
-    const vm = await vmPromise;
-    const compiler = createCompiler<
-      CompilationContextBCH,
+  (t) => {
+    const compiler = compilerConfigurationToCompilerBCH<
       CompilerConfigurationBCH,
       AuthenticationProgramStateBCH
     >({
@@ -719,10 +713,10 @@ test.failing(
       opcodes: generateBytecodeMap(OpcodesBCH2022),
       operations: compilerOperationsBCH,
       scripts: {
-        // eslint-disable-next-line camelcase, @typescript-eslint/naming-convention
+        // eslint-disable-next-line camelcase
         corresponding_output:
           '<1> <signing_serialization.corresponding_output> <2>',
-        // eslint-disable-next-line camelcase, @typescript-eslint/naming-convention
+        // eslint-disable-next-line camelcase
         corresponding_output_hash:
           '<1> <signing_serialization.corresponding_output_hash> <2>',
       },
@@ -732,7 +726,7 @@ test.failing(
           type: 'Key',
         },
       },
-      vm,
+      vm: instantiateVirtualMachineBCH(),
     });
 
     const data = {
@@ -743,14 +737,23 @@ test.failing(
       keys: { privateKeys: { a: privkey } },
     };
 
-    t.deepEqual(compiler.generateBytecode('corresponding_output', data), {
-      bytecode: hexToBin('510052'),
-      success: true,
-    });
+    t.deepEqual(
+      compiler.generateBytecode({ data, scriptId: 'corresponding_output' }),
+      {
+        bytecode: hexToBin('510052'),
+        success: true,
+      }
+    );
 
-    t.deepEqual(compiler.generateBytecode('corresponding_output_hash', data), {
-      bytecode: hexToBin('510052'),
-      success: true,
-    });
+    t.deepEqual(
+      compiler.generateBytecode({
+        data,
+        scriptId: 'corresponding_output_hash',
+      }),
+      {
+        bytecode: hexToBin('510052'),
+        success: true,
+      }
+    );
   }
 );

@@ -1,5 +1,10 @@
 import type { HashFunction } from '../lib';
-import { base64ToBin, instantiateRustWasm, sha512Base64Bytes } from '../lib.js';
+
+import {
+  base64ToBin,
+  instantiateRustWasm,
+  sha512Base64Bytes,
+} from './dependencies.js';
 
 export interface Sha512 extends HashFunction {
   /**
@@ -80,18 +85,9 @@ export const instantiateSha512Bytes = async (
 export const getEmbeddedSha512Binary = () =>
   base64ToBin(sha512Base64Bytes).buffer;
 
-const cachedSha512: { cache?: Promise<Sha512> } = {};
-
 /**
  * An ultimately-portable (but slower) version of `instantiateSha512Bytes`
  * which does not require the consumer to provide the sha512 binary buffer.
  */
-export const instantiateSha512 = async (): Promise<Sha512> => {
-  if (cachedSha512.cache !== undefined) {
-    return cachedSha512.cache;
-  }
-  const result = instantiateSha512Bytes(getEmbeddedSha512Binary());
-  // eslint-disable-next-line functional/immutable-data, functional/no-expression-statement
-  cachedSha512.cache = result;
-  return result;
-};
+export const instantiateSha512 = async (): Promise<Sha512> =>
+  instantiateSha512Bytes(getEmbeddedSha512Binary());

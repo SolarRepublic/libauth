@@ -1,14 +1,13 @@
 import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateCommon,
-  AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
   CompilationContextBCH,
 } from '../lib';
 import { generateBytecodeMap, Opcodes } from '../lib.js';
 
-import { CompilerDefaults } from './compiler-defaults.js';
 import { compilerOperationsCommon } from './compiler-operations.js';
 import type {
   AnyCompilerConfiguration,
@@ -17,41 +16,40 @@ import type {
   Compiler,
   CompilerConfiguration,
 } from './compiler-types';
-import { generateScenarioCommon } from './scenarios.js';
+import { generateScenarioBCH } from './scenarios.js';
 import type { CompilationResult } from './template';
 import type { AuthenticationTemplate } from './template-types';
 import { compileScript } from './template.js';
 
 /**
- * Create a `Compiler` from the provided compiler configuration. This method
- * requires a full `CompilerConfiguration` and does not instantiate any new
- * crypto or VM implementations.
- *
- * @param compilerConfiguration - the configuration from which to create the
- * compiler
+ * Create a `Compiler.generateBytecode` method given a compiler configuration.
  */
-export const createCompiler = <
-  CompilationContext extends CompilationContextBCH,
-  Configuration extends AnyCompilerConfiguration<CompilationContext>,
-  ProgramState extends AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum &
-    AuthenticationProgramStateStack
->(
-  compilerConfiguration: Configuration
-): Compiler<CompilationContext, Configuration, ProgramState> => ({
-  configuration: compilerConfiguration,
-  generateBytecode: <Debug extends boolean>(
-    scriptId: string,
-    data: CompilationData<CompilationContext>,
-    debug = false
-  ) => {
+export const createCompilerGenerateBytecodeFunction =
+  <
+    CompilationContext extends CompilationContextBCH,
+    Configuration extends AnyCompilerConfiguration<CompilationContext>,
+    ProgramState extends AuthenticationProgramStateControlStack &
+      AuthenticationProgramStateMinimum &
+      AuthenticationProgramStateStack
+  >(
+    compilerConfiguration: Configuration
+  ) =>
+  <Debug extends boolean>({
+    data,
+    debug,
+    scriptId,
+  }: {
+    scriptId: string;
+    data: CompilationData<CompilationContext>;
+    debug?: boolean;
+  }) => {
     const result = compileScript<ProgramState, CompilationContext>(
       scriptId,
       data,
       compilerConfiguration
     );
     return (
-      debug
+      debug === true
         ? result
         : result.success
         ? { bytecode: result.bytecode, success: true }
@@ -63,14 +61,41 @@ export const createCompiler = <
     ) as Debug extends true
       ? CompilationResult<ProgramState>
       : BytecodeGenerationResult<ProgramState>;
-  },
-  generateScenario: ({ unlockingScriptId, scenarioId }) =>
-    generateScenarioCommon({
-      configuration: compilerConfiguration,
-      scenarioId,
-      unlockingScriptId,
-    }),
-});
+  };
+
+/**
+ * Create a `Compiler` from the provided compiler configuration. This method
+ * requires a full `CompilerConfiguration` and does not instantiate any new
+ * crypto or VM implementations.
+ *
+ * @param configuration - the configuration from which to create the
+ * compiler
+ */
+export const compilerConfigurationToCompilerBCH = <
+  Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
+  ProgramState extends AuthenticationProgramStateControlStack &
+    AuthenticationProgramStateMinimum &
+    AuthenticationProgramStateStack
+>(
+  configuration: Configuration
+): Compiler<CompilationContextBCH, Configuration, ProgramState> => {
+  const generateBytecode =
+    createCompilerGenerateBytecodeFunction(configuration);
+  return {
+    configuration,
+    generateBytecode,
+    generateScenario: ({ unlockingScriptId, scenarioId, debug }) =>
+      generateScenarioBCH(
+        {
+          configuration,
+          generateBytecode,
+          scenarioId,
+          unlockingScriptId,
+        },
+        debug
+      ),
+  };
+};
 
 const nullHashLength = 32;
 
@@ -82,8 +107,9 @@ const nullHashLength = 32;
  * program state.
  *
  * The precise shape of the authentication program produced by this method is
- * critical to the determinism of BTL evaluations for the compiler in which it
- * is used, it therefore must be standardized between compiler implementations.
+ * critical to the determinism of CashAssembly evaluations for the compiler in
+ * which it is used, it therefore must be standardized between compiler
+ * implementations.
  *
  * @param evaluationBytecode - the compiled bytecode to incorporate in the
  * created authentication program
@@ -134,7 +160,7 @@ export const createCompilerCommonSynchronous = <
 >(
   scriptsAndOverrides: Configuration
 ): Compiler<CompilationContextBCH, Configuration, ProgramState> =>
-  createCompiler<CompilationContextBCH, Configuration, ProgramState>({
+  compilerConfigurationToCompilerBCH<Configuration, ProgramState>({
     ...{
       createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
       opcodes: generateBytecodeMap(Opcodes),
@@ -148,7 +174,7 @@ export const createCompilerCommonSynchronous = <
  * extracting and formatting the `scripts` and `variables` properties.
  *
  * Note, if this `AuthenticationTemplate` might be malformed, first validate it
- * with `validateAuthenticationTemplate`.
+ * with `importAuthenticationTemplate`.
  *
  * @param template - the `AuthenticationTemplate` from which to extract the
  * compiler configuration
@@ -165,7 +191,45 @@ export const authenticationTemplateToCompilerConfiguration = (
   | 'unlockingScriptTimeLockTypes'
   | 'variables'
 > => {
-  const scripts = Object.entries(template.scripts).reduce<
+  /**
+   * Template scripts including virtualized test scripts.
+   */
+  const virtualizedScripts: AuthenticationTemplate['scripts'] = Object.entries(
+    template.scripts
+  ).reduce<AuthenticationTemplate['scripts']>((all, [scriptId, script]) => {
+    if ('tests' in script) {
+      return {
+        ...all,
+        ...Object.entries(script.tests).reduce<
+          AuthenticationTemplate['scripts']
+        >((tests, [testId, test]) => {
+          const pushTestedScript = script.pushed === true;
+          const checkScriptId = `${scriptId}.${testId}.check`;
+          const virtualizedLockingScriptId = `${scriptId}.${testId}.lock`;
+          const virtualizedUnlockingScriptId = `${scriptId}.${testId}.unlock`;
+          return {
+            ...tests,
+            [checkScriptId]: { script: test.check },
+            [virtualizedLockingScriptId]: {
+              script: pushTestedScript
+                ? `<${scriptId}> ${checkScriptId}`
+                : `${scriptId} ${checkScriptId}`,
+            },
+            [virtualizedUnlockingScriptId]: {
+              script: test.setup ?? '',
+              unlocks: virtualizedLockingScriptId,
+            },
+          };
+        }, {}),
+      };
+    }
+    return all;
+  }, {});
+  const allScripts = {
+    ...template.scripts,
+    ...virtualizedScripts,
+  };
+  const scripts = Object.entries(allScripts).reduce<
     CompilerConfiguration['scripts']
   >((all, [id, def]) => ({ ...all, [id]: def.script }), {});
   const variables = Object.values(template.entities).reduce<
@@ -186,7 +250,7 @@ export const authenticationTemplateToCompilerConfiguration = (
     }),
     {}
   );
-  const unlockingScripts = Object.entries(template.scripts).reduce<
+  const unlockingScripts = Object.entries(allScripts).reduce<
     CompilerConfiguration['unlockingScripts']
   >(
     (all, [id, def]) =>
@@ -195,7 +259,7 @@ export const authenticationTemplateToCompilerConfiguration = (
         : all,
     {}
   );
-  const unlockingScriptTimeLockTypes = Object.entries(template.scripts).reduce<
+  const unlockingScriptTimeLockTypes = Object.entries(allScripts).reduce<
     CompilerConfiguration['unlockingScriptTimeLockTypes']
   >(
     (all, [id, def]) =>
@@ -204,7 +268,7 @@ export const authenticationTemplateToCompilerConfiguration = (
         : all,
     {}
   );
-  const lockingScriptTypes = Object.entries(template.scripts).reduce<
+  const lockingScriptTypes = Object.entries(allScripts).reduce<
     CompilerConfiguration['lockingScriptTypes']
   >(
     (all, [id, def]) =>
@@ -229,58 +293,4 @@ export const authenticationTemplateToCompilerConfiguration = (
     unlockingScripts,
     variables,
   };
-};
-
-/**
- * Create a partial `CompilerConfiguration` from an `AuthenticationTemplate`,
- * virtualizing all script tests as unlocking and locking script pairs.
- *
- * @param template - the authentication template from which to extract the
- * compiler configuration
- */
-export const authenticationTemplateToCompilerConfigurationVirtualizedTests = (
-  template: AuthenticationTemplate
-): ReturnType<typeof authenticationTemplateToCompilerConfiguration> => {
-  const virtualizedScripts = Object.entries(template.scripts).reduce<
-    typeof template.scripts
-  >((all, [scriptId, script]) => {
-    if ('tests' in script) {
-      return {
-        ...all,
-        ...script.tests.reduce<typeof template.scripts>(
-          (tests, test, index) => {
-            const pushTestedScript = script.pushed === true;
-            const checkScriptId = `${CompilerDefaults.virtualizedTestCheckScriptPrefix}${scriptId}_${index}`;
-            const virtualizedLockingScriptId = `${CompilerDefaults.virtualizedTestLockingScriptPrefix}${scriptId}_${index}`;
-            const virtualizedUnlockingScriptId = `${CompilerDefaults.virtualizedTestUnlockingScriptPrefix}${scriptId}_${index}`;
-            return {
-              ...tests,
-              [checkScriptId]: { script: test.check },
-              [virtualizedLockingScriptId]: {
-                script: pushTestedScript
-                  ? `<${scriptId}> ${checkScriptId}`
-                  : `${scriptId} ${checkScriptId}`,
-              },
-              [virtualizedUnlockingScriptId]: {
-                script: test.setup ?? '',
-                unlocks: virtualizedLockingScriptId,
-              },
-            };
-          },
-          {}
-        ),
-      };
-    }
-    return all;
-  }, {});
-  const templateWithVirtualizedTests: AuthenticationTemplate = {
-    ...template,
-    scripts: {
-      ...template.scripts,
-      ...virtualizedScripts,
-    },
-  };
-  return authenticationTemplateToCompilerConfiguration(
-    templateWithVirtualizedTests
-  );
 };

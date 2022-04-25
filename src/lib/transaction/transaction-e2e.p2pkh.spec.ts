@@ -8,8 +8,8 @@ import {
   decodeTransactionCommon,
   generateTransaction,
   hexToBin,
+  importAuthenticationTemplate,
   lockingBytecodeToCashAddress,
-  validateAuthenticationTemplate,
 } from '../lib.js';
 
 import {
@@ -20,8 +20,8 @@ import {
 
 test.failing(
   'transaction e2e tests: P2PKH (authenticationTemplateP2pkhHd)',
-  async (t) => {
-    const template = validateAuthenticationTemplate(p2pkhJson);
+  (t) => {
+    const template = importAuthenticationTemplate(p2pkhJson);
     if (typeof template === 'string') {
       t.fail(template);
       return;
@@ -43,11 +43,11 @@ test.failing(
       hdKeys: { addressIndex: 0, hdPrivateKeys: { owner: hdPrivateKey } },
     };
 
-    const compiler = await authenticationTemplateToCompilerBCH(template);
-    const lockingBytecode = compiler.generateBytecode(
-      lockingScript,
-      lockingData
-    );
+    const compiler = authenticationTemplateToCompilerBCH(template);
+    const lockingBytecode = compiler.generateBytecode({
+      data: lockingData,
+      scriptId: lockingScript,
+    });
 
     if (!lockingBytecode.success) {
       t.log(lockingBytecode.errors);

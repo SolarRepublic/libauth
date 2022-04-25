@@ -183,7 +183,7 @@ export const compilerOperationHelperDeriveHdPrivateNode = ({
 
   const instancePath = privateDerivationPath.replace('i', i.toString());
 
-  const masterContents = decodeHdPrivateKey(configuration, entityHdPrivateKey);
+  const masterContents = decodeHdPrivateKey(entityHdPrivateKey, configuration);
   if (typeof masterContents === 'string') {
     return {
       error: `Could not generate ${identifier} – the HD private key provided for ${entityId} could not be decoded: ${masterContents}`,
@@ -192,9 +192,9 @@ export const compilerOperationHelperDeriveHdPrivateNode = ({
   }
 
   const instanceNode = deriveHdPath(
-    configuration,
     masterContents.node,
-    instancePath
+    instancePath,
+    configuration
   );
 
   if (typeof instanceNode === 'string') {

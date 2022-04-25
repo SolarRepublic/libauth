@@ -48,6 +48,7 @@
           }
         ],
         "functional/no-expression-statement": "off",
+        "@typescript-eslint/naming-convention": "off",
         "@typescript-eslint/no-magic-numbers": "off",
         "functional/immutable-data": "off",
         "functional/no-return-void": "off"

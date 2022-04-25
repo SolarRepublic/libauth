@@ -14,6 +14,7 @@ export enum CashAddressNetworkPrefix {
 }
 
 export const cashAddressBitToSize = {
+  /* eslint-disable @typescript-eslint/naming-convention */
   0: 160,
   1: 192,
   2: 224,
@@ -33,6 +34,7 @@ export const cashAddressSizeToBit = {
   384: 5,
   448: 6,
   512: 7,
+  /* eslint-enable @typescript-eslint/naming-convention */
 } as const;
 
 /**
@@ -41,15 +43,17 @@ export const cashAddressSizeToBit = {
  * - next 4 bits: Address Type
  * - 3 least significant bits: Hash Size
  *
- * Only two Address Type values are currently standardized:
+ * Two Address Type values are currently standardized:
  * - 0 (`0b0000`): P2PKH
- * - 1 (`0b0001`): P2SH
+ * - 1 (`0b0001`): P2SH20
  *
- * While both P2PKH and P2SH addresses always use 160 bit hashes, the
+ * And two are proposed by `CHIP-2022-02-CashTokens`:
+ * - 2 (`0b0010`): P2PKH + Token Support
+ * - 3 (`0b0011`): P2SH20 + Token Support
+ *
+ * While both P2PKH and P2SH20 addresses always use 160 bit hashes, the
  * CashAddress specification standardizes other sizes for future use (or use by
  * other systems), see `CashAddressSizeBit`.
- *
- * With these constraints, only two version byte values are currently standard.
  */
 export enum CashAddressVersionByte {
   /**
@@ -59,15 +63,30 @@ export enum CashAddressVersionByte {
    * - Address Type bits: `0000` (P2PKH)
    * - Size bits: `000` (160 bits)
    */
-  P2PKH = 0b00000000,
+  p2pkh = 0b00000000,
   /**
-   * Pay to Script Hash (P2SH): `0b00001000`
+   * 20-byte Pay to Script Hash (P2SH20): `0b00001000`
    *
    * - Most significant bit: `0` (reserved)
-   * - Address Type bits: `0001` (P2SH)
+   * - Address Type bits: `0001` (P2SH20)
    * - Size bits: `000` (160 bits)
    */
-  P2SH = 0b00001000,
+  p2sh20 = 0b00001000,
+  /**
+   * Pay to Public Key Hash (P2PKH) With Token Support: `0b00010000`
+   *
+   * - Most significant bit: `0` (reserved)
+   * - Address Type bits: `0010` (P2PKH + Tokens)
+   * - Size bits: `000` (160 bits)
+   */
+  p2pkhWithTokens = 0b00010000,
+  /**
+   * 20-byte Pay to Script Hash (P2SH20) With Token Support: `0b00011000`
+   * - Most significant bit: `0` (reserved)
+   * - Address Type bits: `0011` (P2SH20 + Tokens)
+   * - Size bits: `000` (160 bits)
+   */
+  p2sh20WithTokens = 0b00011000,
 }
 
 /**
@@ -78,11 +97,11 @@ export enum CashAddressType {
   /**
    * Pay to Public Key Hash (P2PKH)
    */
-  P2PKH = 0,
+  p2pkh = 0,
   /**
-   * Pay to Script Hash (P2SH)
+   * Pay to Script Hash (P2SH20)
    */
-  P2SH = 1,
+  p2sh20 = 1,
 }
 
 const cashAddressTypeBitShift = 3;
@@ -213,12 +232,9 @@ const bech32GeneratorRemainingBytes = [0xf2bc8e61, 0xb76d99e2, 0x3e5fb3c4, 0x2ea
  * corresponds to x^2 + v0*x + v1 mod g(x). As 1 mod g(x) = 1, that is the
  * starting value for `c`.
  *
- * @privateRemarks
- * Derived from the `bitcore-lib-cash` implementation, which does not require
- * BigInt: https://github.com/bitpay/bitcore
- *
  * @param v - Array of 5-bit integers over which the checksum is to be computed
  */
+// Derived from the `bitcore-lib-cash` implementation (does not require BigInt): https://github.com/bitpay/bitcore
 export const cashAddressPolynomialModulo = (v: readonly number[]) => {
   /* eslint-disable functional/no-let, functional/no-loop-statement, functional/no-expression-statement, no-bitwise, @typescript-eslint/no-magic-numbers */
   let mostSignificantByte = 0;
@@ -542,11 +558,9 @@ const finiteFieldOrder = 32;
  * `bchtest:qq2azmyyv6dtgczexyalqar70q036yund53jvfdecc` can be corrected, while
  * `typo:qq2azmyyv6dtgczexyalqar70q036yund53jvfdecc` can not.
  *
- * @privateRemarks
- * Derived from: https://github.com/deadalnix/cashaddressed
- *
  * @param address - the CashAddress on which to attempt error correction
  */
+// Derived from: https://github.com/deadalnix/cashaddressed
 // eslint-disable-next-line complexity
 export const attemptCashAddressFormatErrorCorrection = (address: string) => {
   const parts = address.toLowerCase().split(':');

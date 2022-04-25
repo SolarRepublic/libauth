@@ -153,7 +153,7 @@ export const cashChannels: AuthenticationTemplate = {
   },
   scripts: {
     channel: {
-      lockingType: 'p2sh',
+      lockingType: 'p2sh20',
       name: 'Channel',
       script:
         '<owner.public_key>\nOP_SWAP\nOP_IF\n    /**\n     * Execute Authorization\n     */\n    OP_DUP OP_TOALTSTACK // save owner.public_key\n\n    /**\n     * Reconstruct payment authorization message\n     */\n    <6> OP_PICK // channel_identifier\n    <15> OP_PICK // payment_number_padded\n    <7> OP_PICK // maximum_authorized_satoshis\n    OP_DUP\n    <12> OP_PICK // payment_satoshis\n    OP_GREATERTHANOREQUAL OP_VERIFY // maximum_authorized_satoshis >= payment_satoshis\n    <8> OP_NUM2BIN\n    <7> OP_PICK <8> OP_NUM2BIN // authorized_amount\n    <7> OP_PICK <8> OP_NUM2BIN // denominating_asset\n    <7> OP_PICK <8> OP_NUM2BIN // payment_time\n    OP_CAT OP_CAT\n    OP_DUP OP_TOALTSTACK // save (authorized_amount + denominating_asset + payment_time)\n    OP_CAT OP_CAT OP_CAT\n    OP_SWAP \n\n   OP_CHECKDATASIGVERIFY // check payment authorization signature\n\n    OP_CHECKLOCKTIMEVERIFY // fail if not past payment_time\n    OP_2DROP OP_2DROP\n\n    <8> OP_PICK // payment_number_padded\n    <payment_number_padded>\n    OP_EQUALVERIFY // check against payment_number in authorization\n\n    // reconstruct rate_claim\n    OP_FROMALTSTACK\n    <3> OP_PICK // payment_satoshis\n    <8> OP_NUM2BIN\n    OP_CAT\n\n\n    OP_SWAP\n    OP_FROMALTSTACK // load owner.public_key\n    <receiver.public_key>\n    OP_DUP\n    OP_TOALTSTACK // save receiver.public_key\n    OP_CAT\n    OP_HASH160\n\n    OP_EQUALVERIFY // verify channel_identifier\n\n    <rate_oracle.public_key>\n    OP_CHECKDATASIGVERIFY // verify rate_claim\n\n    <7> OP_PICK // covered_bytecode_before_payment_number\n    <7> OP_PICK // payment_number_padded\n    OP_BIN2NUM\n    <1> OP_ADD <2> OP_NUM2BIN // next payment_number\n    <7> OP_PICK // covered_bytecode_after_payment_number\n    OP_CAT OP_CAT \n    OP_HASH160 // P2SH redeem bytecode hash\n    \n    /**\n     * prefix locking bytecode with its length (required in serialization)\n     */\n    <23>\n    <OP_HASH160 OP_PUSHBYTES_20>\n    OP_ROT\n    <OP_EQUAL>\n    OP_CAT OP_CAT // expected locking bytecode\n    OP_CAT // length + locking bytecode\n\n    // calculate expected output value\n    <5> OP_PICK // outpoint_value\n    OP_BIN2NUM\n    OP_ROT\n    OP_SUB <8> OP_NUM2BIN // remaining balance\n    OP_SWAP OP_CAT // expected output serialization\n    OP_SWAP OP_CAT\n\n    /**\n     * Verify signing serialization transaction outputs (uncomment for testing)\n     */\n    // OP_DUP OP_TOALTSTACK\n    // <8> OP_PICK // signing_serialization.transaction_outputs\n    // OP_EQUALVERIFY\n    // OP_FROMALTSTACK\n    /**\n     * End signing serialization transaction outputs verification (uncomment for testing)\n     */\n\n    OP_HASH256 // expected transaction_outputs_hash\n    OP_SWAP\n    OP_CAT OP_CAT OP_CAT OP_CAT OP_CAT OP_CAT OP_CAT\n\n    /**\n     * Verify full signing serialization (uncomment for testing)\n     */\n    // OP_DUP OP_TOALTSTACK\n    // OP_EQUALVERIFY\n    // OP_FROMALTSTACK\n    /**\n     * End full signing serialization verification (uncomment for testing)\n     */\n    \n    OP_SHA256\n\n    OP_FROMALTSTACK\n    OP_DUP\n    <3> OP_PICK // receiver.schnorr_signature.all_outputs\n    OP_ROT\n    OP_CHECKSIGVERIFY // signature covers transaction\n    OP_ROT \n    <64> OP_SPLIT OP_DROP // remove signature serialization type bit\n    OP_ROT OP_ROT\n    OP_CHECKDATASIG // signature covers expected transaction\nOP_ELSE\n    // Owner Spend\n    OP_CHECKSIG\nOP_ENDIF \n\n\n',
@@ -162,54 +162,54 @@ export const cashChannels: AuthenticationTemplate = {
       name: 'Channel Components',
       script:
         '/**\n * This is just a convenience script to split the locking bytecode\n * at the location of "payment_number_padded". Since this is used in\n * several places, using a single script makes updates easier.\n **/\n<channel> // The raw locking bytecode of the current channel\n<78> OP_SPLIT // the location of payment_number_padded in channel\n<2> OP_SPLIT // the length of payment_number_padded',
-      tests: [
-        {
+      tests: {
+        contains_padded_payment_number: {
           check:
             '/**\n * Here we confirm that we split the bytecode at the\n * correct indexes:\n * - item 1 should be the bytecode before payment_number_padded\n * - item 2 should be payment_number_padded\n * - item 3 should be the bytecode after payment_number_padded\n */\n\n<1> OP_PICK OP_TOALTSTACK\n\nOP_CAT OP_CAT <channel> OP_EQUALVERIFY\n\nOP_FROMALTSTACK <payment_number_padded> OP_EQUAL',
           name: 'Contains Padded Payment Number',
           passes: ['after_payment_time', 'before_payment_time'],
         },
-      ],
+      },
     },
     channel_identifier: {
       name: 'Channel Identifier',
       pushed: true,
       script:
         '$(<owner.public_key>\n<receiver.public_key>\nOP_CAT\nOP_HASH160)',
-      tests: [
-        {
+      tests: {
+        expected_id: {
           check: '<0x564752b9f1c9f0246c8444a7f0a0ee8348f2e339>\nOP_EQUAL',
           name: 'Expected ID',
         },
-      ],
+      },
     },
     covered_bytecode_after_payment_number: {
       name: 'Covered Bytecode After Payment Number',
       pushed: true,
       script:
         '$(\n    channel_components <0> OP_PICK\n    OP_NIP OP_NIP OP_NIP\n)',
-      tests: [
-        {
+      tests: {
+        check_bytecode: {
           check:
             '<0x886c537958807e7c6c2102e493dbf1c10d80f3581e4904930b1404cc6c13900ee0758474fa94abe8c4cd13766b7ea9882102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9bb57795779815193528057797e7ea9011702a9147b01877e7e7e5579817b9458807c7e7c7eaa7c7e7e7e7e7e7e7ea86c7653797bad7b01407f757b7bba67ac68>\nOP_EQUAL',
           name: 'Check Bytecode',
           passes: ['test_bytecode_values'],
         },
-      ],
+      },
     },
     covered_bytecode_before_payment_number: {
       name: 'Covered Bytecode Before Payment Number',
       pushed: true,
       script:
         '$(\n    channel_components <2> OP_PICK\n    OP_NIP OP_NIP OP_NIP\n)',
-      tests: [
-        {
+      tests: {
+        check_bytecode: {
           check:
             '<0x210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817987c63766b56795f795779765c79a26958805779588057795880577958807e7e766b7e7e7e7cbbb16d6d587902>\nOP_EQUAL',
           name: 'Check Bytecode',
           passes: ['test_bytecode_values'],
         },
-      ],
+      },
     },
     execute_authorization: {
       fails: ['before_payment_time'],
@@ -231,42 +231,42 @@ export const cashChannels: AuthenticationTemplate = {
       pushed: true,
       script:
         '$(\n    <channel_identifier>\n    <payment_number>\n    <2> OP_NUM2BIN\n    <maximum_authorized_satoshis>\n    <8> OP_NUM2BIN\n    <authorized_amount>\n    <8> OP_NUM2BIN\n    <denominating_asset>\n    <8> OP_NUM2BIN\n    <payment_time>\n    <8> OP_NUM2BIN\n    OP_CAT OP_CAT OP_CAT OP_CAT OP_CAT\n)',
-      tests: [
-        {
+      tests: {
+        check_format: {
           check:
             '<0x564752b9f1c9f0246c8444a7f0a0ee8348f2e33902000429000000000000e803000000000000555344000000000080bf345e00000000>\nOP_EQUAL',
           name: 'Check Format',
           passes: ['before_payment_time'],
         },
-      ],
+      },
     },
     payment_number_padded: {
       name: 'Payment Number Padded',
       pushed: true,
       script:
         '$(\n    <payment_number>\n    OP_DUP <65534> OP_LESSTHANOREQUAL OP_VERIFY\n    <2> OP_NUM2BIN\n)\n\n\n<1>',
-      tests: [
-        {
+      tests: {
+        requires_uint16: {
           check: '<0x0200>\nOP_EQUAL',
           fails: ['exceeds_maximum_payment_number'],
           name: 'Requires Uint16',
           passes: ['before_payment_time'],
         },
-      ],
+      },
     },
     rate_claim: {
       name: 'Rate Claim',
       pushed: true,
       script:
         '$(\n    <authorized_amount>\n    <8> OP_NUM2BIN\n    <denominating_asset>\n    <8> OP_NUM2BIN\n    <payment_time>\n    <8> OP_NUM2BIN\n    <payment_satoshis>\n    <8> OP_NUM2BIN\n    OP_CAT\n    OP_CAT\n    OP_CAT\n)',
-      tests: [
-        {
+      tests: {
+        check_format: {
           check:
             '<\n    0xe803000000000000\n    0x5553440000000000\n    0x80bf345e00000000\n    0x1027000000000000\n>\nOP_EQUAL',
           name: 'Check Format',
           passes: ['after_payment_time'],
         },
-      ],
+      },
     },
   },
   supported: ['BCH_2019_05', 'BCH_2019_11'],

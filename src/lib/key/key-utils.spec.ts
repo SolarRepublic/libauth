@@ -6,7 +6,7 @@ import { fc, testProp } from 'ava-fast-check';
 import {
   generatePrivateKey,
   hexToBin,
-  instantiateSecp256k1,
+  secp256k1,
   validateSecp256k1PrivateKey,
 } from '../lib.js';
 
@@ -14,8 +14,6 @@ const privateKeyLength = 32;
 const maximumUint8Value = 255;
 
 const secureRandom = () => randomBytes(privateKeyLength);
-
-const secp256k1Promise = instantiateSecp256k1();
 
 test('validateSecp256k1PrivateKey', (t) => {
   t.false(validateSecp256k1PrivateKey(hexToBin('')));
@@ -71,8 +69,7 @@ testProp(
       .array(fc.integer(0, maximumUint8Value), theRest, theRest)
       .map((random) => Uint8Array.from([...almostInvalid, ...random])),
   ],
-  async (t, input) => {
-    const secp256k1 = await secp256k1Promise;
+  (t, input) => {
     t.deepEqual(
       validateSecp256k1PrivateKey(input),
       secp256k1.validatePrivateKey(input)
@@ -80,8 +77,7 @@ testProp(
   }
 );
 
-test('generatePrivateKey: works', async (t) => {
-  const secp256k1 = await secp256k1Promise;
+test('generatePrivateKey: works', (t) => {
   const key = generatePrivateKey(secureRandom);
   t.true(secp256k1.validatePrivateKey(key));
 });

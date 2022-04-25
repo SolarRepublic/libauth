@@ -12,7 +12,6 @@ import {
   createTestAuthenticationProgramBCH,
   decodeTransactionCommon,
   hexToBin,
-  instantiateSha256,
   instantiateVirtualMachineBCH2021,
   OpcodesBCH2022,
   parseBytecode,
@@ -30,8 +29,8 @@ const program = createCompilationContextCommonTesting({
   ],
 }) as AuthenticationProgramBCH;
 
-test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', async (t) => {
-  const vm = await instantiateVirtualMachineBCH2021();
+test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const state = createAuthenticationProgramStateCommon({
     instructions: parseBytecode(
       Uint8Array.from([
@@ -46,7 +45,7 @@ test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', async (t) => {
   const result = vm.stateEvaluate(state);
   t.deepEqual(result, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -68,8 +67,8 @@ test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', async (t) => {
   });
 });
 
-test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
-  const vm = await instantiateVirtualMachineBCH2021();
+test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const state = createAuthenticationProgramStateCommon({
     instructions: parseBytecode(
       Uint8Array.from([
@@ -85,7 +84,7 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
   t.deepEqual(result, [
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -107,7 +106,7 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -129,7 +128,7 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -151,7 +150,7 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -174,8 +173,8 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', async (t) => {
   ]);
 });
 
-test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
-  const vm = await instantiateVirtualMachineBCH2021();
+test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const state0 = createAuthenticationProgramStateCommon({
     instructions: parseBytecode(
       Uint8Array.from([
@@ -195,7 +194,7 @@ test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
 
   t.deepEqual(state0, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -217,7 +216,7 @@ test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
   });
   t.deepEqual(state1, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -239,7 +238,7 @@ test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
   });
   t.deepEqual(state2, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -261,7 +260,7 @@ test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
   });
   t.deepEqual(state3, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -283,23 +282,21 @@ test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', async (t) => {
   });
 });
 
-test('[BCH VM] vm.evaluate: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
-  const sha256 = await instantiateSha256();
-  const vm = await instantiateVirtualMachineBCH2021();
+test('[BCH VM] vm.evaluate: only lockingBytecode: OP_2 OP_2 OP_ADD', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const testProgram = createTestAuthenticationProgramBCH({
     lockingBytecode: Uint8Array.from([
       OpcodesBCH2022.OP_2,
       OpcodesBCH2022.OP_2,
       OpcodesBCH2022.OP_ADD,
     ]),
-    sha256,
     unlockingBytecode: Uint8Array.of(),
     valueSatoshis: hexToBin('0000000000000000'),
   });
   const result = vm.evaluate(testProgram);
   t.deepEqual(result, {
     alternateStack: [],
-    executionStack: [],
+    controlStack: [],
     instructions: [
       {
         opcode: 82,
@@ -321,16 +318,14 @@ test('[BCH VM] vm.evaluate: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) =
   });
 });
 
-test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
-  const sha256 = await instantiateSha256();
-  const vm = await instantiateVirtualMachineBCH2021();
+test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const testProgram = createTestAuthenticationProgramBCH({
     lockingBytecode: Uint8Array.from([
       OpcodesBCH2022.OP_2,
       OpcodesBCH2022.OP_2,
       OpcodesBCH2022.OP_ADD,
     ]),
-    sha256,
     unlockingBytecode: Uint8Array.of(),
     valueSatoshis: hexToBin('0000000000000000'),
   });
@@ -338,7 +333,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
   t.deepEqual(result, [
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [],
       ip: 0,
       lastCodeSeparator: -1,
@@ -350,7 +345,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -372,7 +367,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -394,7 +389,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -416,7 +411,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -438,7 +433,7 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
     },
     {
       alternateStack: [],
-      executionStack: [],
+      controlStack: [],
       instructions: [
         {
           opcode: 82,
@@ -461,10 +456,8 @@ test('[BCH VM] vm.debug: only lockingBytecode: OP_2 OP_2 OP_ADD', async (t) => {
   ]);
 });
 
-const vmPromise = instantiateVirtualMachineBCH2021();
-
-test('verifyTransaction', async (t) => {
-  const vm = await vmPromise;
+test('verifyTransaction', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const valueSatoshis = 10000;
   const transaction = decodeTransactionCommon(
     hexToBin(
@@ -489,8 +482,8 @@ test('verifyTransaction', async (t) => {
   t.deepEqual(result, true, stringify(result));
 });
 
-test('verifyTransaction: ', async (t) => {
-  const vm = await vmPromise;
+test('verifyTransaction: ', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const valueSatoshis = 10000;
   const transaction = decodeTransactionCommon(
     hexToBin(
@@ -515,8 +508,8 @@ test('verifyTransaction: ', async (t) => {
   t.deepEqual(result, true, stringify(result));
 });
 
-test('verifyTransaction: incorrect spentOutputs length', async (t) => {
-  const vm = await vmPromise;
+test('verifyTransaction: incorrect spentOutputs length', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const transaction = decodeTransactionCommon(
     hexToBin(
       '0200000001600a1b6b0563bbd5b9bef124ff634600df774559da6c51e34a6b97a178be233401000000fc0047304402205e7d56c4e7854f9c672977d6606dd2f0af5494b8e61108e2a92fc920bf8049fc022065262675b0e1a3850d88bd3c56e0eb5fb463d9cdbe49f2f625da5c0f82c765304147304402200d167d5ed77fa169346d295f6fb742e80ae391f0ae086d42b99152bdb23edf4102202c8b85c2583b07b66485b88cacdd14f680bd3aa3f3f12e9f63bc02b4d1cc6d15414c6952210349c17cce8a460f013fdcd286f90f7b0330101d0f3ab4ced44a5a3db764e465882102a438b1662aec9c35f85794600e1d2d3683a43cbb66307cf825fc4486b84695452103d9fffac162e9e15aecbe4f937b951815ccb4f940c850fff9ee52fa70805ae7de53ae000000000100000000000000000d6a0b68656c6c6f20776f726c6400000000'
@@ -539,8 +532,8 @@ test('verifyTransaction: incorrect spentOutputs length', async (t) => {
   );
 });
 
-test('verifyTransaction: invalid input', async (t) => {
-  const vm = await vmPromise;
+test('verifyTransaction: invalid input', (t) => {
+  const vm = instantiateVirtualMachineBCH2021();
   const valueSatoshis = 10000;
   const transaction = decodeTransactionCommon(
     hexToBin(

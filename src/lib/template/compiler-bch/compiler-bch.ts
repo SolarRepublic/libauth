@@ -1,3 +1,9 @@
+import {
+  ripemd160 as internalRipemd160,
+  secp256k1 as internalSecp256k1,
+  sha256 as internalSha256,
+  sha512 as internalSha512,
+} from '../../crypto/default-crypto-instances.js';
 import type {
   AnyCompilerConfiguration,
   AuthenticationProgramStateBCH,
@@ -10,6 +16,7 @@ import type {
 } from '../../lib.js';
 import {
   authenticationTemplateToCompilerConfiguration,
+  compilerConfigurationToCompilerBCH,
   compilerOperationAttemptBytecodeResolution,
   compilerOperationHelperCompileScript,
   compilerOperationHelperDeriveHdKeyPrivate,
@@ -17,15 +24,9 @@ import {
   compilerOperationRequires,
   createAuthenticationProgramEvaluationCommon,
   createAuthenticationVirtualMachine,
-  createCompiler,
   createInstructionSetBCH,
   generateBytecodeMap,
   generateSigningSerializationBCH,
-  instantiateRipemd160,
-  instantiateSecp256k1,
-  instantiateSha1,
-  instantiateSha256,
-  instantiateSha512,
   OpcodesBCH2022,
   SigningSerializationFlag,
 } from '../../lib.js';
@@ -128,7 +129,10 @@ export const compilerOperationHelperComputeSignatureBCH = ({
   privateKey: Uint8Array;
   compilationContext: CompilationContextBCH;
   operationName: string;
-  sign: (privateKey: Uint8Array, messageHash: Uint8Array) => Uint8Array;
+  sign: (
+    privateKey: Uint8Array,
+    messageHash: Uint8Array
+  ) => Uint8Array | string;
   sha256: { hash: Sha256['hash'] };
 }): CompilerOperationResult => {
   const [, , algorithm, unknown] = identifier.split('.') as (
@@ -163,7 +167,7 @@ export const compilerOperationHelperComputeSignatureBCH = ({
   );
   const digest = sha256.hash(sha256.hash(serialization));
   const bitcoinEncodedSignature = Uint8Array.from([
-    ...sign(privateKey, digest),
+    ...(sign(privateKey, digest) as Uint8Array),
     ...signingSerializationType,
   ]);
   return {
@@ -332,7 +336,10 @@ export const compilerOperationHelperComputeDataSignatureBCH = <
   identifier: string;
   privateKey: Uint8Array;
   operationName: string;
-  sign: (privateKey: Uint8Array, messageHash: Uint8Array) => Uint8Array;
+  sign: (
+    privateKey: Uint8Array,
+    messageHash: Uint8Array
+  ) => Uint8Array | string;
   sha256: { hash: Sha256['hash'] };
 }): CompilerOperationResult => {
   const [, , scriptId, unknown] = identifier.split('.') as [
@@ -375,7 +382,7 @@ export const compilerOperationHelperComputeDataSignatureBCH = <
 
   const digest = sha256.hash(result);
   return {
-    bytecode: sign(privateKey, digest),
+    bytecode: sign(privateKey, digest) as Uint8Array,
     signature: { message: result },
     status: 'success',
   };
@@ -595,46 +602,31 @@ export type CompilerConfigurationBCH = CompilerConfiguration<
  * Create a compiler using the default BCH compiler configuration.
  *
  * Internally instantiates the necessary crypto and VM implementations – use
- * `createCompiler` for more control.
+ * {@link compilerConfigurationToCompilerBCH} for more control.
  *
- * @param scriptsAndOverrides - a compiler configuration from which properties
+ * @param configuration - a compiler configuration from which properties
  * will be used to override properties of the default BCH configuration – must
  * include the `scripts` property
  */
-export const createCompilerBCH = async <
-  CompilationContext extends CompilationContextBCH,
-  Configuration extends AnyCompilerConfiguration<CompilationContext>,
+export const createCompilerBCH = <
+  Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
   ProgramState extends AuthenticationProgramStateBCH
 >(
-  scriptsAndOverrides: Configuration
+  configuration: Configuration
 ) => {
-  const [sha1, sha256, sha512, ripemd160, secp256k1] = await Promise.all([
-    instantiateSha1(),
-    instantiateSha256(),
-    instantiateSha512(),
-    instantiateRipemd160(),
-    instantiateSecp256k1(),
-  ]);
-  const vm = createAuthenticationVirtualMachine(
-    createInstructionSetBCH({
-      ripemd160,
-      secp256k1,
-      sha1,
-      sha256,
-    })
-  );
-  return createCompiler<CompilationContext, Configuration, ProgramState>({
+  const vm = createAuthenticationVirtualMachine(createInstructionSetBCH());
+  return compilerConfigurationToCompilerBCH<Configuration, ProgramState>({
     ...{
       createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
       opcodes: generateBytecodeMap(OpcodesBCH2022),
       operations: compilerOperationsBCH,
-      ripemd160,
-      secp256k1,
-      sha256,
-      sha512,
+      ripemd160: internalRipemd160,
+      secp256k1: internalSecp256k1,
+      sha256: internalSha256,
+      sha512: internalSha512,
       vm,
     },
-    ...scriptsAndOverrides,
+    ...configuration,
   });
 };
 
@@ -646,15 +638,14 @@ export const createCompilerBCH = async <
  * @param overrides - a compiler configuration from which properties will be
  * used to override properties of the default BCH configuration
  */
-export const authenticationTemplateToCompilerBCH = async <
-  CompilationContext extends CompilationContextBCH,
-  Environment extends AnyCompilerConfiguration<CompilationContext>,
+export const authenticationTemplateToCompilerBCH = <
+  Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
   ProgramState extends AuthenticationProgramStateBCH
 >(
   template: AuthenticationTemplate,
-  overrides?: CompilerConfiguration<CompilationContext>
+  overrides?: Configuration
 ) =>
-  createCompilerBCH<CompilationContext, Environment, ProgramState>({
+  createCompilerBCH<Configuration, ProgramState>({
     ...overrides,
     ...authenticationTemplateToCompilerConfiguration(template),
-  } as Environment);
+  } as Configuration);

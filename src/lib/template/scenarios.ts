@@ -1,4 +1,4 @@
-import type { CompilationContextBCH, Input, Output } from '../lib';
+import type { CompilationContextBCH } from '../lib';
 import {
   bigIntToBinUint256BEClamped,
   bigIntToBinUint64LE,
@@ -12,16 +12,19 @@ import type {
   AnyCompilerConfigurationIgnoreOperations,
   AuthenticationTemplateKey,
   AuthenticationTemplateScenario,
+  AuthenticationTemplateScenarioBytecode,
   AuthenticationTemplateScenarioData,
   AuthenticationTemplateScenarioOutput,
-  AuthenticationTemplateScenarioTransactionOutput,
   CompilationData,
   CompilationError,
+  CompilationResult,
+  CompilationResultSuccess,
+  Compiler,
   Scenario,
+  ScenarioGenerationDebuggingResult,
 } from './template';
 import {
   CompilerDefaults,
-  compileScript,
   compileScriptRaw,
   stringifyErrors,
 } from './template.js';
@@ -30,7 +33,7 @@ import {
  * The default `lockingBytecode` value for scenario outputs is a new empty
  * object (`{}`).
  */
-const defaultScenarioTransactionOutputLockingBytecode = () => ({});
+const defaultScenarioOutputLockingBytecode = () => ({});
 
 /**
  * The contents of an `AuthenticationTemplateScenario` without the `name` and
@@ -46,9 +49,14 @@ type RequiredTwoLevels<T> = {
 };
 
 /**
+ * A scenario definition produced when a child scenario `extends` a parent
+ * scenario; this "extended" scenario definition is the same as the parent
+ * scenario definition, but any properties defined in the child scenario
+ * definition replace those found in the parent scenario definition.
+ *
  * All scenarios extend the default scenario, so the `data`, `transaction` (and
  * all `transaction` properties), and `sourceOutputs` properties are guaranteed
- * to be defined in an extended scenario definition.
+ * to be defined in any extended scenario definition.
  */
 export type ExtendedScenarioDefinition = Required<
   Pick<ScenarioDefinition, 'data'>
@@ -129,13 +137,11 @@ export const generateDefaultScenarioDefinition = <
         ? {}
         : { keys: { privateKeys } }),
     },
-    sourceOutputs: [{ lockingBytecode: null }],
+    sourceOutputs: [{ lockingBytecode: ['slot'] }],
     transaction: {
-      inputs: [{ unlockingBytecode: null }],
+      inputs: [{ unlockingBytecode: ['slot'] }],
       locktime: CompilerDefaults.defaultScenarioTransactionLocktime as const,
-      outputs: [
-        { lockingBytecode: defaultScenarioTransactionOutputLockingBytecode() },
-      ],
+      outputs: [{ lockingBytecode: defaultScenarioOutputLockingBytecode() }],
       version: CompilerDefaults.defaultScenarioTransactionVersion as const,
     },
   };
@@ -167,14 +173,17 @@ export const generateDefaultScenarioDefinition = <
      */
     const assumeValid = true;
     const masterNode = deriveHdPrivateNodeFromSeed(
-      crypto,
       valueMap[entityId],
-      assumeValid
+      assumeValid,
+      crypto
     );
-    const hdPrivateKey = encodeHdPrivateKey(crypto, {
-      network: 'mainnet',
-      node: masterNode,
-    });
+    const hdPrivateKey = encodeHdPrivateKey(
+      {
+        network: 'mainnet',
+        node: masterNode,
+      },
+      crypto
+    );
 
     return { ...all, [entityId]: hdPrivateKey };
   }, {});
@@ -412,14 +421,8 @@ export const extendedScenarioDefinitionToCompilationData = (
 });
 
 /**
- * Extend a `CompilationData` object with the compiled result of the bytecode
- * scripts provided by a `AuthenticationTemplateScenarioData`.
- *
- * @param compilationData - the compilation data to extend
- * @param configuration - the compiler configuration in which to compile the
- * scripts
- * @param scenarioDataBytecodeScripts - the `data.bytecode` property of an
- * `AuthenticationTemplateScenarioData`
+ * Extend a {@link CompilationData} object with the compiled result of the
+ * bytecode scripts provided by an {@link AuthenticationTemplateScenarioData}.
  */
 export const extendCompilationDataWithScenarioBytecode = <
   Configuration extends AnyCompilerConfigurationIgnoreOperations<CompilationContext>,
@@ -429,8 +432,17 @@ export const extendCompilationDataWithScenarioBytecode = <
   configuration,
   scenarioDataBytecodeScripts,
 }: {
+  /**
+   * The compilation data to extend.
+   */
   compilationData: CompilationData<CompilationContext>;
+  /**
+   * The compiler configuration in which to compile the scripts.
+   */
   configuration: Configuration;
+  /**
+   * The {@link AuthenticationTemplateScenarioData.bytecode} property.
+   */
   scenarioDataBytecodeScripts: NonNullable<
     AuthenticationTemplateScenarioData['bytecode']
   >;
@@ -520,6 +532,90 @@ export const extendCompilationDataWithScenarioBytecode = <
 };
 
 /**
+ * Compile a {@link AuthenticationTemplateScenarioOutput.valueSatoshis},
+ * returning the `Uint8Array` result.
+ */
+export const compileAuthenticationTemplateScenarioValueSatoshis = (
+  valueSatoshisDefinition: AuthenticationTemplateScenarioOutput<boolean>['valueSatoshis'] = CompilerDefaults.defaultScenarioOutputValueSatoshis
+) =>
+  typeof valueSatoshisDefinition === 'string'
+    ? hexToBin(valueSatoshisDefinition)
+    : bigIntToBinUint64LE(BigInt(valueSatoshisDefinition));
+
+/**
+ * Compile an {@link AuthenticationTemplateScenarioBytecode} definition for an
+ * {@link AuthenticationTemplateScenario}, returning either a
+ * simple `Uint8Array` result or a full CashAssembly {@link CompilationResult}.
+ */
+// eslint-disable-next-line complexity
+export const compileAuthenticationTemplateScenarioBytecode = <
+  Configuration extends AnyCompilerConfigurationIgnoreOperations,
+  GenerateBytecode extends Compiler<
+    CompilationContextBCH,
+    Configuration,
+    ProgramState
+  >['generateBytecode'],
+  ProgramState
+>({
+  bytecodeDefinition,
+  configuration,
+  defaultOverride,
+  extendedScenario,
+  generateBytecode,
+  lockingOrUnlockingScriptIdUnderTest,
+}: {
+  bytecodeDefinition: AuthenticationTemplateScenarioBytecode;
+  configuration: Configuration;
+  extendedScenario: ExtendedScenarioDefinition;
+  defaultOverride: AuthenticationTemplateScenarioData;
+  generateBytecode: GenerateBytecode;
+  lockingOrUnlockingScriptIdUnderTest?: string;
+}):
+  | CompilationResult<ProgramState>
+  | Uint8Array
+  | { errors: [{ error: string }]; success: false } => {
+  if (typeof bytecodeDefinition === 'string') {
+    return hexToBin(bytecodeDefinition);
+  }
+
+  const scriptId =
+    bytecodeDefinition.script === undefined ||
+    Array.isArray(bytecodeDefinition.script)
+      ? lockingOrUnlockingScriptIdUnderTest
+      : bytecodeDefinition.script;
+
+  /**
+   * The script ID to compile. If `undefined`, we are attempting to "copy" the
+   * script ID in a scenario generation that does not define a locking or
+   * unlocking script under test (e.g. the scenario is only used for debugging
+   * values in an editor) – in these cases, simply return an empty `Uint8Array`.
+   */
+  if (scriptId === undefined) {
+    return hexToBin('');
+  }
+
+  const overrides = bytecodeDefinition.overrides ?? defaultOverride;
+  const overriddenDataDefinition = extendScenarioDefinitionData(
+    extendedScenario.data,
+    overrides
+  );
+  const data = extendCompilationDataWithScenarioBytecode({
+    compilationData: extendedScenarioDefinitionToCompilationData({
+      data: overriddenDataDefinition,
+    }),
+    configuration,
+    scenarioDataBytecodeScripts: overriddenDataDefinition.bytecode ?? {},
+  });
+
+  if (typeof data === 'string') {
+    const error = `Could not compile scenario "data.bytecode": ${data}`;
+    return { errors: [{ error }], success: false };
+  }
+
+  return generateBytecode({ data, debug: true, scriptId });
+};
+
+/**
  * Generate a scenario given a compiler configuration. If neither `scenarioId`
  * or `unlockingScriptId` are provided, the default scenario for the compiler
  * configuration will be generated.
@@ -527,37 +623,59 @@ export const extendCompilationDataWithScenarioBytecode = <
  * Returns either the full `CompilationData` for the selected scenario or an
  * error message (as a `string`).
  *
- * @param scenarioId - the ID of the scenario to generate – if `undefined`, the
- * default scenario
- * @param unlockingScriptId - the ID of the unlocking script under test by this
- * scenario – if `undefined` but required by the scenario, an error will be
- * produced
- * @param configuration - the compiler configuration from which to generate the
- * scenario
+ * Note, this method should typically not be used directly, use
+ * {@link Compiler.generateScenario} instead.
  */
 // eslint-disable-next-line complexity
-export const generateScenarioCommon = <
-  Configuration extends AnyCompilerConfigurationIgnoreOperations
->({
-  configuration,
-  scenarioId,
-  unlockingScriptId,
-}: {
-  configuration: Configuration;
-  scenarioId?: string | undefined;
-  unlockingScriptId?: string | undefined;
-}): Scenario | string => {
-  const { scenario, scenarioName } =
+export const generateScenarioBCH = <
+  Configuration extends AnyCompilerConfigurationIgnoreOperations,
+  GenerateBytecode extends Compiler<
+    CompilationContextBCH,
+    Configuration,
+    ProgramState
+  >['generateBytecode'],
+  ProgramState,
+  Debug extends boolean
+>(
+  {
+    configuration,
+    generateBytecode,
+    scenarioId,
+    unlockingScriptId,
+  }: {
+    /**
+     * The compiler configuration from which to generate the scenario.
+     */
+    configuration: Configuration;
+
+    generateBytecode: GenerateBytecode;
+    /**
+     * The ID of the scenario to generate. If `undefined`, the default scenario.
+     */
+    scenarioId?: string | undefined;
+    /**
+     * The ID of the unlocking script under test by this scenario. If
+     * `undefined` but required by the scenario, an error will be produced.
+     */
+    unlockingScriptId?: string | undefined;
+  },
+  debug?: Debug
+):
+  | string
+  | (Debug extends true
+      ? ScenarioGenerationDebuggingResult<ProgramState>
+      : Scenario) => {
+  const { scenarioDefinition, scenarioName } =
     scenarioId === undefined
-      ? { scenario: {}, scenarioName: `the default scenario` }
+      ? { scenarioDefinition: {}, scenarioName: `the default scenario` }
       : {
-          scenario: configuration.scenarios?.[scenarioId],
+          scenarioDefinition: configuration.scenarios?.[scenarioId],
           scenarioName: `scenario "${scenarioId}"`,
         };
 
-  if (scenario === undefined) {
+  if (scenarioDefinition === undefined) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return `Cannot generate ${scenarioName}: a scenario with the identifier ${scenarioId!} is not included in this compiler configuration.`;
+    return `Cannot generate ${scenarioName}: a scenario definition with the identifier ${scenarioId!} is not included in this compiler configuration.`;
   }
 
   const parentScenario = generateExtendedScenario<
@@ -568,7 +686,10 @@ export const generateScenarioCommon = <
     return `Cannot generate ${scenarioName}: ${parentScenario}`;
   }
 
-  const extendedScenario = extendScenarioDefinition(parentScenario, scenario);
+  const extendedScenario = extendScenarioDefinition(
+    parentScenario,
+    scenarioDefinition
+  );
   const partialCompilationData =
     extendedScenarioDefinitionToCompilationData(extendedScenario);
   const fullCompilationData = extendCompilationDataWithScenarioBytecode({
@@ -578,7 +699,7 @@ export const generateScenarioCommon = <
   });
 
   if (typeof fullCompilationData === 'string') {
-    return `Cannot generate ${scenarioName}: ${fullCompilationData}`;
+    return `Cannot generate ${scenarioName}. ${fullCompilationData}`;
   }
 
   if (
@@ -588,258 +709,253 @@ export const generateScenarioCommon = <
     return `Cannot generate ${scenarioName}: could not match source outputs with inputs – "sourceOutputs" must be the same length as "transaction.inputs".`;
   }
 
-  const testedInputs = extendedScenario.transaction.inputs.filter(
-    (input) => input.unlockingBytecode === null
+  const testedInputs = extendedScenario.transaction.inputs.filter((input) =>
+    Array.isArray(input.unlockingBytecode)
   );
   if (testedInputs.length !== 1) {
-    return `Cannot generate ${scenarioName}: the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input which has "unlockingBytecode" set to "null".`;
+    return `Cannot generate ${scenarioName}: the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input which has "unlockingBytecode" set to ["slot"].`;
   }
   const testedInputIndex = extendedScenario.transaction.inputs.findIndex(
-    (input) => input.unlockingBytecode === null
+    (input) => Array.isArray(input.unlockingBytecode)
   );
 
-  const testedSourceOutputs = extendedScenario.sourceOutputs.filter(
-    (output) => output.lockingBytecode === null
+  const testedSourceOutputs = extendedScenario.sourceOutputs.filter((output) =>
+    Array.isArray(output.lockingBytecode)
   );
   if (testedSourceOutputs.length !== 1) {
-    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – "sourceOutputs" must include exactly one output which has "lockingBytecode" set to "null".`;
+    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – "sourceOutputs" must include exactly one output which has "lockingBytecode" set to ["slot"].`;
   }
 
   if (
-    extendedScenario.sourceOutputs[testedInputIndex].lockingBytecode !== null
+    !Array.isArray(
+      extendedScenario.sourceOutputs[testedInputIndex].lockingBytecode
+    )
   ) {
-    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – the "null" locking and unlocking bytecode in "transaction.inputs" and "sourceOutputs" must be at the same index.`;
+    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – the ["slot"] in "transaction.inputs" and "sourceOutputs" must be at the same index.`;
   }
 
-  const outputs = extendedScenario.transaction.outputs.map<
-    Required<AuthenticationTemplateScenarioTransactionOutput>
-  >((output) => ({
-    lockingBytecode:
-      output.lockingBytecode ??
-      defaultScenarioTransactionOutputLockingBytecode(),
-    valueSatoshis:
-      output.valueSatoshis ??
-      CompilerDefaults.defaultScenarioOutputValueSatoshis,
-  }));
-
-  const bytecodeUnderTest = undefined;
-  const compileOutput =
-    (overrideAddressIndex: boolean) =>
-    // eslint-disable-next-line complexity
-    (
-      output: Required<AuthenticationTemplateScenarioOutput<boolean>>,
-      index: number
-    ) => {
-      const valueSatoshis =
-        typeof output.valueSatoshis === 'string'
-          ? hexToBin(output.valueSatoshis)
-          : bigIntToBinUint64LE(BigInt(output.valueSatoshis));
-
-      if (output.lockingBytecode === null) {
-        return { lockingBytecode: bytecodeUnderTest, valueSatoshis };
-      }
-
-      if (typeof output.lockingBytecode === 'string') {
-        return {
-          lockingBytecode: hexToBin(output.lockingBytecode),
-          valueSatoshis,
-        };
-      }
-
-      const specifiedLockingScriptId = output.lockingBytecode.script;
-      const impliedLockingScriptId =
-        unlockingScriptId === undefined
-          ? undefined
-          : configuration.unlockingScripts?.[unlockingScriptId];
-      const scriptId =
-        typeof specifiedLockingScriptId === 'string'
-          ? specifiedLockingScriptId
-          : impliedLockingScriptId;
-
-      if (scriptId === undefined) {
-        if (unlockingScriptId === undefined) {
-          return `Cannot generate locking bytecode for output ${index}: this output is set to use the script unlocked by the unlocking script under test, but an unlocking script ID was not provided for scenario generation.`;
-        }
-        return `Cannot generate locking bytecode for output ${index}: the locking script unlocked by "${unlockingScriptId}" is not provided in this compiler configuration.`;
-      }
-
-      const overriddenDataDefinition =
-        output.lockingBytecode.overrides === undefined
-          ? overrideAddressIndex
-            ? extendScenarioDefinitionData(extendedScenario.data, {
-                hdKeys: { addressIndex: 1 },
-              })
-            : undefined
-          : extendScenarioDefinitionData(
-              extendedScenario.data,
-              output.lockingBytecode.overrides
-            );
-
-      const overriddenCompilationData =
-        overriddenDataDefinition === undefined
-          ? undefined
-          : extendCompilationDataWithScenarioBytecode({
-              compilationData: extendedScenarioDefinitionToCompilationData({
-                data: overriddenDataDefinition,
-              }),
-              configuration,
-              scenarioDataBytecodeScripts:
-                overriddenDataDefinition.bytecode ?? {},
-            });
-
-      if (typeof overriddenCompilationData === 'string') {
-        return `Cannot generate locking bytecode for output ${index}: ${overriddenCompilationData}`;
-      }
-
-      const data =
-        overriddenCompilationData === undefined
-          ? fullCompilationData
-          : overriddenCompilationData;
-
-      const result = compileScript(scriptId, data, configuration);
-
-      if (!result.success) {
-        return `Cannot generate locking bytecode for output ${index}: ${stringifyErrors(
-          result.errors
-        )}`;
-      }
-
-      return { lockingBytecode: result.bytecode, valueSatoshis };
-    };
-
-  const compiledTransactionOutputResults = outputs.map<
-    Output<Uint8Array | undefined> | string
-  >(compileOutput(true));
-  const outputCompilationErrors = compiledTransactionOutputResults.filter(
-    (result): result is string => typeof result === 'string'
-  );
-  if (outputCompilationErrors.length > 0) {
-    return `Cannot generate ${scenarioName}: ${outputCompilationErrors.join(
-      '; '
-    )}`;
+  const lockingScriptId =
+    unlockingScriptId === undefined
+      ? undefined
+      : configuration.unlockingScripts?.[unlockingScriptId];
+  if (unlockingScriptId !== undefined && lockingScriptId === undefined) {
+    return `Cannot generate ${scenarioName} using unlocking script "${unlockingScriptId}": the locking script unlocked by "${unlockingScriptId}" is not provided in this compiler configuration.`;
   }
-  const compiledTransactionOutputs =
-    compiledTransactionOutputResults as Output[];
 
-  const compiledSourceOutputResults = outputs.map<
-    Output<Uint8Array | undefined> | string
-  >(compileOutput(false));
-  const sourceOutputCompilationErrors = compiledSourceOutputResults.filter(
-    (result): result is string => typeof result === 'string'
-  );
-  if (outputCompilationErrors.length > 0) {
-    return `Cannot generate ${scenarioName}: ${sourceOutputCompilationErrors.join(
-      '; '
-    )}`;
-  }
-  const compiledSourceOutputs = compiledSourceOutputResults as Output<
-    Uint8Array | undefined
-  >[];
-
-  const compiledTransactionInputResults =
-    extendedScenario.transaction.inputs.map<
-      Input<Uint8Array | undefined> | string
-      // eslint-disable-next-line complexity
-    >((input, index) => {
-      const appliedDefaults = {
-        outpointIndex:
-          input.outpointIndex ??
-          CompilerDefaults.defaultScenarioInputOutpointIndex,
-        outpointTransactionHash: hexToBin(
-          input.outpointTransactionHash ??
-            CompilerDefaults.defaultScenarioInputOutpointTransactionHash
-        ),
-        sequenceNumber:
-          input.sequenceNumber ??
-          CompilerDefaults.defaultScenarioInputSequenceNumber,
+  const sourceOutputCompilations = extendedScenario.sourceOutputs.map(
+    (sourceOutput, index) => {
+      const slot = Array.isArray(sourceOutput.lockingBytecode);
+      const bytecodeDefinition = slot
+        ? lockingScriptId === undefined
+          ? (CompilerDefaults.defaultScenarioBytecode as string)
+          : { script: lockingScriptId }
+        : sourceOutput.lockingBytecode ?? {};
+      const defaultOverride = {};
+      return {
+        compiled: {
+          lockingBytecode: compileAuthenticationTemplateScenarioBytecode({
+            bytecodeDefinition,
+            configuration,
+            defaultOverride,
+            extendedScenario,
+            generateBytecode,
+            lockingOrUnlockingScriptIdUnderTest: lockingScriptId,
+          }),
+          valueSatoshis: compileAuthenticationTemplateScenarioValueSatoshis(
+            sourceOutput.valueSatoshis
+          ),
+        },
+        index,
+        slot,
+        type: 'source output' as const,
       };
+    }
+  );
 
-      if (typeof input.unlockingBytecode === 'string') {
-        return {
-          ...appliedDefaults,
-          unlockingBytecode: hexToBin(input.unlockingBytecode),
-        };
-      }
-
-      if (input.unlockingBytecode === null) {
-        return { ...appliedDefaults, unlockingBytecode: bytecodeUnderTest };
-      }
-
-      const scriptId =
-        input.unlockingBytecode?.script === undefined ||
-        input.unlockingBytecode.script === null
-          ? unlockingScriptId
-          : input.unlockingBytecode.script;
-
-      if (scriptId === undefined) {
-        if (unlockingScriptId === undefined) {
-          return `Cannot generate unlocking bytecode for input ${index}: this input is set to use the unlocking script under test, but an unlocking script ID was not provided for scenario generation.`;
-        }
-        return `Cannot generate unlocking bytecode for input ${index}: the unlocking script "${unlockingScriptId}" is not provided in this compiler configuration.`;
-      }
-
-      const overriddenDataDefinition =
-        input.unlockingBytecode?.overrides === undefined
-          ? undefined
-          : extendScenarioDefinitionData(
-              extendedScenario.data,
-              input.unlockingBytecode.overrides
-            );
-
-      const overriddenCompilationData =
-        overriddenDataDefinition === undefined
-          ? undefined
-          : extendCompilationDataWithScenarioBytecode({
-              compilationData: extendedScenarioDefinitionToCompilationData({
-                data: overriddenDataDefinition,
-              }),
-              configuration,
-              scenarioDataBytecodeScripts:
-                overriddenDataDefinition.bytecode ?? {},
-            });
-
-      if (typeof overriddenCompilationData === 'string') {
-        return `Cannot generate unlocking bytecode for input ${index}: ${overriddenCompilationData}`;
-      }
-
-      const data =
-        overriddenCompilationData === undefined
-          ? fullCompilationData
-          : overriddenCompilationData;
-
-      const result = compileScript(scriptId, data, configuration);
-
-      if (!result.success) {
-        return `Cannot generate unlocking bytecode for input ${index}: ${stringifyErrors(
-          result.errors
-        )}`;
-      }
-      return { ...appliedDefaults, unlockingBytecode: result.bytecode };
+  const transactionOutputCompilations =
+    extendedScenario.transaction.outputs.map((transactionOutput, index) => {
+      const defaultOverride = { hdKeys: { addressIndex: 1 } };
+      return {
+        compiled: {
+          lockingBytecode: compileAuthenticationTemplateScenarioBytecode({
+            bytecodeDefinition: transactionOutput.lockingBytecode ?? {},
+            configuration,
+            defaultOverride,
+            extendedScenario,
+            generateBytecode,
+            lockingOrUnlockingScriptIdUnderTest: lockingScriptId,
+          }),
+          valueSatoshis: compileAuthenticationTemplateScenarioValueSatoshis(
+            transactionOutput.valueSatoshis
+          ),
+        },
+        index,
+        type: 'transaction output' as const,
+      };
     });
 
-  const inputCompilationErrors = compiledTransactionInputResults.filter(
-    (result): result is string => typeof result === 'string'
+  const transactionInputCompilations = extendedScenario.transaction.inputs.map(
+    // eslint-disable-next-line complexity
+    (input, index) => {
+      const slot = Array.isArray(input.unlockingBytecode);
+      const bytecodeDefinition = Array.isArray(input.unlockingBytecode)
+        ? unlockingScriptId === undefined
+          ? (CompilerDefaults.defaultScenarioBytecode as string)
+          : { script: unlockingScriptId }
+        : input.unlockingBytecode ?? {};
+      const defaultOverride = {};
+      return {
+        compiled: {
+          outpointIndex:
+            input.outpointIndex ??
+            CompilerDefaults.defaultScenarioInputOutpointIndex,
+          outpointTransactionHash: hexToBin(
+            input.outpointTransactionHash ??
+              CompilerDefaults.defaultScenarioInputOutpointTransactionHash
+          ),
+          sequenceNumber:
+            input.sequenceNumber ??
+            CompilerDefaults.defaultScenarioInputSequenceNumber,
+          unlockingBytecode: compileAuthenticationTemplateScenarioBytecode({
+            bytecodeDefinition,
+            configuration,
+            defaultOverride,
+            extendedScenario,
+            generateBytecode,
+            lockingOrUnlockingScriptIdUnderTest: unlockingScriptId,
+          }),
+        },
+        index,
+        slot,
+        type: 'input' as const,
+      };
+    }
   );
-  if (inputCompilationErrors.length > 0) {
-    return `Cannot generate ${scenarioName}: ${inputCompilationErrors.join(
-      '; '
-    )}`;
-  }
-  const compiledTransactionInputs = compiledTransactionInputResults as Input<
-    Uint8Array | undefined
-  >[];
 
-  return {
+  const lockingCompilation = sourceOutputCompilations.find(
+    (compilation) => compilation.slot
+  )?.compiled.lockingBytecode as CompilationResult<ProgramState>;
+  const unlockingCompilation = transactionInputCompilations.find(
+    (compilation) => compilation.slot
+  )?.compiled.unlockingBytecode as CompilationResult<ProgramState>;
+
+  const errors = [
+    ...sourceOutputCompilations,
+    ...transactionInputCompilations,
+    ...transactionOutputCompilations,
+  ].reduce<string[]>((accumulated, result) => {
+    const errorSet =
+      'lockingBytecode' in result.compiled
+        ? 'errors' in result.compiled.lockingBytecode
+          ? result.compiled.lockingBytecode.errors
+          : undefined
+        : 'errors' in result.compiled.unlockingBytecode
+        ? result.compiled.unlockingBytecode.errors
+        : undefined;
+    if (errorSet === undefined) return accumulated;
+    return [
+      ...accumulated,
+      ...errorSet.map(
+        (errorObject) =>
+          `Failed compilation of ${result.type} at index ${result.index}: ${errorObject.error}`
+      ),
+    ];
+  }, []);
+
+  if (errors.length > 0) {
+    const error = `Cannot generate ${scenarioName}: ${errors.join(' ')}`;
+    if (debug === true) {
+      return {
+        lockingCompilation,
+        scenario: error,
+        unlockingCompilation,
+      } as Debug extends true
+        ? ScenarioGenerationDebuggingResult<ProgramState>
+        : Scenario;
+    }
+    return error;
+  }
+  const sourceOutputCompilationsSuccess =
+    sourceOutputCompilations as AuthenticationTemplateScenarioOutputSuccessfulCompilation[];
+  const transactionOutputCompilationsSuccess =
+    transactionOutputCompilations as AuthenticationTemplateScenarioOutputSuccessfulCompilation[];
+  const transactionInputCompilationsSuccess =
+    transactionInputCompilations as AuthenticationTemplateScenarioInputSuccessfulCompilation[];
+
+  interface AuthenticationTemplateScenarioOutputSuccessfulCompilation {
+    compiled: {
+      lockingBytecode: CompilationResultSuccess<ProgramState> | Uint8Array;
+      valueSatoshis: Uint8Array;
+    };
+    index: number;
+    slot?: boolean;
+    type: string;
+  }
+
+  interface AuthenticationTemplateScenarioInputSuccessfulCompilation {
+    compiled: {
+      outpointIndex: number;
+      outpointTransactionHash: Uint8Array;
+      sequenceNumber: number;
+      unlockingBytecode: CompilationResultSuccess<ProgramState> | Uint8Array;
+    };
+    index: number;
+    slot?: boolean;
+    type: string;
+  }
+
+  const extractOutput = (
+    compilation: AuthenticationTemplateScenarioOutputSuccessfulCompilation
+  ) => {
+    const { lockingBytecode, valueSatoshis } = compilation.compiled;
+    return {
+      lockingBytecode:
+        'bytecode' in lockingBytecode
+          ? lockingBytecode.bytecode
+          : lockingBytecode,
+      valueSatoshis,
+    };
+  };
+
+  const sourceOutputs = sourceOutputCompilationsSuccess.map(extractOutput);
+  const outputs = transactionOutputCompilationsSuccess.map(extractOutput);
+  const inputs = transactionInputCompilationsSuccess.map((compilation) => {
+    const {
+      outpointIndex,
+      outpointTransactionHash,
+      sequenceNumber,
+      unlockingBytecode,
+    } = compilation.compiled;
+    return {
+      outpointIndex,
+      outpointTransactionHash,
+      sequenceNumber,
+      unlockingBytecode:
+        'bytecode' in unlockingBytecode
+          ? unlockingBytecode.bytecode
+          : unlockingBytecode,
+    };
+  });
+
+  const scenario: Scenario = {
     data: fullCompilationData,
     program: {
       inputIndex: testedInputIndex,
-      sourceOutputs: compiledSourceOutputs,
+      sourceOutputs,
       transaction: {
-        inputs: compiledTransactionInputs,
+        inputs,
         locktime: extendedScenario.transaction.locktime,
-        outputs: compiledTransactionOutputs,
+        outputs,
         version: extendedScenario.transaction.version,
       },
     },
   };
+
+  return (
+    debug === true
+      ? { lockingCompilation, scenario, unlockingCompilation }
+      : scenario
+  ) as Debug extends true
+    ? ScenarioGenerationDebuggingResult<ProgramState>
+    : Scenario;
 };

@@ -1,7 +1,7 @@
 import test from 'ava';
 
 import type {
-  BtlScriptSegment,
+  CashAssemblyScriptSegment,
   IdentifierResolutionFunction,
   ResolvedScript,
 } from '../../lib';
@@ -40,7 +40,7 @@ test('resolveScriptSegment: error on unrecognized parse results', (t) => {
         value: 'unrecognized_expression',
       },
     ],
-  } as BtlScriptSegment;
+  } as CashAssemblyScriptSegment;
   t.deepEqual(
     resolveScriptSegment(segment, () => ({
       bytecode: Uint8Array.of(),

@@ -1,43 +1,43 @@
+/**
+ * An implementation of the built-in `Partial` utility that allows explicit
+ * `undefined` values when
+ * [exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes)
+ * is enabled.
+ */
 export type PartialExactOptional<T> = {
   [P in keyof T]?: T[P] | undefined;
 };
 
-type ImmutablePrimitive =
+export type ImmutablePrimitive =
   // eslint-disable-next-line @typescript-eslint/ban-types
   Function | boolean | number | string | null | undefined;
-type ImmutableArray<T> = readonly Immutable<T>[];
-type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
-type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
-type ImmutableObject<T> = {
+export type ImmutableArray<T> = readonly Immutable<T>[];
+export type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
+export type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
+export type ImmutableObject<T> = {
   readonly [K in keyof T]: Immutable<T[K]>;
 };
-type ImmutableUint8Array = ImmutableObject<Uint8Array> &
-  Iterable<number> &
-  Readonly<ArrayLike<number>>;
+// Derived from: https://www.growingwiththeweb.com/2020/10/typescript-readonly-typed-arrays.html
+export interface ImmutableUint8Array
+  extends Omit<Uint8Array, 'copyWithin' | 'fill' | 'reverse' | 'set' | 'sort'> {
+  readonly [n: number]: number;
+}
 
 /**
- * A deep-readonly utility type. Can be removed when a built-in alternative is
- * added to TypeScript. Derived from:
- * https://github.com/microsoft/TypeScript/issues/13923#issuecomment-557509399
+ * A deep-readonly utility type. Supports objects, `Array`s, `Uint8Array`s,
+ * `Map`s, and `Set`s.
+ *
+ * Note: `Uint8Array` is the only supported `TypedArray`.
  */
+// Derived from: https://github.com/microsoft/TypeScript/issues/13923#issuecomment-557509399
 export type Immutable<T> = T extends ImmutablePrimitive
   ? T
   : T extends (infer U)[]
   ? ImmutableArray<U>
+  : T extends Uint8Array
+  ? ImmutableUint8Array
   : T extends Map<infer K, infer V>
   ? ImmutableMap<K, V>
   : T extends Set<infer M>
   ? ImmutableSet<M>
-  : T extends Uint8Array
-  ? ImmutableUint8Array
   : ImmutableObject<T>;
-
-/*
- * const canBeAssigned: Immutable<Uint8Array> = Uint8Array.of(0, 0);
- * const canBeSpread = [...canBeAssigned];
- * const spreadResultWorks = Uint8Array.from(canBeSpread);
- * const functionRequiringIt = (bin: Immutable<Uint8Array>) => bin;
- * const canAcceptNonMutable = functionRequiringIt(Uint8Array.of());
- */
-
-// TODO: use or remove

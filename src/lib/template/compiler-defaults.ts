@@ -4,6 +4,11 @@ export enum CompilerDefaults {
    */
   defaultScenarioAddressIndex = 0,
   /**
+   * The value used for `["slot"]` and `["copy"]` locking or unlocking bytecode
+   * when generating a scenario and no `unlockingScriptId` is provided.
+   */
+  defaultScenarioBytecode = '',
+  /**
    *
    * The value of `currentBlockHeight` in the default authentication template
    * scenario. This is the height of the second mined block after the genesis
@@ -66,26 +71,5 @@ export enum CompilerDefaults {
    * bytecode script. See `AuthenticationTemplateScenarioData.bytecode` for
    * details.
    */
-  scenarioBytecodeScriptPrefix = '_scenario_',
-
-  /**
-   * The prefix used to identify the `check` script from a virtualized
-   * `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
-   */
-  virtualizedTestCheckScriptPrefix = '__virtualized_test_check_',
-
-  /**
-   * The prefix used to identify the concatenated tested and `check` script from
-   * a virtualized `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
-   */
-  virtualizedTestLockingScriptPrefix = '__virtualized_test_lock_',
-
-  /**
-   * The prefix used to identify the `setup` script from a virtualized
-   * `AuthenticationTemplateScriptTest`. For details, see
-   * `authenticationTemplateToCompilerConfigurationVirtualizedTests`.
-   */
-  virtualizedTestUnlockingScriptPrefix = '__virtualized_test_unlock_',
+  scenarioBytecodeScriptPrefix = '_scenario.',
 }

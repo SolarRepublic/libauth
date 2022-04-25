@@ -10,7 +10,7 @@ import type {
 
 import { compileScriptRaw } from './compile.js';
 import type {
-  BtlScriptSegment,
+  CashAssemblyScriptSegment,
   CompilationResultSuccess,
   IdentifierResolutionFunction,
   MarkedNode,
@@ -35,7 +35,7 @@ const removeNumericSeparators = (numericLiteral: string) =>
   numericLiteral.replace(/_/gu, '');
 
 export const resolveScriptSegment = (
-  segment: BtlScriptSegment,
+  segment: CashAssemblyScriptSegment,
   resolveIdentifiers: IdentifierResolutionFunction
 ): ResolvedScript => {
   // eslint-disable-next-line complexity

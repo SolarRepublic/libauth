@@ -6,7 +6,6 @@ import {
   bigIntToBinUint64LE,
   createTestAuthenticationProgramBCH,
   disassembleBytecodeBCH,
-  instantiateSha256,
   instantiateVirtualMachineBCH2021,
   stackItemIsTruthy,
   stringify,
@@ -93,9 +92,8 @@ const pendingTests = tests;
 const elide = (text: string, length: number) =>
   text.length > length ? `${text.slice(0, length)}...` : text;
 
-const vmNonStandardPromise = instantiateVirtualMachineBCH2021(false);
-const vmStandardPromise = instantiateVirtualMachineBCH2021(true);
-const sha256Promise = instantiateSha256();
+const vmNonStandard = instantiateVirtualMachineBCH2021(false);
+const vmStandard = instantiateVirtualMachineBCH2021(true);
 
 pendingTests.map((expectation) => {
   const description = `[script_tests] ${expectation.testIndex}/${
@@ -113,20 +111,16 @@ pendingTests.map((expectation) => {
   test(
     description,
     // eslint-disable-next-line complexity
-    async (t) => {
+    (t) => {
       const unlockingBytecode = assembleBitcoinSatoshiScript(
         expectation.unlockingBytecodeText
       );
       const lockingBytecode = assembleBitcoinSatoshiScript(
         expectation.lockingBytecodeText
       );
-      const vm = expectation.flags.useStrict
-        ? await vmStandardPromise
-        : await vmNonStandardPromise;
-      const sha256 = await sha256Promise;
+      const vm = expectation.flags.useStrict ? vmStandard : vmNonStandard;
       const program = createTestAuthenticationProgramBCH({
         lockingBytecode,
-        sha256,
         unlockingBytecode,
         valueSatoshis: bigIntToBinUint64LE(BigInt(expectation.valueSatoshis)),
       });

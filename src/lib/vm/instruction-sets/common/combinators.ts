@@ -1,6 +1,6 @@
 import type {
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateError,
-  AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
   InstructionSetOperationMapping,
   Operation,
@@ -25,11 +25,11 @@ export const incrementOperationCount =
   };
 
 export const conditionallyEvaluate =
-  <State extends AuthenticationProgramStateExecutionStack>(
+  <State extends AuthenticationProgramStateControlStack>(
     operation: Operation<State>
   ): Operation<State> =>
   (state: State) =>
-    state.executionStack.every((item) => item) ? operation(state) : state;
+    state.controlStack.every((item) => item) ? operation(state) : state;
 
 /**
  * Map a function over each operation in an `InstructionSet.operations` object,

@@ -27,10 +27,8 @@ export interface BaseConverter {
  *
  * @param alphabet - an ordered string which maps each index to a character,
  * e.g. `0123456789`.
- * @privateRemarks
- * Algorithm from the `base-x` implementation (which is derived from the
- * original Satoshi implementation): https://github.com/cryptocoinjs/base-x
  */
+// Algorithm from the `base-x` implementation (derived from the original Satoshi implementation): https://github.com/cryptocoinjs/base-x
 export const createBaseConverter = (
   alphabet: string
 ): BaseConversionError | BaseConverter => {

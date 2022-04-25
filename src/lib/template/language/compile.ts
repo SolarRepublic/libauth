@@ -1,5 +1,5 @@
 import type {
-  AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
   AuthenticationVirtualMachine,
@@ -54,8 +54,8 @@ export const describeExpectedInput = (expectedArray: string[]) => {
  * recommended API for direct compilation.
  */
 export const compileScriptContents = <
-  ProgramState extends AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+  ProgramState extends AuthenticationProgramStateControlStack &
+    AuthenticationProgramStateStack = AuthenticationProgramStateControlStack &
     AuthenticationProgramStateStack,
   CompilationContext = unknown
 >({
@@ -124,9 +124,9 @@ const emptyRange = () => ({
  * recommended API for direct compilation.
  */
 export const compileScriptRaw = <
-  ProgramState extends AuthenticationProgramStateExecutionStack &
+  ProgramState extends AuthenticationProgramStateControlStack &
     AuthenticationProgramStateMinimum &
-    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateStack = AuthenticationProgramStateControlStack &
     AuthenticationProgramStateMinimum &
     AuthenticationProgramStateStack,
   CompilationContext = unknown
@@ -179,7 +179,7 @@ export const compileScriptRaw = <
   });
 };
 
-export const compileScriptP2shLocking = <
+export const compileScriptP2sh20Locking = <
   ResolvedTransaction,
   AuthenticationProgram,
   ProgramState
@@ -198,17 +198,20 @@ export const compileScriptP2shLocking = <
 }) => {
   const compiler = createCompilerCommonSynchronous({
     scripts: {
-      p2shLocking: 'OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL',
+      p2sh20Locking: 'OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL',
     },
     variables: { lockingBytecode: { type: 'AddressData' } },
     vm,
   });
-  return compiler.generateBytecode('p2shLocking', {
-    bytecode: { lockingBytecode },
+  return compiler.generateBytecode({
+    data: {
+      bytecode: { lockingBytecode },
+    },
+    scriptId: 'p2sh20Locking',
   });
 };
 
-export const compileScriptP2shUnlocking = <ProgramState>({
+export const compileScriptP2sh20Unlocking = <ProgramState>({
   lockingBytecode,
   unlockingBytecode,
 }: {
@@ -217,15 +220,16 @@ export const compileScriptP2shUnlocking = <ProgramState>({
 }) => {
   const compiler = createCompilerCommonSynchronous({
     scripts: {
-      p2shUnlocking: 'unlockingBytecode <lockingBytecode>',
+      p2sh20Unlocking: 'unlockingBytecode <lockingBytecode>',
     },
     variables: {
       lockingBytecode: { type: 'AddressData' },
       unlockingBytecode: { type: 'AddressData' },
     },
   });
-  return compiler.generateBytecode('p2shUnlocking', {
-    bytecode: { lockingBytecode, unlockingBytecode },
+  return compiler.generateBytecode({
+    data: { bytecode: { lockingBytecode, unlockingBytecode } },
+    scriptId: 'p2sh20Unlocking',
   }) as CompilationResultSuccess<ProgramState>;
 };
 
@@ -238,9 +242,9 @@ export const compileScriptP2shUnlocking = <ProgramState>({
  */
 // eslint-disable-next-line complexity
 export const compileScript = <
-  ProgramState extends AuthenticationProgramStateExecutionStack &
+  ProgramState extends AuthenticationProgramStateControlStack &
     AuthenticationProgramStateMinimum &
-    AuthenticationProgramStateStack = AuthenticationProgramStateExecutionStack &
+    AuthenticationProgramStateStack = AuthenticationProgramStateControlStack &
     AuthenticationProgramStateMinimum &
     AuthenticationProgramStateStack,
   CompilationContext extends CompilationContextCommon = CompilationContextBCH
@@ -322,13 +326,13 @@ export const compileScript = <
     unlocks === undefined
       ? undefined
       : configuration.lockingScriptTypes?.[unlocks];
-  const isP2shUnlockingScript = unlockingScriptType === 'p2sh';
+  const isP2sh20UnlockingScript = unlockingScriptType === 'p2sh20';
 
   const lockingScriptType = configuration.lockingScriptTypes?.[scriptId];
-  const isP2shLockingScript = lockingScriptType === 'p2sh';
+  const isP2sh20LockingScript = lockingScriptType === 'p2sh20';
 
-  if (isP2shLockingScript) {
-    const transformedResult = compileScriptP2shLocking<
+  if (isP2sh20LockingScript) {
+    const transformedResult = compileScriptP2sh20Locking<
       unknown,
       unknown,
       ProgramState
@@ -342,11 +346,11 @@ export const compileScript = <
     return {
       ...rawResult,
       bytecode: transformedResult.bytecode,
-      transformed: 'p2sh-locking',
+      transformed: 'p2sh20-locking',
     };
   }
 
-  if (isP2shUnlockingScript) {
+  if (isP2sh20UnlockingScript) {
     const lockingBytecodeResult = compileScriptRaw<
       ProgramState,
       CompilationContext
@@ -359,14 +363,14 @@ export const compileScript = <
     if (!lockingBytecodeResult.success) {
       return lockingBytecodeResult;
     }
-    const transformedResult = compileScriptP2shUnlocking<ProgramState>({
+    const transformedResult = compileScriptP2sh20Unlocking<ProgramState>({
       lockingBytecode: lockingBytecodeResult.bytecode,
       unlockingBytecode: rawResult.bytecode,
     });
     return {
       ...rawResult,
       bytecode: transformedResult.bytecode,
-      transformed: 'p2sh-unlocking',
+      transformed: 'p2sh20-unlocking',
     };
   }
 

@@ -9,8 +9,7 @@
  * is a valid private key. This range is part of the definition of the
  * secp256k1 elliptic curve parameters.
  *
- * This method does not require the `Secp256k1` WASM implementation (available
- * via `instantiateSecp256k1`).
+ * This method does not require a `Secp256k1` implementation.
  */
 export const validateSecp256k1PrivateKey = (privateKey: Uint8Array) => {
   const privateKeyLength = 32;

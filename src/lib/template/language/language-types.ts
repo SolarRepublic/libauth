@@ -32,28 +32,28 @@ type StringSegmentType =
 
 type RecursiveSegmentType = 'Evaluation' | 'Push';
 
-interface BitauthTemplatingLanguageSegment extends MarkedNode {
+interface CashAssemblyLanguageSegment extends MarkedNode {
   name: string;
 }
 
-interface BtlStringSegment extends BitauthTemplatingLanguageSegment {
+interface CashAssemblyStringSegment extends CashAssemblyLanguageSegment {
   name: StringSegmentType;
   value: string;
 }
 
-interface BtlRecursiveSegment extends BitauthTemplatingLanguageSegment {
+interface CashAssemblyRecursiveSegment extends CashAssemblyLanguageSegment {
   name: RecursiveSegmentType;
-  value: BtlScriptSegment;
+  value: CashAssemblyScriptSegment;
 }
 
-export interface BtlScriptSegment extends BitauthTemplatingLanguageSegment {
+export interface CashAssemblyScriptSegment extends CashAssemblyLanguageSegment {
   name: 'Script';
-  value: (BtlRecursiveSegment | BtlStringSegment)[];
+  value: (CashAssemblyRecursiveSegment | CashAssemblyStringSegment)[];
 }
 
 export type ParseResult =
   | { expected: string[]; index: SourcePosition; status: false }
-  | { status: true; value: BtlScriptSegment };
+  | { status: true; value: CashAssemblyScriptSegment };
 
 interface ResolvedSegmentBase {
   range: Range;
@@ -245,7 +245,7 @@ export type IdentifierResolutionFunction = (identifier: string) =>
     });
 
 /**
- * The result of reducing a single BTL script node.
+ * The result of reducing a single CashAssembly script node.
  */
 export interface ScriptReductionTraceNode {
   bytecode: Uint8Array;
@@ -288,9 +288,9 @@ export interface TraceSample<ProgramState> {
 
 /**
  * A group of instructions which when read together are not malformed (contain
- * incomplete push instructions). For example, the BTL `0x03 'a' 'b' 'c'` would
- * be malformed if not evaluated together, since the `0x03` becomes
- * `OP_PUSHBYTES_3`, and the UTF8 literals compile to `0x616263`.
+ * incomplete push instructions). For example, the CashAssembly
+ * `0x03 'a' 'b' 'c'` would be malformed if not evaluated together, since the
+ * `0x03` becomes `OP_PUSHBYTES_3`, and the UTF8 literals compile to `0x616263`.
  */
 export interface InstructionAggregation {
   instructions: AuthenticationInstruction[];
@@ -358,7 +358,7 @@ export interface EvaluationSample<ProgramState> {
 }
 
 export interface CompilationResultResolve {
-  parse: BtlScriptSegment;
+  parse: CashAssemblyScriptSegment;
   resolve: ResolvedScript;
 }
 
@@ -450,15 +450,15 @@ export interface CompilationResultSuccess<ProgramState>
   /**
    * The transformation type of the resulting bytecode.
    *
-   * Set to `p2sh-locking` if the resulting bytecode was transformed into a P2SH
-   * locking script (`OP_HASH160 <$(<result> OP_HASH160)> OP_EQUAL`).
+   * Set to `p2sh20-locking` if the resulting bytecode was transformed into a
+   * P2SH20 locking script (`OP_HASH160 <$(<result> OP_HASH160)> OP_EQUAL`).
    *
-   * Set to `p2sh-unlocking` if the resulting bytecode was transformed into a
-   * P2SH unlocking script (`result <locking_script>`).
+   * Set to `p2sh20-unlocking` if the resulting bytecode was transformed into a
+   * P2SH20 unlocking script (`result <locking_script>`).
    *
    * This property is not defined if the result was not transformed.
    */
-  transformed?: 'p2sh-locking' | 'p2sh-unlocking';
+  transformed?: 'p2sh20-locking' | 'p2sh20-unlocking';
 }
 
 export type CompilationResult<

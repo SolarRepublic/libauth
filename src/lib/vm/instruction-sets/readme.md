@@ -31,4 +31,4 @@ Generally, Libauth only maintains support for active VM versions. For example, `
 - enabled Schnorr signature support in `OP_CHECKSIG` and `OP_CHECKDATASIG`
 - added a clean-stack exception for SegWit recovery
 
-The `BCH_2019_05` VM version was replaced without a network split by the `BCH_2019_11` upgrade, meaning `BCH_2019_05` is no longer in use by any public network. As such, relevant code paths, flags, and other VM-specific functionality for `BCH_2019_05` have been removed to simplify Libauth's code. (Of course, historical implementations will always remain available in previously-released versions of Libauth.)
+The `BCH_2019_05` VM version was replaced without a network split by the `BCH_2019_11` upgrade, meaning `BCH_2019_05` is no longer in use by any public network. As such, relevant code paths, flags, and other VM-specific functionality for `BCH_2019_05` have been removed to simplify Libauth's code. (Of course, historical implementations will always remain available in the Git history and previously-released versions of Libauth.)

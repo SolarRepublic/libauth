@@ -36,7 +36,7 @@ export enum AuthenticationErrorCommon {
   malformedPush = 'Program must be long enough to push the requested number of bytes.',
   malformedUnlockingBytecode = 'The provided unlocking bytecode is malformed.',
   negativeLocktime = 'Program called an OP_CHECKLOCKTIMEVERIFY or OP_CHECKSEQUENCEVERIFY operation with a negative locktime.',
-  nonEmptyExecutionStack = 'Program completed with a non-empty execution stack (missing `OP_ENDIF`).',
+  nonEmptyControlStack = 'Program completed with a non-empty control stack (missing `OP_ENDIF`).',
   nonMinimalPush = 'Push operations must use the smallest possible encoding.',
   nonNullSignatureFailure = 'Program failed a signature verification with a non-null signature (violating the "NULLFAIL" rule).',
   requiresCleanStack = 'Program completed with an unexpected number of items on the stack (must be exactly 1).',

@@ -3,7 +3,7 @@
  * bitcoin without patches to the Libauth codebase. As such, Libauth can
  * potentially include support for multiple implementations of a particular data
  * structure. By convention, Libauth identifies chain-specific implementations
- * with a currency symbol suffix.
+ * with an uppercase currency symbol suffix.
  *
  * For example, a "transaction" may include different properties depending on
  * the chain for which it is created. The type `TransactionBCH` specifies a
@@ -22,4 +22,8 @@ export {
   decodeTransactionUnsafeCommon as decodeTransactionUnsafe,
   OpcodesBCH as Opcodes,
   OpcodeDescriptionsBCH as OpcodeDescriptions,
+  disassembleBytecodeBTC2017 as disassembleBytecodeBTC,
+  disassembleBytecodeBCH2022 as disassembleBytecodeBCH,
+  compilerConfigurationToCompilerBCH as compilerConfigurationToCompiler,
+  createCompilerBCH as createCompiler,
 } from '../index.js';

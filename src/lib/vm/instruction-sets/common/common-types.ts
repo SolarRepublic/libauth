@@ -8,8 +8,8 @@ import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateAlternateStack,
   AuthenticationProgramStateCommon,
+  AuthenticationProgramStateControlStack,
   AuthenticationProgramStateError,
-  AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateInternalCommon,
   AuthenticationProgramStateStack,
   Operation,
@@ -29,8 +29,8 @@ export const ConsensusCommon = ConsensusBCH2022;
 
 export const undefinedOperation = conditionallyEvaluate(
   <
-    State extends AuthenticationProgramStateError &
-      AuthenticationProgramStateExecutionStack
+    State extends AuthenticationProgramStateControlStack &
+      AuthenticationProgramStateError
   >(
     state: State
   ) => applyError(AuthenticationErrorCommon.unknownOpcode, state)
@@ -71,7 +71,7 @@ export const createAuthenticationProgramInternalStateCommon = ({
   stack?: Uint8Array[];
 }): AuthenticationProgramStateInternalCommon => ({
   alternateStack: [],
-  executionStack: [],
+  controlStack: [],
   instructions,
   ip: 0,
   lastCodeSeparator: -1,
@@ -114,7 +114,7 @@ export const cloneAuthenticationProgramStateCommon = <
 ) => ({
   ...(state.error === undefined ? {} : { error: state.error }),
   alternateStack: cloneStack(state.alternateStack),
-  executionStack: state.executionStack.slice(),
+  controlStack: state.controlStack.slice(),
   instructions: state.instructions.map(cloneAuthenticationInstruction),
   ip: state.ip,
   lastCodeSeparator: state.lastCodeSeparator,
@@ -126,7 +126,7 @@ export const cloneAuthenticationProgramStateCommon = <
 });
 
 /**
- * A reduced version of `AuthenticationProgramCommon` in which some transaction
+ * A reduced version of `c` in which some transaction
  * input `unlockingBytecode` values may be undefined. This context is required
  * by the compiler to generate signatures.
  */

@@ -1,4 +1,4 @@
-/* eslint-disable camelcase, @typescript-eslint/naming-convention */
+/* eslint-disable camelcase */
 import test from 'ava';
 
 import type { AuthenticationTemplate } from '../lib';
@@ -6,7 +6,6 @@ import {
   authenticationTemplateP2pkh,
   authenticationTemplateP2pkhNonHd,
   authenticationTemplateToCompilerConfiguration,
-  authenticationTemplateToCompilerConfigurationVirtualizedTests,
   createCompilerCommonSynchronous,
   hexToBin,
   stringify,
@@ -16,7 +15,7 @@ import {
 test('createCompilerCommonSynchronous', (t) => {
   const compiler = createCompilerCommonSynchronous({
     scripts: {
-      lock: 'OP_DUP OP_HASH160 <some_public_key> OP_EQUALVERIFY OP_CHECKSIG',
+      lock: 'OP_DUP OP_HASH160 <some_public_key> OP_EQUALVERIFY OP_CHECKSIG',
     },
     variables: {
       some_public_key: {
@@ -24,10 +23,13 @@ test('createCompilerCommonSynchronous', (t) => {
       },
     },
   });
-  const resultLock = compiler.generateBytecode('lock', {
-    bytecode: {
-      some_public_key: hexToBin('15d16c84669ab46059313bf0747e781f1d13936d'),
+  const resultLock = compiler.generateBytecode({
+    data: {
+      bytecode: {
+        some_public_key: hexToBin('15d16c84669ab46059313bf0747e781f1d13936d'),
+      },
     },
+    scriptId: 'lock',
   });
   t.deepEqual(resultLock, {
     bytecode: hexToBin('76a91415d16c84669ab46059313bf0747e781f1d13936d88ac'),
@@ -101,34 +103,33 @@ test('authenticationTemplateToCompilerConfiguration: authenticationTemplateP2pkh
   );
 });
 
-test('authenticationTemplateToCompilerConfigurationVirtualizedTests', (t) => {
-  const configuration =
-    authenticationTemplateToCompilerConfigurationVirtualizedTests({
-      entities: {},
-      scripts: {
-        add_two: {
-          script: '<2> OP_ADD',
-          tests: [
-            { check: '<3> OP_EQUAL', setup: '<1>' },
-            { check: '<4> OP_EQUAL', setup: '<2>' },
-          ],
-        },
-        message: {
-          pushed: true,
-          script: '"abc"',
-          tests: [{ check: '<"abc"> OP_EQUAL' }],
-        },
-        push_three: {
-          script: '<3>',
-          tests: [{ check: '<3> OP_EQUAL' }],
-        },
-        unrelated: {
-          script: '<1>',
-        },
+test('authenticationTemplateToCompilerConfiguration: virtualized tests', (t) => {
+  const configuration = authenticationTemplateToCompilerConfiguration({
+    entities: {},
+    scripts: {
+      add_two: {
+        script: '<2> OP_ADD',
+        tests: [
+          { check: '<3> OP_EQUAL', setup: '<1>' },
+          { check: '<4> OP_EQUAL', setup: '<2>' },
+        ],
       },
-      supported: ['BCH_2019_05'],
-      version: 0,
-    } as AuthenticationTemplate);
+      message: {
+        pushed: true,
+        script: '"abc"',
+        tests: [{ check: '<"abc"> OP_EQUAL' }],
+      },
+      push_three: {
+        script: '<3>',
+        tests: [{ check: '<3> OP_EQUAL' }],
+      },
+      unrelated: {
+        script: '<1>',
+      },
+    },
+    supported: ['BCH_2019_05'],
+    version: 0,
+  } as AuthenticationTemplate);
 
   t.deepEqual(
     configuration,
@@ -136,37 +137,29 @@ test('authenticationTemplateToCompilerConfigurationVirtualizedTests', (t) => {
       entityOwnership: {},
       lockingScriptTypes: {},
       scripts: {
-        __virtualized_test_check_add_two_0: '<3> OP_EQUAL',
-        __virtualized_test_check_add_two_1: '<4> OP_EQUAL',
-        __virtualized_test_check_message_0: '<"abc"> OP_EQUAL',
-        __virtualized_test_check_push_three_0: '<3> OP_EQUAL',
-        __virtualized_test_lock_add_two_0:
-          'add_two __virtualized_test_check_add_two_0',
-        __virtualized_test_lock_add_two_1:
-          'add_two __virtualized_test_check_add_two_1',
-        __virtualized_test_lock_message_0:
-          '<message> __virtualized_test_check_message_0',
-        __virtualized_test_lock_push_three_0:
-          'push_three __virtualized_test_check_push_three_0',
-        __virtualized_test_unlock_add_two_0: '<1>',
-        __virtualized_test_unlock_add_two_1: '<2>',
-        __virtualized_test_unlock_message_0: '',
-        __virtualized_test_unlock_push_three_0: '',
         add_two: '<2> OP_ADD',
+        'add_two.0.check': '<3> OP_EQUAL',
+        'add_two.0.lock': 'add_two add_two.0.check',
+        'add_two.0.unlock': '<1>',
+        'add_two.1.check': '<4> OP_EQUAL',
+        'add_two.1.lock': 'add_two add_two.1.check',
+        'add_two.1.unlock': '<2>',
         message: '"abc"',
+        'message.0.check': '<"abc"> OP_EQUAL',
+        'message.0.lock': '<message> message.0.check',
+        'message.0.unlock': '',
         push_three: '<3>',
+        'push_three.0.check': '<3> OP_EQUAL',
+        'push_three.0.lock': 'push_three push_three.0.check',
+        'push_three.0.unlock': '',
         unrelated: '<1>',
       },
       unlockingScriptTimeLockTypes: {},
       unlockingScripts: {
-        __virtualized_test_unlock_add_two_0:
-          '__virtualized_test_lock_add_two_0',
-        __virtualized_test_unlock_add_two_1:
-          '__virtualized_test_lock_add_two_1',
-        __virtualized_test_unlock_message_0:
-          '__virtualized_test_lock_message_0',
-        __virtualized_test_unlock_push_three_0:
-          '__virtualized_test_lock_push_three_0',
+        'add_two.0.unlock': 'add_two.0.lock',
+        'add_two.1.unlock': 'add_two.1.lock',
+        'message.0.unlock': 'message.0.lock',
+        'push_three.0.unlock': 'push_three.0.lock',
       },
       variables: {},
     },

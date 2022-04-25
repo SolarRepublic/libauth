@@ -12,6 +12,7 @@
     "sourceMap": true,
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
     "resolveJsonModule": true,
+    "allowJs": true /* ajv validators are pre-compiled to JS */,
 
     "strict": true /* Enable all strict type-checking options. */,
 

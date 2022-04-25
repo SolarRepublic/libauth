@@ -1,4 +1,3 @@
-import type { Ripemd160, Secp256k1, Sha1, Sha256 } from '../../../../lib';
 import type { InstructionSet } from '../../../vm';
 import type {
   AuthenticationProgramBCH,
@@ -8,6 +7,7 @@ import type {
 import {
   conditionallyEvaluate,
   createInstructionSetBCH2022,
+  incrementOperationCount,
   mapOverOperations,
   OpcodesBCH,
 } from '../../instruction-sets.js';
@@ -49,45 +49,21 @@ import {
  * enabled. Transactions which fail these rules are often called "non-standard"
  * and can technically be included by miners in valid blocks, but most network
  * nodes will refuse to relay them. (Default: `true`)
- * @param sha1 - a Sha1 implementation
- * @param sha256 - a Sha256 implementation
- * @param ripemd160 - a Ripemd160 implementation
- * @param secp256k1 - a Secp256k1 implementation
  */
-export const createInstructionSetBCH2021 = ({
-  ripemd160,
-  secp256k1,
-  sha1,
-  sha256,
-  standard = true,
-}: {
-  ripemd160: { hash: Ripemd160['hash'] };
-  secp256k1: {
-    verifySignatureSchnorr: Secp256k1['verifySignatureSchnorr'];
-    verifySignatureDERLowS: Secp256k1['verifySignatureDERLowS'];
-  };
-  sha1: { hash: Sha1['hash'] };
-  sha256: { hash: Sha256['hash'] };
-  standard?: boolean;
-}): InstructionSet<
+export const createInstructionSetBCH2021 = (
+  standard = true
+): InstructionSet<
   ResolvedTransactionBCH,
   AuthenticationProgramBCH,
   AuthenticationProgramStateBCH
 > => {
-  const instructionSet = createInstructionSetBCH2022({
-    ripemd160,
-    secp256k1,
-    sha1,
-    sha256,
-    standard,
-  });
-
+  const instructionSet = createInstructionSetBCH2022(standard);
   return {
     ...instructionSet,
     operations: {
       ...instructionSet.operations,
       ...mapOverOperations<AuthenticationProgramStateBCH>(
-        [conditionallyEvaluate],
+        [conditionallyEvaluate, incrementOperationCount],
         {
           [OpcodesBCH.OP_PICK]: opPick4Byte,
           [OpcodesBCH.OP_ROLL]: opRoll4Byte,

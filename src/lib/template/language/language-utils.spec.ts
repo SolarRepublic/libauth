@@ -4,7 +4,7 @@ import test from 'ava';
 import type { Range } from '../../lib';
 import {
   AuthenticationErrorCommon,
-  compileBtl,
+  compileCashAssembly,
   containsRange,
   createAuthenticationProgramEvaluationCommon,
   createCompilerBCH,
@@ -77,17 +77,17 @@ test('containsRange', (t) => {
   );
 });
 
-test('compileBtl', (t) => {
-  const successful = compileBtl('<0x010203>');
+test('compileCashAssembly', (t) => {
+  const successful = compileCashAssembly('<0x010203>');
   t.deepEqual(
     successful,
     hexToBin('03010203'),
     stringifyTestVector(successful)
   );
-  const failed = compileBtl('<bad>');
+  const failed = compileCashAssembly('<bad>');
   t.deepEqual(
     failed,
-    'BTL compilation error: [1, 2]: Unknown identifier "bad".',
+    'CashAssembly compilation error: [1, 2]: Unknown identifier "bad".',
     stringifyTestVector(failed)
   );
 });
@@ -101,11 +101,11 @@ test('extractBytecodeResolutions', (t) => {
     variables: { var: { type: 'AddressData' }, var2: { type: 'AddressData' } },
   });
 
-  const compiled = compiler.generateBytecode(
-    't',
-    { bytecode: { var: Uint8Array.of(0) } },
-    true
-  );
+  const compiled = compiler.generateBytecode({
+    data: { bytecode: { var: Uint8Array.of(0) } },
+    debug: true,
+    scriptId: 't',
+  });
 
   if (!('resolve' in compiled)) {
     t.fail(stringifyTestVector(compiled));
@@ -217,8 +217,8 @@ OP_ELSE
     OP_ENDIF
 OP_ENDIF`;
 
-const vmPromise = instantiateVirtualMachineBCH();
-const compilerPromise = createCompilerBCH({
+const vm = instantiateVirtualMachineBCH();
+const compiler = createCompilerBCH({
   scripts: {
     docs: '0x00 0x01 0xab01 0xcd9300 $(OP_3 <0x00> OP_SWAP OP_CAT) 0x010203',
     /**
@@ -268,10 +268,12 @@ const compilerPromise = createCompilerBCH({
   },
 });
 
-test.failing('extractEvaluationSamples: documentation example', async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('docs', {}, true);
+test.failing('extractEvaluationSamples: documentation example', (t) => {
+  const result = compiler.generateBytecode({
+    data: {},
+    debug: true,
+    scriptId: 'docs',
+  });
   if (!result.success) {
     t.fail(stringifyErrors(result.errors));
     return;
@@ -409,7 +411,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
         trace: [
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [],
             ip: 0,
             lastCodeSeparator: -1,
@@ -421,7 +423,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -447,7 +449,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -473,7 +475,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -499,7 +501,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -525,7 +527,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -551,7 +553,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
           },
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 opcode: 83,
@@ -595,7 +597,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
     [
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
@@ -607,7 +609,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -647,7 +649,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -687,7 +689,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -727,7 +729,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -767,7 +769,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -807,7 +809,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -847,7 +849,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -887,7 +889,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -933,7 +935,7 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1046,10 +1048,12 @@ test.failing('extractEvaluationSamples: documentation example', async (t) => {
   });
 });
 
-test('extractEvaluationSamples: error in initial validation', async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('nonPushingOpcodeUnlock', {}, true);
+test('extractEvaluationSamples: error in initial validation', (t) => {
+  const result = compiler.generateBytecode({
+    data: {},
+    debug: true,
+    scriptId: 'nonPushingOpcodeUnlock',
+  });
   if (!result.success) {
     t.fail(stringifyErrors(result.errors));
     return;
@@ -1121,8 +1125,8 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
     [
       {
         alternateStack: [],
+        controlStack: [],
         error: 'Unlocking bytecode may contain only push operations.',
-        executionStack: [],
         instructions: [
           {
             opcode: 81,
@@ -1163,10 +1167,12 @@ test('extractEvaluationSamples: error in initial validation', async (t) => {
 
 test.failing(
   "extractEvaluationSamples: node closes an open sample, then errors before the node's last instruction",
-  async (t) => {
-    const compiler = await compilerPromise;
-    const vm = await vmPromise;
-    const result = compiler.generateBytecode('error1', {}, true);
+  (t) => {
+    const result = compiler.generateBytecode({
+      data: {},
+      debug: true,
+      scriptId: 'error1',
+    });
     if (!result.success) {
       t.fail(stringifyErrors(result.errors));
       return;
@@ -1264,7 +1270,7 @@ test.failing(
           trace: [
             {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [],
               ip: 0,
               lastCodeSeparator: -1,
@@ -1276,7 +1282,7 @@ test.failing(
             },
             {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('ab6a00'),
@@ -1293,7 +1299,7 @@ test.failing(
             },
             {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('ab6a00'),
@@ -1310,7 +1316,7 @@ test.failing(
             },
             {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('ab6a00'),
@@ -1336,7 +1342,7 @@ test.failing(
       [
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [],
           ip: 0,
           lastCodeSeparator: -1,
@@ -1348,7 +1354,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin('ab'),
@@ -1372,7 +1378,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin('ab'),
@@ -1396,8 +1402,8 @@ test.failing(
         },
         {
           alternateStack: [],
+          controlStack: [],
           error: AuthenticationErrorCommon.calledReturn,
-          executionStack: [],
           instructions: [
             {
               data: hexToBin('ab'),
@@ -1421,8 +1427,8 @@ test.failing(
         },
         {
           alternateStack: [],
+          controlStack: [],
           error: AuthenticationErrorCommon.calledReturn,
-          executionStack: [],
           instructions: [
             {
               data: hexToBin('ab'),
@@ -1485,10 +1491,12 @@ test.failing(
   }
 );
 
-test('extractEvaluationSamples: node which closes an open sample with an error', async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('error2', {}, true);
+test('extractEvaluationSamples: node which closes an open sample with an error', (t) => {
+  const result = compiler.generateBytecode({
+    data: {},
+    debug: true,
+    scriptId: 'error2',
+  });
   if (!result.success) {
     t.fail(stringifyErrors(result.errors));
     return;
@@ -1535,7 +1543,7 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
     [
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
@@ -1547,7 +1555,7 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1570,7 +1578,7 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1593,8 +1601,8 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
       },
       {
         alternateStack: [],
+        controlStack: [],
         error: AuthenticationErrorCommon.exceedsMaximumPush,
-        executionStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1617,8 +1625,8 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
       },
       {
         alternateStack: [],
+        controlStack: [],
         error: AuthenticationErrorCommon.exceedsMaximumPush,
-        executionStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1680,10 +1688,12 @@ test('extractEvaluationSamples: node which closes an open sample with an error',
   });
 });
 
-test('extractEvaluationSamples: error3 – error occurs, so final state is dropped', async (t) => {
-  const compiler = await compilerPromise;
-  const vm = await vmPromise;
-  const result = compiler.generateBytecode('error3', {}, true);
+test('extractEvaluationSamples: error3 – error occurs, so final state is dropped', (t) => {
+  const result = compiler.generateBytecode({
+    data: {},
+    debug: true,
+    scriptId: 'error3',
+  });
   if (!result.success) {
     t.fail(stringifyErrors(result.errors));
     return;
@@ -1746,7 +1756,7 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
     [
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [],
         ip: 0,
         lastCodeSeparator: -1,
@@ -1758,7 +1768,7 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1786,7 +1796,7 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
       },
       {
         alternateStack: [],
-        executionStack: [],
+        controlStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1814,8 +1824,8 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
       },
       {
         alternateStack: [],
+        controlStack: [],
         error: 'Program called an OP_RETURN operation.',
-        executionStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1843,8 +1853,8 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
       },
       {
         alternateStack: [],
+        controlStack: [],
         error: 'Program called an OP_RETURN operation.',
-        executionStack: [],
         instructions: [
           {
             data: hexToBin(''),
@@ -1905,10 +1915,12 @@ test('extractEvaluationSamples: error3 – error occurs, so final state is dropp
 
 test.failing(
   'extractEvaluationSamplesRecursive: complex, deeply-nested script with irregular spacing',
-  async (t) => {
-    const compiler = await compilerPromise;
-    const vm = await vmPromise;
-    const result = compiler.generateBytecode('nested', {}, true);
+  (t) => {
+    const result = compiler.generateBytecode({
+      data: {},
+      debug: true,
+      scriptId: 'nested',
+    });
     if (!result.success) {
       t.fail(stringifyErrors(result.errors));
       return;
@@ -2042,7 +2054,7 @@ test.failing(
                             trace: [
                               {
                                 alternateStack: [],
-                                executionStack: [],
+                                controlStack: [],
                                 instructions: [],
                                 ip: 0,
                                 lastCodeSeparator: -1,
@@ -2054,7 +2066,7 @@ test.failing(
                               },
                               {
                                 alternateStack: [],
-                                executionStack: [],
+                                controlStack: [],
                                 instructions: [
                                   {
                                     data: hexToBin('51'),
@@ -2071,7 +2083,7 @@ test.failing(
                               },
                               {
                                 alternateStack: [],
-                                executionStack: [],
+                                controlStack: [],
                                 instructions: [
                                   {
                                     data: hexToBin('51'),
@@ -2088,7 +2100,7 @@ test.failing(
                               },
                               {
                                 alternateStack: [],
-                                executionStack: [],
+                                controlStack: [],
                                 instructions: [
                                   {
                                     data: hexToBin('51'),
@@ -2128,7 +2140,7 @@ test.failing(
                       trace: [
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [],
                           ip: 0,
                           lastCodeSeparator: -1,
@@ -2140,7 +2152,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               opcode: 81,
@@ -2162,7 +2174,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               opcode: 81,
@@ -2184,7 +2196,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               opcode: 81,
@@ -2206,7 +2218,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               opcode: 81,
@@ -2228,7 +2240,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               opcode: 81,
@@ -2301,7 +2313,7 @@ test.failing(
                       trace: [
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [],
                           ip: 0,
                           lastCodeSeparator: -1,
@@ -2313,7 +2325,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('616263'),
@@ -2330,7 +2342,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('616263'),
@@ -2347,7 +2359,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('616263'),
@@ -2387,7 +2399,7 @@ test.failing(
                 trace: [
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [],
                     ip: 0,
                     lastCodeSeparator: -1,
@@ -2399,7 +2411,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2430,7 +2442,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2461,7 +2473,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2492,7 +2504,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2523,7 +2535,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2554,7 +2566,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2585,7 +2597,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2742,7 +2754,7 @@ test.failing(
                       trace: [
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [],
                           ip: 0,
                           lastCodeSeparator: -1,
@@ -2754,7 +2766,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('7e'),
@@ -2771,7 +2783,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('7e'),
@@ -2788,7 +2800,7 @@ test.failing(
                         },
                         {
                           alternateStack: [],
-                          executionStack: [],
+                          controlStack: [],
                           instructions: [
                             {
                               data: hexToBin('7e'),
@@ -2810,7 +2822,7 @@ test.failing(
                 trace: [
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [],
                     ip: 0,
                     lastCodeSeparator: -1,
@@ -2822,7 +2834,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2846,7 +2858,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2870,7 +2882,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2894,7 +2906,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2918,7 +2930,7 @@ test.failing(
                   },
                   {
                     alternateStack: [],
-                    executionStack: [],
+                    controlStack: [],
                     instructions: [
                       {
                         data: hexToBin(''),
@@ -2960,7 +2972,7 @@ test.failing(
       [
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [],
           ip: 0,
           lastCodeSeparator: -1,
@@ -2972,7 +2984,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin(''),
@@ -2993,7 +3005,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin(''),
@@ -3014,7 +3026,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin(''),
@@ -3035,7 +3047,7 @@ test.failing(
         },
         {
           alternateStack: [],
-          executionStack: [],
+          controlStack: [],
           instructions: [
             {
               data: hexToBin(''),
@@ -3078,7 +3090,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3118,7 +3130,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3154,7 +3166,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3203,7 +3215,7 @@ test.failing(
                 },
                 state: {
                   alternateStack: [],
-                  executionStack: [],
+                  controlStack: [],
                   instructions: [
                     {
                       data: hexToBin(''),
@@ -3242,7 +3254,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3288,7 +3300,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   opcode: 81,
@@ -3325,7 +3337,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('51'),
@@ -3361,7 +3373,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('51'),
@@ -3396,7 +3408,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   opcode: 81,
@@ -3436,7 +3448,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   opcode: 81,
@@ -3476,7 +3488,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   opcode: 81,
@@ -3513,7 +3525,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('616263'),
@@ -3549,7 +3561,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('616263'),
@@ -3585,7 +3597,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3634,7 +3646,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3683,7 +3695,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3729,7 +3741,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3772,7 +3784,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3815,7 +3827,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3854,7 +3866,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('7e'),
@@ -3890,7 +3902,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin('7e'),
@@ -3925,7 +3937,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3968,7 +3980,7 @@ test.failing(
             },
             state: {
               alternateStack: [],
-              executionStack: [],
+              controlStack: [],
               instructions: [
                 {
                   data: hexToBin(''),
@@ -3992,7 +4004,7 @@ test.failing(
         unmatchedStates: [
           {
             alternateStack: [],
-            executionStack: [],
+            controlStack: [],
             instructions: [
               {
                 data: hexToBin(''),
@@ -4020,10 +4032,12 @@ test.failing(
 
 const extractUnexecutedRangesMacro = test.macro<[string, Range[], boolean?]>({
   // eslint-disable-next-line max-params
-  exec: async (t, scriptId, ranges, specifyStart) => {
-    const compiler = await compilerPromise;
-    const vm = await vmPromise;
-    const result = compiler.generateBytecode(scriptId, {}, true);
+  exec: (t, scriptId, ranges, specifyStart) => {
+    const result = compiler.generateBytecode({
+      data: {},
+      debug: true,
+      scriptId,
+    });
     if (!result.success) {
       t.fail(stringifyErrors(result.errors));
       return;
