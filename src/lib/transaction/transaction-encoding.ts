@@ -1,41 +1,62 @@
+import { sha256 as internalSha256 } from '../crypto/default-crypto-instances.js';
 import type { Sha256 } from '../lib';
 import {
-  bigIntToBitcoinVarInt,
+  bigIntToVarInt,
   binToHex,
   binToNumberUint32LE,
+  decodeVarInt,
   flattenBinArray,
   numberToBinUint32LE,
-  readBitcoinVarInt,
 } from '../lib.js';
 
 import type { Input, Output, TransactionCommon } from './transaction';
 
 /**
- * @param bin - the raw transaction from which to read the input
- * @param offset - the offset at which the input begins
+ * Encode a single input for inclusion in an encoded transaction.
+ *
+ * @param input - the input to encode
  */
-export const readTransactionInput = (bin: Uint8Array, offset: number) => {
+export const encodeTransactionInput = (input: Input) =>
+  flattenBinArray([
+    input.outpointTransactionHash.slice().reverse(),
+    numberToBinUint32LE(input.outpointIndex),
+    bigIntToVarInt(BigInt(input.unlockingBytecode.length)),
+    input.unlockingBytecode,
+    numberToBinUint32LE(input.sequenceNumber),
+  ]);
+
+/**
+ * Decode a transaction {@link Input} from a Uint8Array containing the encoded
+ * transaction input beginning at `index`.
+ *
+ * Note: this method throws runtime errors when attempting to decode an
+ * improperly-encoded input.
+ *
+ * @param bin - the raw transaction from which to read the input
+ * @param index - the index at which the input begins
+ */
+export const decodeTransactionInputUnsafe = (
+  bin: Uint8Array,
+  index: number
+) => {
   const sha256HashBytes = 32;
   const uint32Bytes = 4;
-  const offsetAfterTxHash = offset + sha256HashBytes;
-  const outpointTransactionHash = bin
-    .slice(offset, offsetAfterTxHash)
-    .reverse();
-  const offsetAfterOutpointIndex = offsetAfterTxHash + uint32Bytes;
+  const indexAfterTxHash = index + sha256HashBytes;
+  const outpointTransactionHash = bin.slice(index, indexAfterTxHash).reverse();
+  const indexAfterOutpointIndex = indexAfterTxHash + uint32Bytes;
   const outpointIndex = binToNumberUint32LE(
-    bin.subarray(offsetAfterTxHash, offsetAfterOutpointIndex)
+    bin.subarray(indexAfterTxHash, indexAfterOutpointIndex)
   );
-  const { nextOffset: offsetAfterBytecodeLength, value: bytecodeLength } =
-    readBitcoinVarInt(bin, offsetAfterOutpointIndex);
-  const offsetAfterBytecode =
-    offsetAfterBytecodeLength + Number(bytecodeLength);
+  const { nextIndex: indexAfterBytecodeLength, value: bytecodeLength } =
+    decodeVarInt(bin, indexAfterOutpointIndex);
+  const indexAfterBytecode = indexAfterBytecodeLength + Number(bytecodeLength);
   const unlockingBytecode = bin.slice(
-    offsetAfterBytecodeLength,
-    offsetAfterBytecode
+    indexAfterBytecodeLength,
+    indexAfterBytecode
   );
-  const nextOffset = offsetAfterBytecode + uint32Bytes;
+  const nextIndex = indexAfterBytecode + uint32Bytes;
   const sequenceNumber = binToNumberUint32LE(
-    bin.subarray(offsetAfterBytecode, nextOffset)
+    bin.subarray(indexAfterBytecode, nextIndex)
   );
   return {
     input: {
@@ -44,61 +65,124 @@ export const readTransactionInput = (bin: Uint8Array, offset: number) => {
       sequenceNumber,
       unlockingBytecode,
     },
-    nextOffset,
+    nextIndex,
   };
 };
 
 /**
- * Encode a single input for inclusion in an encoded transaction.
+ * Encode a set of {@link Input}s for inclusion in an encoded transaction
+ * including the prefixed number of inputs.
  *
- * @param output - the input to encode
- */
-export const encodeInput = (input: Input) =>
-  flattenBinArray([
-    input.outpointTransactionHash.slice().reverse(),
-    numberToBinUint32LE(input.outpointIndex),
-    bigIntToBitcoinVarInt(BigInt(input.unlockingBytecode.length)),
-    input.unlockingBytecode,
-    numberToBinUint32LE(input.sequenceNumber),
-  ]);
-
-/**
- * Encode a set of inputs for inclusion in an encoded transaction including
- * the prefixed number of inputs.
- *
- * Format: [BitcoinVarInt: input count] [encoded inputs]
+ * Format: [VarInt: input count] [encoded inputs]
  *
  * @param inputs - the set of inputs to encode
  */
-export const encodeInputs = (inputs: readonly Input[]) =>
+export const encodeTransactionInputs = (inputs: readonly Input[]) =>
   flattenBinArray([
-    bigIntToBitcoinVarInt(BigInt(inputs.length)),
-    ...inputs.map(encodeInput),
+    bigIntToVarInt(BigInt(inputs.length)),
+    ...inputs.map(encodeTransactionInput),
   ]);
 
 /**
- * Read a single transaction output from an encoded transaction.
+ * Decode an array of items following a VarInt (see {@link decodeVarInt}). A
+ * VarInt will be read beginning at `index`, and then the encoded number of
+ * items will be decoded using `itemDecoder`.
+ *
+ * Note: the decoder produced by this method throws runtime errors when
+ * attempting to decode improperly-encoded items.
+ *
+ * @param itemDecoder - a function used to decode each encoded item
+ */
+export const createVarIntItemUnsafeDecoder =
+  <Item, Key extends string, KeyPlural extends string>(
+    key: Key,
+    itemDecoder: (
+      bin: Uint8Array,
+      index: number
+    ) => { [key in Key]: Item } & { nextIndex: number },
+    keyPlural: KeyPlural
+  ) =>
+  (bin: Uint8Array, index: number) => {
+    const { nextIndex: indexAfterItemCount, value: itemCount } = decodeVarInt(
+      bin,
+      index
+    );
+    // eslint-disable-next-line functional/no-let
+    let cursor = indexAfterItemCount;
+    const items = [];
+    // eslint-disable-next-line functional/no-let, functional/no-loop-statement, no-plusplus
+    for (let i = 0; i < Number(itemCount); i++) {
+      // const { [key]: item, nextIndex } = itemDecoder(bin, cursor);
+      const result = itemDecoder(bin, cursor);
+      const item = result[key];
+      // eslint-disable-next-line functional/no-expression-statement
+      cursor = result.nextIndex;
+      // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
+      items.push(item);
+    }
+    return { [keyPlural]: items, nextIndex: cursor } as {
+      [key in KeyPlural]: Item[];
+    } & { nextIndex: number };
+  };
+
+/**
+ * Decode a set of transaction {@link Input}s from a Uint8Array beginning at
+ * `index`. A VarInt will be read beginning at `index`, and then the encoded
+ * number of transaction inputs will be decoded and returned.
+ *
+ * Note: this method throws runtime errors when attempting to decode
+ * improperly-encoded sets of inputs.
+ *
+ * @param bin - the raw transaction from which to read the inputs
+ * @param index - the index at which the VarInt count begins
+ */
+export const decodeTransactionInputsUnsafe = createVarIntItemUnsafeDecoder(
+  'input',
+  decodeTransactionInputUnsafe,
+  'inputs'
+) as (
+  bin: Uint8Array,
+  index: number
+) => {
+  inputs: {
+    outpointIndex: number;
+    outpointTransactionHash: Uint8Array;
+    sequenceNumber: number;
+    unlockingBytecode: Uint8Array;
+  }[];
+  nextIndex: number;
+};
+
+/**
+ * Decode a transaction {@link Output} from a Uint8Array containing the encoded
+ * transaction output beginning at `index`.
+ *
+ * Note: this method throws runtime errors when attempting to decode an
+ * improperly-encoded output.
  *
  * @param bin - the raw transaction from which to read the output
- * @param offset - the offset at which the output begins
+ * @param index - the index at which the output begins
  */
-export const readTransactionOutput = (bin: Uint8Array, offset: number) => {
+export const decodeTransactionOutputUnsafe = (
+  bin: Uint8Array,
+  index: number
+) => {
   const uint64Bytes = 8;
-  const offsetAfterSatoshis = offset + uint64Bytes;
-  const valueSatoshis = bin.slice(offset, offsetAfterSatoshis);
-  const { nextOffset: offsetAfterScriptLength, value } = readBitcoinVarInt(
+  const indexAfterSatoshis = index + uint64Bytes;
+  const valueSatoshis = bin.slice(index, indexAfterSatoshis);
+  const { nextIndex: indexAfterScriptLength, value } = decodeVarInt(
     bin,
-    offsetAfterSatoshis
+    indexAfterSatoshis
   );
   const bytecodeLength = Number(value);
-  const nextOffset = offsetAfterScriptLength + bytecodeLength;
+  const nextIndex = indexAfterScriptLength + bytecodeLength;
   const lockingBytecode =
     bytecodeLength === 0
       ? new Uint8Array()
-      : bin.slice(offsetAfterScriptLength, nextOffset);
+      : bin.slice(indexAfterScriptLength, nextIndex);
 
   return {
-    nextOffset,
+    nextIndex,
     output: {
       lockingBytecode,
       valueSatoshis,
@@ -107,29 +191,56 @@ export const readTransactionOutput = (bin: Uint8Array, offset: number) => {
 };
 
 /**
- * Encode a single output for inclusion in an encoded transaction.
+ * Encode a single {@link Output} for inclusion in an encoded transaction.
  *
  * @param output - the output to encode
  */
-export const encodeOutput = (output: Output) =>
+export const encodeTransactionOutput = (output: Output) =>
   flattenBinArray([
     output.valueSatoshis,
-    bigIntToBitcoinVarInt(BigInt(output.lockingBytecode.length)),
+    bigIntToVarInt(BigInt(output.lockingBytecode.length)),
     output.lockingBytecode,
   ]);
 
 /**
- * Encode a set of outputs for inclusion in an encoded transaction
- * including the prefixed number of outputs.
+ * Decode a set of transaction {@link Output}s from a Uint8Array beginning at
+ * `index`. A VarInt will be read beginning at `index`, and then the encoded
+ * number of transaction outputs will be decoded and returned.
  *
- * Format: [BitcoinVarInt: output count] [encoded outputs]
+ * Note: this method throws runtime errors when attempting to decode
+ * improperly-encoded sets of outputs.
+ *
+ * @param bin - the raw transaction from which to read the outputs
+ * @param index - the index at which the VarInt count begins
+ */
+export const decodeTransactionOutputsUnsafe = createVarIntItemUnsafeDecoder(
+  'output',
+  decodeTransactionOutputUnsafe,
+  'outputs'
+) as (
+  bin: Uint8Array,
+  index: number
+) => {
+  outputs: {
+    lockingBytecode: Uint8Array;
+    valueSatoshis: Uint8Array;
+  }[];
+  nextIndex: number;
+};
+
+/**
+ * Encode a set of {@link Output}s for inclusion in an encoded transaction
+ * including the prefixed number of outputs. Note, this encoding differs from
+ * {@link encodeTransactionOutputsForSigning} (used for signing serializations).
+ *
+ * Format: [VarInt: output count] [encoded outputs]
  *
  * @param outputs - the set of outputs to encode
  */
-export const encodeOutputsForTransaction = (outputs: readonly Output[]) =>
+export const encodeTransactionOutputs = (outputs: readonly Output[]) =>
   flattenBinArray([
-    bigIntToBitcoinVarInt(BigInt(outputs.length)),
-    ...outputs.map(encodeOutput),
+    bigIntToVarInt(BigInt(outputs.length)),
+    ...outputs.map(encodeTransactionOutput),
   ]);
 
 /**
@@ -137,7 +248,7 @@ export const encodeOutputsForTransaction = (outputs: readonly Output[]) =>
  *
  * Note: this method throws runtime errors when attempting to decode messages
  * which do not properly follow the transaction format. If the input is
- * untrusted, use `decodeTransaction`.
+ * untrusted, use {@link decodeTransaction}.
  *
  * @param bin - the raw message to decode
  */
@@ -146,35 +257,15 @@ export const decodeTransactionUnsafeCommon = (
 ): TransactionCommon => {
   const uint32Bytes = 4;
   const version = binToNumberUint32LE(bin.subarray(0, uint32Bytes));
-  const offsetAfterVersion = uint32Bytes;
-  const { nextOffset: offsetAfterInputCount, value: inputCount } =
-    readBitcoinVarInt(bin, offsetAfterVersion);
-  // eslint-disable-next-line functional/no-let
-  let cursor = offsetAfterInputCount;
-  const inputs = [];
-  // eslint-disable-next-line functional/no-let, functional/no-loop-statement, no-plusplus
-  for (let i = 0; i < Number(inputCount); i++) {
-    const { input, nextOffset } = readTransactionInput(bin, cursor);
-    // eslint-disable-next-line functional/no-expression-statement
-    cursor = nextOffset;
-    // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    inputs.push(input);
-  }
-  const { nextOffset: offsetAfterOutputCount, value: outputCount } =
-    readBitcoinVarInt(bin, cursor);
-  // eslint-disable-next-line functional/no-expression-statement
-  cursor = offsetAfterOutputCount;
-  const outputs = [];
-  // eslint-disable-next-line functional/no-let, functional/no-loop-statement, no-plusplus
-  for (let i = 0; i < Number(outputCount); i++) {
-    const { output, nextOffset } = readTransactionOutput(bin, cursor);
-    // eslint-disable-next-line functional/no-expression-statement
-    cursor = nextOffset;
-    // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    outputs.push(output);
-  }
+  const indexAfterVersion = uint32Bytes;
+  const { inputs, nextIndex: indexAfterInputs } = decodeTransactionInputsUnsafe(
+    bin,
+    indexAfterVersion
+  );
+  const { outputs, nextIndex: indexAfterOutputs } =
+    decodeTransactionOutputsUnsafe(bin, indexAfterInputs);
   const locktime = binToNumberUint32LE(
-    bin.subarray(cursor, cursor + uint32Bytes)
+    bin.subarray(indexAfterOutputs, indexAfterOutputs + uint32Bytes)
   );
   return {
     inputs,
@@ -203,15 +294,15 @@ export const decodeTransactionCommon = (bin: Uint8Array) => {
 };
 
 /**
- * Encode a `Transaction` using the standard P2P network format. This
+ * Encode a {@link Transaction} using the standard P2P network format. This
  * serialization is also used when computing the transaction's hash (A.K.A.
  * "transaction ID" or "TXID").
  */
 export const encodeTransactionCommon = (tx: TransactionCommon) =>
   flattenBinArray([
     numberToBinUint32LE(tx.version),
-    encodeInputs(tx.inputs),
-    encodeOutputsForTransaction(tx.outputs),
+    encodeTransactionInputs(tx.inputs),
+    encodeTransactionOutputs(tx.outputs),
     numberToBinUint32LE(tx.locktime),
   ]);
 
@@ -248,59 +339,52 @@ export const cloneTransactionCommon = <Transaction extends TransactionCommon>(
 
 /**
  * Compute a transaction hash (A.K.A. "transaction ID" or "TXID") from an
- * encoded transaction in big-endian byte order. This is the byte order
- * typically used by block explorers and other user interfaces.
+ * encoded transaction in P2P network message order. This is the byte order
+ * produced by most sha256 libraries and used in most P2P network messages. It
+ * is also the byte order produced by `OP_SHA256` and `OP_HASH256` in the
+ * virtual machine.
  *
- * @returns the transaction hash as a string
+ * @returns the transaction hash in P2P network message byte order
  *
  * @param transaction - the encoded transaction
  * @param sha256 - an implementation of sha256
  */
-export const getTransactionHashBE = (
-  sha256: { hash: Sha256['hash'] },
-  transaction: Uint8Array
+export const hashTransactionP2pOrder = (
+  transaction: Uint8Array,
+  sha256: { hash: Sha256['hash'] } = internalSha256
 ) => sha256.hash(sha256.hash(transaction));
 
 /**
  * Compute a transaction hash (A.K.A. "transaction ID" or "TXID") from an
- * encoded transaction in little-endian byte order. This is the byte order
- * used in P2P network messages.
+ * encoded transaction in user interface byte order. This is the byte order
+ * typically used by block explorers, wallets, and other user interfaces.
  *
- * @remarks
- * The result of sha256 is defined by its specification as big-endian, but
- * bitcoin message formats always reverse the order of this result for
- * serialization in P2P network messages.
- *
- * @returns the transaction hash in little-endian byte order
+ * @returns the transaction hash in User Interface byte order
  *
  * @param transaction - the encoded transaction
  * @param sha256 - an implementation of sha256
  */
-export const getTransactionHashLE = (
-  sha256: { hash: Sha256['hash'] },
-  transaction: Uint8Array
-) => getTransactionHashBE(sha256, transaction).reverse();
+export const hashTransactionUiOrder = (
+  transaction: Uint8Array,
+  sha256: { hash: Sha256['hash'] } = internalSha256
+) => hashTransactionP2pOrder(transaction, sha256).reverse();
 
 /**
- * Return a `Transaction`'s hash as a string (in big-endian byte order as is
- * common for user interfaces).
+ * Return an encoded {@link Transaction}'s hash/ID as a string in user interface
+ * byte order (typically used by wallets and block explorers).
  *
  * @param transaction - the encoded transaction
- * @param sha256 - an implementation of sha256
  */
-export const getTransactionHash = (
-  sha256: { hash: Sha256['hash'] },
-  transaction: Uint8Array
-) => binToHex(getTransactionHashBE(sha256, transaction));
+export const hashTransaction = (transaction: Uint8Array) =>
+  binToHex(hashTransactionUiOrder(transaction));
 
 /**
- * Get the hash of all outpoints in a series of inputs. (For use in
- * `hashTransactionOutpoints`.)
+ * Encode all outpoints in a series of transaction inputs. (For use in
+ * {@link hashTransactionOutpoints}.)
  *
  * @param inputs - the series of inputs from which to extract the outpoints
- * @param sha256 - an implementation of sha256
  */
-export const encodeOutpoints = (
+export const encodeTransactionOutpoints = (
   inputs: readonly {
     outpointIndex: number;
     outpointTransactionHash: Uint8Array;
@@ -316,21 +400,23 @@ export const encodeOutpoints = (
   );
 
 /**
- * Encode an array of transaction outputs for use in transaction signing
- * serializations.
+ * Encode an array of transaction {@link Output}s for use in transaction signing
+ * serializations. Note, this encoding differs from
+ * {@link encodeTransactionOutputs} (used for encoding full transactions).
  *
  * @param outputs - the array of outputs to encode
  */
-export const encodeOutputsForSigning = (outputs: readonly Output[]) =>
-  flattenBinArray(outputs.map(encodeOutput));
+export const encodeTransactionOutputsForSigning = (
+  outputs: readonly Output[]
+) => flattenBinArray(outputs.map(encodeTransactionOutput));
 
 /**
- * Encode an array of input sequence numbers for use in transaction signing
- * serializations.
+ * Encode the sequence numbers of an array of transaction inputs for use in
+ * transaction signing serializations.
  *
  * @param inputs - the array of inputs from which to extract the sequence
  * numbers
  */
-export const encodeSequenceNumbersForSigning = (
+export const encodeTransactionInputSequenceNumbersForSigning = (
   inputs: readonly { sequenceNumber: number }[]
 ) => flattenBinArray(inputs.map((i) => numberToBinUint32LE(i.sequenceNumber)));

@@ -129,7 +129,7 @@ Libauth also exports new, potentially unstable APIs. As these APIs stabilize, th
 
 Pull Requests welcome! Please see [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for details.
 
-This library requires [Yarn](https://yarnpkg.com/) for development. If you don't have Yarn, make sure you have `Node.js` installed (which ships with `npm`), then run `npm install -g yarn`. Once Yarn is installed:
+This library requires [Yarn](https://yarnpkg.com/) for development. If you don't have Yarn, make sure you have `Node.js` installed (ships with `npm`), then run `npm install -g yarn`. Once Yarn is installed:
 
 ```sh
 # use --recursive to clone the secp256k1 submodule

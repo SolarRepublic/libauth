@@ -8,16 +8,17 @@ import type {
 } from './vm';
 
 /**
- * Operations define the behavior of an opcode in an `InstructionSet`.
+ * Operations define the behavior of an opcode in an {@link InstructionSet}.
  *
  * Operations should be written as efficiently as possible, and may safely
- * mutate the `ProgramState`. If needed, the `AuthenticationVirtualMachine`
- * will clone the `ProgramState` before providing it to an operation.
+ * mutate the `ProgramState`. If needed, the
+ * {@link AuthenticationVirtualMachine} will clone the `ProgramState` before
+ * providing it to an operation.
  */
 export type Operation<ProgramState> = (state: ProgramState) => ProgramState;
 
 /**
- * Test a program state, returning an error message
+ * Test a program state, returning an error message.
  */
 export type TestState<ProgramState> = (state: ProgramState) => string | true;
 export interface InstructionSetOperationMapping<ProgramState> {
@@ -25,19 +26,17 @@ export interface InstructionSetOperationMapping<ProgramState> {
 }
 
 /**
- * An `InstructionSet` is a mapping of methods which define the operation of
- * an `AuthenticationVirtualMachine`. An instruction set is specific to a
- * single consensus setting of a single network, e.g. `BCH_2019_05_Mandatory`,
- * `BCH_2019_05_Standard` or `BTC_2017_08_Mandatory`.
+ * An {@link InstructionSet} is a mapping of methods that define the operation
+ * of an {@link AuthenticationVirtualMachine}.
  *
- * An instruction set is composed of `Operation`s which take a `ProgramState`
- * and return a `ProgramState`, as well as the `clone`, `continue`, `evaluate`,
- * and `verify` "lifecycle" methods.
+ * An instruction set is composed of {@link Operation}s that take a
+ * `ProgramState` and return a `ProgramState`, as well as several instruction
+ * set "lifecycle" methods.
  *
  * Each operation is assigned to its `opcode` number (between 0 and 255). When
- * evaluating instructions, the virtual machine will select an Operation based
- * on its opcode. Any opcodes which are unassigned by the instruction set will
- * use the `undefined` operation.
+ * evaluating instructions, the virtual machine will select an {@link Operation}
+ * based on its opcode. Any opcodes that are unassigned by the instruction set
+ * will use the `undefined` operation.
  */
 export interface InstructionSet<
   ResolvedTransaction,
@@ -49,8 +48,8 @@ export interface InstructionSet<
    *
    * @remarks
    * This method is used internally by `stateEvaluate`, `stateStep`, and
-   * `stateDebug` to prevent the `AuthenticationVirtualMachine` from mutating an
-   * input when mutation is not desirable.
+   * `stateDebug` to prevent the {@link AuthenticationVirtualMachine} from
+   * mutating an input when mutation is not desirable.
    */
   clone: Operation<ProgramState>;
 
@@ -58,33 +57,35 @@ export interface InstructionSet<
    * Test the ProgramState to determine if execution should continue.
    *
    * @remarks
-   * This method is used internally by the `AuthenticationVirtualMachine`'s
-   * `stateEvaluate` and `stateDebug` methods after each operation, and should
-   * usually test for errors or program completion. This method is exposed via
-   * the `AuthenticationVirtualMachine`'s `stateContinue` method.
+   * This method is used internally by the
+   * {@link AuthenticationVirtualMachine}'s `stateEvaluate` and `stateDebug`
+   * methods after each operation, and should usually test for errors or program
+   * completion. This method is exposed via the
+   * {@link AuthenticationVirtualMachine}'s `stateContinue` method.
    */
 
   continue: (state: ProgramState) => boolean;
 
   /**
-   * Evaluate a program to completion given the `AuthenticationVirtualMachine`'s
-   * `stateEvaluate` method.
+   * Evaluate a program to completion given the
+   * {@link AuthenticationVirtualMachine}'s `stateEvaluate` method.
    *
    * @remarks
-   * Each `AuthenticationVirtualMachine` can have precise operation requirements
-   * modifying the ways in which `AuthenticationProgram`s and `ProgramState`s
-   * are interpreted. (In the C++ implementations, these requirements are
-   * encoded in `VerifyScript`, and can significantly modify the behavior of
-   * the basic `EvalScript` system.) For example, the secondary evaluation step
-   * required for P2SH can be performed in this method.
+   * Each {@link AuthenticationVirtualMachine} can have precise operation
+   * requirements modifying the ways in which `AuthenticationProgram`s and
+   * `ProgramState`s are interpreted. (In the C++ implementations, these
+   * requirements are encoded in `VerifyScript`, and can significantly modify
+   * the behavior of the basic `EvalScript` system.) For example, the secondary
+   * evaluation step required for P2SH can be performed in this method.
    *
-   * This method is used internally by the `AuthenticationVirtualMachine`'s
-   * `evaluate` and `debug` methods. It should perform any necessary operations
-   * and validations before returning a fully-evaluated `ProgramState`.
+   * This method is used internally by the
+   * {@link AuthenticationVirtualMachine}'s `evaluate` and `debug` methods. It
+   * should perform any necessary operations and validations before returning a
+   * fully-evaluated `ProgramState`.
    *
    * @privateRemarks
    * When using the `debug` method, the `stateEvaluate` parameter is given a
-   * a modified `stateDebug` which shares the same method signature as
+   * a modified `stateDebug` that shares the same method signature as
    * `stateEvaluate` but saves intermediate states for use in the returned
    * array. When the method returns, the last `ProgramState` is added to the
    * array of saved intermediate states, and the full array is returned. This
@@ -102,15 +103,16 @@ export interface InstructionSet<
 
   /**
    * An optional operation to be performed after every executed virtual machine
-   * operation. This is useful for implementing logic which is common to all
+   * operation. This is useful for implementing logic that is common to all
    * operations, e.g. stack depth or memory usage, operation count, etc.
    */
   every?: Operation<ProgramState>;
 
   /**
    * A mapping of `opcode` numbers (between 0 and 255) to `Operations`. When the
-   * `AuthenticationVirtualMachine` encounters an instruction for the specified
-   * `opcode`, the program state will be passed to the specified operation.
+   * {@link AuthenticationVirtualMachine} encounters an instruction for the
+   * specified `opcode`, the program state will be passed to the
+   * specified operation.
    */
 
   operations: InstructionSetOperationMapping<ProgramState>;
@@ -134,9 +136,9 @@ export interface InstructionSet<
   success: (state: ProgramState) => string | true;
 
   /**
-   * Verify a transaction given the `InstructionSet`'s `evaluate` and `success`
-   * methods and a fully-resolved transaction (e.g. the decoded transaction and
-   * an array of the outputs spent by its inputs).
+   * Verify a transaction given the {@link InstructionSet}'s `evaluate` and
+   * `success` methods and a fully-resolved transaction (e.g. the decoded
+   * transaction and an array of the outputs spent by its inputs).
    *
    * This method should perform all possible stateless transaction validation
    * but should not attempt to perform any kinds of network state-sensitive
@@ -174,7 +176,7 @@ export interface AuthenticationVirtualMachine<
    * bitcoin forks due to P2SH), the initial program state at the start of each
    * phase will appear in the debug trace. For example, all inputs in all
    * bitcoin forks use at least two phases 1) the unlocking phase 2) the locking
-   * phase. Inputs which match the P2SH format perform a third P2SH phase. Other
+   * phase. Inputs that match the P2SH format perform a third P2SH phase. Other
    * virtual machines may include different phases (e.g. the SegWit phase in
    * BTC). For each phase performed, the count of program states in the final
    * debug trace will increase by one, even if the phase includes no
@@ -182,7 +184,7 @@ export interface AuthenticationVirtualMachine<
    *
    * @remarks
    * Even for simple virtual machines, this method includes one final program
-   * state in addition to the output which would otherwise be produced by
+   * state in addition to the output that would otherwise be produced by
    * `stateDebug`. This occurs because the `evaluate` method of the instruction
    * set must return one final program state after `stateContinue` has produced
    * a `false`. Often, this is cloned from the previous program state, but it
@@ -192,14 +194,14 @@ export interface AuthenticationVirtualMachine<
    * "duplicate"**: it is the finalized result of the complete virtual machine
    * evaluation.
    *
-   * @param state - the `AuthenticationProgram` to debug
+   * @param state - the {@link AuthenticationProgram} to debug
    */
   debug: (program: Readonly<AuthenticationProgram>) => ProgramState[];
 
   /**
    * Fully evaluate a program, returning the resulting `ProgramState`.
    *
-   * @param state - the `AuthenticationProgram` to evaluate
+   * @param state - the {@link AuthenticationProgram} to evaluate
    */
   evaluate: (program: Readonly<AuthenticationProgram>) => ProgramState;
 
@@ -217,7 +219,7 @@ export interface AuthenticationVirtualMachine<
    * Return an array of program states by fully evaluating `state`, cloning and
    * adding each intermediate state to the returned array. The first
    * `ProgramState` in the returned array is the initial program state, and the
-   * last `ProgramState` in the returned array is the first program state which
+   * last `ProgramState` in the returned array is the first program state that
    * returns `false` when provided to `stateContinue`.
    *
    * Note, this method is typically an implementation detail of the virtual
@@ -230,7 +232,7 @@ export interface AuthenticationVirtualMachine<
    * Return a new program state by cloning and fully evaluating `state`.
    *
    * To evaluate a state, the state is cloned and provided to `stateStepMutate`
-   * until a final result is obtained (a `ProgramState` which returns `false`
+   * until a final result is obtained (a `ProgramState` that returns `false`
    * when provided to `stateContinue`).
    *
    * Note, this method is typically an implementation detail of the virtual
@@ -249,7 +251,7 @@ export interface AuthenticationVirtualMachine<
   stateStep: (state: Readonly<ProgramState>) => ProgramState;
 
   /**
-   * A faster, less-safe version of `step` which directly modifies the provided
+   * A faster, less-safe version of `step` that directly modifies the provided
    * program state.
    *
    * @param state - the program state to mutate
@@ -270,7 +272,7 @@ export interface AuthenticationVirtualMachine<
 
   /**
    * Statelessly verify a fully-resolved transaction (e.g. the decoded
-   * transaction and an array of source outputs which are spent by its inputs).
+   * transaction and an array of source outputs that are spent by its inputs).
    *
    * Returns `true` if the transaction is valid or an array of error messages on
    * failure.
@@ -297,9 +299,9 @@ export interface AuthenticationVirtualMachine<
 }
 
 /**
- * Create an AuthenticationVirtualMachine to evaluate authentication programs
- * constructed from operations in the `instructionSet`.
- * @param instructionSet - an `InstructionSet`
+ * Create an {@link AuthenticationVirtualMachine} to evaluate authentication
+ * programs constructed from operations in the `instructionSet`.
+ * @param instructionSet - an {@link InstructionSet}
  */
 export const createAuthenticationVirtualMachine = <
   ResolvedTransaction = ResolvedTransactionCommon,

@@ -7,8 +7,8 @@ import type {
 import {
   applyError,
   AuthenticationErrorCommon,
-  isScriptNumberError,
-  parseBytesAsScriptNumber,
+  decodeVmNumber,
+  isVmNumberError,
 } from './common.js';
 
 enum Bits {
@@ -17,7 +17,7 @@ enum Bits {
 }
 
 enum Constants {
-  locktimeScriptNumberByteLength = 5,
+  locktimeVmNumberByteLength = 5,
   locktimeThreshold = 500_000_000,
   locktimeDisablingSequenceNumber = 0xffffffff,
   sequenceLocktimeTransactionVersionMinimum = 2,
@@ -29,7 +29,7 @@ enum Constants {
   sequenceLocktimeMask = 0x0000ffff,
 }
 
-export const readLocktime = <
+export const useLocktime = <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
@@ -40,14 +40,14 @@ export const readLocktime = <
   if (item === undefined) {
     return applyError(AuthenticationErrorCommon.emptyStack, state);
   }
-  const parsedLocktime = parseBytesAsScriptNumber(item, {
-    maximumScriptNumberByteLength: Constants.locktimeScriptNumberByteLength,
+  const decodedLocktime = decodeVmNumber(item, {
+    maximumVmNumberByteLength: Constants.locktimeVmNumberByteLength,
     requireMinimalEncoding: true,
   });
-  if (isScriptNumberError(parsedLocktime)) {
-    return applyError(AuthenticationErrorCommon.invalidScriptNumber, state);
+  if (isVmNumberError(decodedLocktime)) {
+    return applyError(AuthenticationErrorCommon.invalidVmNumber, state);
   }
-  const locktime = Number(parsedLocktime);
+  const locktime = Number(decodedLocktime);
   if (locktime < 0) {
     return applyError(AuthenticationErrorCommon.negativeLocktime, state);
   }
@@ -68,7 +68,7 @@ export const opCheckLockTimeVerify = <
 >(
   state: State
 ) =>
-  readLocktime(state, (nextState, requiredLocktime) => {
+  useLocktime(state, (nextState, requiredLocktime) => {
     if (
       !locktimeTypesAreCompatible(
         nextState.program.transaction.locktime,
@@ -102,7 +102,7 @@ export const opCheckSequenceVerify = <
 >(
   state: State
 ) =>
-  readLocktime(
+  useLocktime(
     state,
     // eslint-disable-next-line complexity
     (nextState, requiredSequence) => {

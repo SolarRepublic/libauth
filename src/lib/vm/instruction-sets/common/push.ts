@@ -11,7 +11,7 @@ import type { AuthenticationInstructionPush } from '../instruction-sets';
 import {
   applyError,
   AuthenticationErrorCommon,
-  bigIntToScriptNumber,
+  bigIntToVmNumber,
   pushToStack,
 } from './common.js';
 
@@ -64,20 +64,20 @@ export enum PushOperationConstants {
  * stack.
  *
  * @remarks
- * This method conservatively encodes a `Uint8Array` as a data push. For Script
- * Numbers which can be pushed using a single opcode (-1 through 16), the
+ * This method conservatively encodes a `Uint8Array` as a data push. For VM
+ * Numbers that can be pushed using a single opcode (-1 through 16), the
  * equivalent bytecode value is returned. Other `data` values will be prefixed
  * with the proper opcode and push length bytes (if necessary) to create the
  * minimal push instruction.
  *
- * Note, while some single-byte Script Number pushes will be minimally-encoded
- * by this method, all larger inputs will be encoded as-is (it cannot be assumed
- * that inputs are intended to be used as Script Numbers). To encode the push of
- * a Script Number, minimally-encode the number before passing it to this
+ * Note, while some single-byte VM Number pushes will be minimally-encoded by
+ * this method, all larger inputs will be encoded as-is (it cannot be assumed
+ * that inputs are intended to be used as VM Numbers). To encode the push of a
+ * VM Number, minimally-encode the number before passing it to this
  * method, e.g.:
- * `encodeDataPush(bigIntToScriptNumber(parseBytesAsScriptNumber(nonMinimalNumber)))`.
+ * `encodeDataPush(bigIntToVmNumber(decodeVmNumber(nonMinimalNumber)))`.
  *
- * The maximum `bytecode` length which can be encoded for a push in the Bitcoin
+ * The maximum `bytecode` length that can be encoded for a push in the Bitcoin
  * system is `4294967295` (~4GB). This method assumes a smaller input – if
  * `bytecode` has the potential to be longer, it should be checked (and the
  * error handled) prior to calling this method.
@@ -159,7 +159,7 @@ const executionIsActive = <
   state: State
 ) => state.controlStack.every((item) => item);
 
-// TODO: add tests which verify the order of operations below (are non-minimal pushes OK inside unexecuted conditionals?)
+// TODO: add tests that verify the order of operations below (are non-minimal pushes OK inside unexecuted conditionals?)
 
 export const pushOperation =
   <
@@ -184,8 +184,8 @@ export const pushOperation =
   };
 
 /**
- * @param number - the number which is pushed to the stack by this operation.
- * @returns an operation which pushes a number to the stack.
+ * @param number - the number that is pushed to the stack by this operation.
+ * @returns an operation that pushes a number to the stack.
  */
 export const pushNumberOperation = <
   ProgramState extends AuthenticationProgramStateMinimum &
@@ -193,6 +193,6 @@ export const pushNumberOperation = <
 >(
   number: number
 ) => {
-  const value = bigIntToScriptNumber(BigInt(number));
+  const value = bigIntToVmNumber(BigInt(number));
   return (state: ProgramState) => pushToStack(state, value);
 };

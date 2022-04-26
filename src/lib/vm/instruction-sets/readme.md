@@ -2,7 +2,7 @@
 
 This directory contains all of Libauth's supported instruction sets.
 
-Functionality which is shared among multiple instruction sets is typically included in the `common` directory, and VM-specific functionality is included in each respective VM directory.
+Functionality that is shared among multiple instruction sets is typically included in the `common` directory, and VM-specific functionality is included in each respective VM directory.
 
 ## Copy, Don't Complicate
 
@@ -16,7 +16,7 @@ These single-file instruction set files should generally only import operations 
 
 ## Virtual Machine Support
 
-Libauth aims to provide support for the Virtual Machine (VM) used by every public bitcoin-like network.
+Libauth aims to provide support for the Virtual Machine (VM) used by every public bitcoin-like network and for public upgrade proposals with stable technical specifications.
 
 Where multiple VMs include similar functionality, **Libauth's exported utilities should prefer the configuration used by the latest version of the Bitcoin Cash (BCH) VM**.
 
@@ -26,7 +26,7 @@ If a proposed upgrade seems likely to cause a network split, Libauth will attemp
 
 ## Virtual Machine Deprecation
 
-Generally, Libauth only maintains support for active VM versions. For example, `BCH_2019_05` was an upgrade which:
+Generally, Libauth only maintains support for active VM versions. For example, `BCH_2019_05` was an upgrade that:
 
 - enabled Schnorr signature support in `OP_CHECKSIG` and `OP_CHECKDATASIG`
 - added a clean-stack exception for SegWit recovery

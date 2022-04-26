@@ -17,7 +17,7 @@ test(
 );
 
 test(
-  '[BCH compiler] language – compile BigIntLiterals to script numbers',
+  '[BCH compiler] language – compile BigIntLiterals to VM numbers',
   expectCompilationResult,
   '42 -42 2_147_483_647 -2_147_483_647',
   {},
@@ -25,7 +25,7 @@ test(
 );
 
 test(
-  '[BCH compiler] language – compile BinaryLiterals to script numbers',
+  '[BCH compiler] language – compile BinaryLiterals to VM numbers',
   expectCompilationResult,
   '0b1 0b1111_1111 0b111 0b1111_1111__1111_1111__1111_1111__1111_1111____1111_1111__1111_1111__1111_1111__1111_1111_1',
   {},

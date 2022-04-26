@@ -59,7 +59,7 @@ export interface Sha256 extends HashFunction {
 
 /**
  * The most performant way to instantiate sha256 functionality. To avoid
- * using Node.js or DOM-specific APIs, you can use `instantiateSha256`.
+ * using Node.js or DOM-specific APIs, you can use {@link instantiateSha256}.
  *
  * @param webassemblyBytes - A buffer containing the sha256 binary.
  */
@@ -87,8 +87,8 @@ export const getEmbeddedSha256Binary = () =>
 
 /**
  * An ultimately-portable (but possibly slower) version of
- * `instantiateSha256Bytes` which does not require the consumer to provide the
- * sha256 binary buffer.
+ * {@link instantiateSha256Bytes} which does not require the consumer to provide
+ * the sha256 binary buffer.
  */
 export const instantiateSha256 = async (): Promise<Sha256> =>
   instantiateSha256Bytes(getEmbeddedSha256Binary());

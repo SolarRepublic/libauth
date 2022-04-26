@@ -1,16 +1,16 @@
 import type {
   AuthenticationInstruction,
+  AuthenticationInstructionMalformed,
+  AuthenticationInstructionMaybeMalformed,
   AuthenticationProgramStateControlStack,
-  ParsedAuthenticationInstruction,
-  ParsedAuthenticationInstructionMalformed,
 } from '../../lib';
 import {
   authenticationInstructionIsMalformed,
-  encodeParsedAuthenticationInstructionMalformed,
+  decodeAuthenticationInstructions,
+  encodeAuthenticationInstructionMalformed,
   flattenBinArray,
-  parseBytecode,
 } from '../../lib.js';
-import { createCompilerCommonSynchronous } from '../template.js';
+import { createCompilerCommon } from '../template.js';
 
 import type {
   CompilationError,
@@ -128,7 +128,9 @@ export const containsRange = (
  * evaluations
  */
 export const compileCashAssembly = (script: string) => {
-  const result = createCompilerCommonSynchronous({
+  const result = createCompilerCommon({
+    opcodes: {},
+    operations: {},
     scripts: { script },
   }).generateBytecode({ data: {}, scriptId: 'script' });
   if (result.success) {
@@ -142,10 +144,10 @@ export const compileCashAssembly = (script: string) => {
 };
 
 /**
- * Extract a list of the errors which occurred while resolving a script.
+ * Extract a list of the errors that occurred while resolving a script.
  *
- * @param resolvedScript - the result of `resolveScript` from which to extract
- * errors
+ * @param resolvedScript - the result of {@link resolveScript} from which to
+ * extract errors
  */
 export const getResolutionErrors = (
   resolvedScript: ResolvedScript
@@ -192,8 +194,9 @@ export const allErrorsAreRecoverable = (
   );
 
 /**
- * A single resolution for a `ResolvedSegment`. The `variable`, `script`, or
- * `opcode` property contains the full identifier which resolved to `bytecode`.
+ * A single resolution for a {@link ResolvedSegment}. The `variable`, `script`,
+ * or `opcode` property contains the full identifier that resolved
+ * to `bytecode`.
  */
 export interface CashAssemblyResolution {
   bytecode: Uint8Array;
@@ -202,7 +205,7 @@ export interface CashAssemblyResolution {
 }
 
 /**
- * Get an array of all resolutions used in a `ResolvedScript`.
+ * Get an array of all resolutions used in a {@link ResolvedScript}.
  * @param resolvedScript - the resolved script to search
  */
 export const extractBytecodeResolutions = (
@@ -260,8 +263,8 @@ export const extractBytecodeResolutions = (
   }, []);
 
 /**
- * Extract an object mapping the variable identifiers used in a `ResolvedScript`
- * to their resolved bytecode.
+ * Extract an object mapping the variable identifiers used in a
+ * {@link ResolvedScript} to their resolved bytecode.
  *
  * @param resolvedScript - the resolved script to search
  */
@@ -279,8 +282,8 @@ export const extractResolvedVariableBytecodeMap = (
   );
 
 /**
- * Format a list of `CompilationError`s into a single string, with an error
- * start position following each error. E.g. for line 1, column 2:
+ * Format a list of {@link CompilationError}s into a single string, with an
+ * error start position following each error. E.g. for line 1, column 2:
  * `The error message. [1, 2]`
  *
  * Errors are separated with the `separator`, which defaults to `; `, e.g.:
@@ -302,7 +305,7 @@ export interface SampleExtractionResult<ProgramState> {
    * The samples successfully extracted from the provided `nodes` and `trace`.
    *
    * In a successful evaluation, one sample will be produced for each state in
-   * `trace` with the exception of the last state (the evaluation result) which
+   * `trace` with the exception of the last state (the evaluation result), which
    * will be returned in `unmatchedStates`.
    *
    * In an unsuccessful evaluation, the `trace` states will be exhausted before
@@ -327,7 +330,7 @@ export interface SampleExtractionResult<ProgramState> {
 /**
  * Extract a set of "evaluation samples" from the result of a CashAssembly
  * compilation and a matching debug trace (from `vm.debug`), pairing program
- * states with the source ranges which produced them – like a "source map" for
+ * states with the source ranges that produced them – like a "source map" for
  * complete evaluations. This is useful for omniscient debuggers like
  * Bitauth IDE.
  *
@@ -346,7 +349,8 @@ export interface SampleExtractionResult<ProgramState> {
  * of `0`.)
  *
  * This method allows for samples to be extracted from a single evaluation;
- * most applications should use `extractEvaluationSamplesRecursive` instead.
+ * most applications should use
+ * {@link extractEvaluationSamplesRecursive} instead.
  *
  * @remarks
  * This method incrementally concatenates the reduced bytecode from each node,
@@ -354,7 +358,7 @@ export interface SampleExtractionResult<ProgramState> {
  *
  * Each node can contain only a portion of an instruction (like a long push
  * operation), or it can contain multiple instructions (like a long hex literal
- * representing a string of bytecode or an evaluation which is not wrapped by a
+ * representing a string of bytecode or an evaluation that is not wrapped by a
  * push).
  *
  * If a node contains only a portion of an instruction, the bytecode from
@@ -371,7 +375,7 @@ export interface SampleExtractionResult<ProgramState> {
  * in a sample (usually caused by an evaluation error), the last instruction
  * with a matching program state is used for the sample (with its program
  * state), and the unmatched instructions are ignored. (This allows the "last
- * known state" to be displayed for the sample which caused evaluation to halt.)
+ * known state" to be displayed for the sample that caused evaluation to halt.)
  *
  * ---
  *
@@ -399,11 +403,11 @@ export interface SampleExtractionResult<ProgramState> {
  * responsible for the initial `0x00` and which are responsible for the `0x03`.
  *
  * For this reason, the range of each sample is limited to the range(s) of one
- * or more adjacent nodes. Samples may overlap in the range of a node which is
+ * or more adjacent nodes. Samples may overlap in the range of a node that is
  * responsible for both ending a previous sample and beginning a new sample.
  * (Though, only 2 samples can overlap. If a node is responsible for more than 2
  * instructions, the second sample includes `internalStates` for instructions
- * which occur before the end of the second sample.)
+ * that occur before the end of the second sample.)
  *
  * In this case, there are 6 samples identified below within `[]`, where each
  * `[` is closed by the closest following `]` (no nesting):
@@ -432,12 +436,8 @@ export interface SampleExtractionResult<ProgramState> {
  * Note, this implementation relies on the expectation that `trace` begins with
  * the initial program state, contains a single program state per instruction,
  * and ends with the final program state (as produced by `vm.debug`). It also
- * expects the `bytecode` provided by nodes to be parsable by `parseBytecode`.
- *
- * @param evaluationRange - the range of the script node which was evaluated to
- * produce the `trace`
- * @param nodes - an array of reduced nodes to parse
- * @param trace - the `vm.debug` result to map to these nodes
+ * expects the `bytecode` provided by nodes to be parsable by
+ * {@link decodeAuthenticationInstructions}.
  */
 // eslint-disable-next-line complexity
 export const extractEvaluationSamples = <ProgramState>({
@@ -445,8 +445,17 @@ export const extractEvaluationSamples = <ProgramState>({
   nodes,
   trace,
 }: {
+  /**
+   * The range of the script node that was evaluated to produce the `trace`
+   */
   evaluationRange: Range;
+  /**
+   * An array of reduced nodes to parse
+   */
   nodes: ScriptReductionTraceScriptNode<ProgramState>['script'];
+  /**
+   * The `vm.debug` result to map to these nodes
+   */
   trace: ProgramState[];
 }): SampleExtractionResult<ProgramState> => {
   const traceWithoutFinalState =
@@ -494,18 +503,18 @@ export const extractEvaluationSamples = <ProgramState>({
             mergedRange: mergeRanges([incomplete.range, currentNode.range]),
           };
 
-    const parsed = parseBytecode(mergedBytecode);
+    const decoded = decodeAuthenticationInstructions(mergedBytecode);
 
-    const [zeroth] = parsed;
+    const [zeroth] = decoded;
     const hasNonMalformedInstructions =
       zeroth !== undefined && !('malformed' in zeroth);
 
     if (hasNonMalformedInstructions) {
-      const lastInstruction = parsed[parsed.length - 1];
+      const lastInstruction = decoded[decoded.length - 1];
       const validInstructions = (
         authenticationInstructionIsMalformed(lastInstruction)
-          ? parsed.slice(0, parsed.length - 1)
-          : parsed
+          ? decoded.slice(0, decoded.length - 1)
+          : decoded
       ) as AuthenticationInstruction[];
       const firstUnmatchedStateIndex = nextState + validInstructions.length;
       const matchingStates = traceWithoutFinalState.slice(
@@ -521,7 +530,7 @@ export const extractEvaluationSamples = <ProgramState>({
        * Guaranteed to have a defined `state` (or the loop would have exited).
        */
       const firstPairedState = pairedStates[0] as {
-        instruction: ParsedAuthenticationInstruction;
+        instruction: AuthenticationInstructionMaybeMalformed;
         state: ProgramState;
       };
 
@@ -551,7 +560,7 @@ export const extractEvaluationSamples = <ProgramState>({
       // eslint-disable-next-line functional/no-conditional-statement
       if (closesASecondSample) {
         const finalState = pairedStates[sampleClosingIndex] as {
-          instruction: ParsedAuthenticationInstruction;
+          instruction: AuthenticationInstructionMaybeMalformed;
           state: ProgramState;
         };
         const secondSamplePairsBegin = closesCurrentlyOpenSample ? 1 : 0;
@@ -559,7 +568,7 @@ export const extractEvaluationSamples = <ProgramState>({
           secondSamplePairsBegin,
           sampleClosingIndex
         ) as {
-          instruction: ParsedAuthenticationInstruction;
+          instruction: AuthenticationInstructionMaybeMalformed;
           state: ProgramState;
         }[];
         // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
@@ -578,8 +587,7 @@ export const extractEvaluationSamples = <ProgramState>({
       if (authenticationInstructionIsMalformed(lastInstruction)) {
         // eslint-disable-next-line functional/no-expression-statement
         incomplete = {
-          bytecode:
-            encodeParsedAuthenticationInstructionMalformed(lastInstruction),
+          bytecode: encodeAuthenticationInstructionMalformed(lastInstruction),
           range: currentNode.range,
         };
         // eslint-disable-next-line functional/no-conditional-statement
@@ -589,8 +597,8 @@ export const extractEvaluationSamples = <ProgramState>({
       }
       // eslint-disable-next-line functional/no-conditional-statement
     } else {
-      const lastInstruction = parsed[parsed.length - 1] as
-        | ParsedAuthenticationInstructionMalformed
+      const lastInstruction = decoded[decoded.length - 1] as
+        | AuthenticationInstructionMalformed
         | undefined;
 
       // eslint-disable-next-line functional/no-expression-statement
@@ -599,7 +607,7 @@ export const extractEvaluationSamples = <ProgramState>({
           ? undefined
           : {
               bytecode:
-                encodeParsedAuthenticationInstructionMalformed(lastInstruction),
+                encodeAuthenticationInstructionMalformed(lastInstruction),
               range: mergedRange,
             };
     }
@@ -626,8 +634,8 @@ export const extractEvaluationSamples = <ProgramState>({
 };
 
 /**
- * Similar to `extractEvaluationSamples`, but recursively extracts samples from
- * evaluations within the provided array of nodes.
+ * Similar to {@link extractEvaluationSamples}, but recursively extracts samples
+ * from evaluations within the provided array of nodes.
  *
  * Because CashAssembly evaluations are fully self-contained, there should never
  * be unmatched states from evaluations within a script reduction trace tree.
@@ -635,17 +643,21 @@ export const extractEvaluationSamples = <ProgramState>({
  * nested evaluations.)
  *
  * Returned samples are ordered by the ending position (line and column) of
- * their range. Samples from CashAssembly evaluations which occur within an
+ * their range. Samples from CashAssembly evaluations that occur within an
  * outer evaluation appear before their parent sample (which uses their result).
- *
- * @param evaluationRange - the range of the script node which was evaluated to
- * produce the `trace`
- * @param nodes - an array of reduced nodes to parse
- * @param trace - the `vm.debug` result to map to these nodes
  */
 export const extractEvaluationSamplesRecursive = <ProgramState>({
+  /**
+   * The range of the script node that was evaluated to produce the `trace`
+   */
   evaluationRange,
+  /**
+   * An array of reduced nodes to parse
+   */
   nodes,
+  /**
+   * The `vm.debug` result to map to these nodes
+   */
   trace,
 }: {
   evaluationRange: Range;
@@ -718,19 +730,19 @@ const stateIsExecuting = (state: AuthenticationProgramStateControlStack) =>
   state.controlStack.every((item) => item);
 
 /**
- * Extract an array of ranges which were unused by an evaluation. This is useful
- * in development tooling for fading out or hiding code which is unimportant to
+ * Extract an array of ranges that were unused by an evaluation. This is useful
+ * in development tooling for fading out or hiding code that is unimportant to
  * the current evaluation being tested.
  *
  * @remarks
- * Only ranges which are guaranteed to be unimportant to an evaluation are
- * returned by this method. These ranges are extracted from samples which:
- * - are preceded by a sample which ends with execution disabled (e.g. an
+ * Only ranges that are guaranteed to be unimportant to an evaluation are
+ * returned by this method. These ranges are extracted from samples that:
+ * - are preceded by a sample that ends with execution disabled (e.g. an
  * unsuccessful `OP_IF`)
  * - end with execution disabled, and
- * - contain no `internalStates` which enable execution.
+ * - contain no `internalStates` that enable execution.
  *
- * Note, internal states which temporarily re-enable and then disable execution
+ * Note, internal states that temporarily re-enable and then disable execution
  * again can still have an effect on the parent evaluation, so this method
  * conservatively excludes such samples. For example, the hex literal
  * `0x675167`, which encodes `OP_ELSE OP_1 OP_ELSE`, could begin and end with

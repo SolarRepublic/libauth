@@ -4,6 +4,7 @@ import { fc, testProp } from 'ava-fast-check';
 import {
   dateToLocktime,
   dateToLocktimeBin,
+  decodeLocktime,
   hexToBin,
   LocktimeError,
   locktimeToDate,
@@ -11,7 +12,6 @@ import {
   maximumLocktimeTimestamp,
   minimumLocktimeDate,
   minimumLocktimeTimestamp,
-  parseLocktimeBin,
 } from '../lib.js';
 
 test('dateToLocktime', (t) => {
@@ -31,12 +31,12 @@ test('dateToLocktimeBin', (t) => {
 });
 
 test('parseLockTime', (t) => {
-  t.deepEqual(parseLocktimeBin(hexToBin('0069a25d')), new Date('2019-10-13'));
-  t.deepEqual(parseLocktimeBin(hexToBin('d090371c')), 473403600);
-  t.deepEqual(parseLocktimeBin(hexToBin('')), LocktimeError.incorrectLength);
-  t.deepEqual(parseLocktimeBin(hexToBin('00')), LocktimeError.incorrectLength);
+  t.deepEqual(decodeLocktime(hexToBin('0069a25d')), new Date('2019-10-13'));
+  t.deepEqual(decodeLocktime(hexToBin('d090371c')), 473403600);
+  t.deepEqual(decodeLocktime(hexToBin('')), LocktimeError.incorrectLength);
+  t.deepEqual(decodeLocktime(hexToBin('00')), LocktimeError.incorrectLength);
   t.deepEqual(
-    parseLocktimeBin(hexToBin('0000000000')),
+    decodeLocktime(hexToBin('0000000000')),
     LocktimeError.incorrectLength
   );
 });
@@ -49,7 +49,7 @@ testProp(
 );
 
 testProp(
-  '[fast-check] dateToLocktimeBin <-> parseLocktimeBin',
+  '[fast-check] dateToLocktimeBin <-> decodeLocktime',
   [fc.date({ max: maximumLocktimeDate, min: minimumLocktimeDate })],
   (t, date) => {
     const withSecondResolution = new Date(
@@ -57,7 +57,7 @@ testProp(
     );
     t.deepEqual(
       (
-        parseLocktimeBin(
+        decodeLocktime(
           dateToLocktimeBin(withSecondResolution) as Uint8Array
         ) as Date
       ).getTime(),

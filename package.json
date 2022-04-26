@@ -46,8 +46,8 @@
     "fix": "run-s fix:*",
     "fix:prettier": "prettier \"src/**/*.ts\" --write",
     "fix:lint": "eslint . --ext .ts --fix",
-    "gen:tests": "run-s build && yarn run gen:tests:bch && prettier 'build/src/lib/vm/vmb-tests/generated/*.json' --write",
-    "gen:tests:bch": "run-s build && node 'build/lib/vm/vmb-tests/bch-vmb-tests.spec.helper.js' 'generated'",
+    "gen:vmb-tests": "run-s build gen:vmb-tests:*",
+    "gen:vmb-tests:bch": "node 'build/lib/vm/vmb-tests/bch-vmb-tests.spec.helper.js' 'src/lib/vm/vmb-tests/generated/bch' && prettier 'src/lib/vm/vmb-tests/generated/bch/*.json' --write",
     "gen:schema": "run-p gen:schema:*",
     "gen:schema:authentication-template": "ts-json-schema-generator --no-ref-encode --path 'src/lib/template/template-types.ts' --type 'AuthenticationTemplate' > src/lib/schema/authentication-template.schema.json && prettier 'src/lib/schema/authentication-template.schema.json' --write && ajv compile -s src/lib/schema/authentication-template.schema.json --allowUnionTypes -o src/lib/schema/ajv/validate-authentication-template.js && prettier 'src/lib/schema/ajv/validate-authentication-template.js' --write && node -e \"const fs = require('fs'), path = 'src/lib/schema/ajv/validate-authentication-template.js'; fs.writeFileSync(path, fs.readFileSync(path, 'utf8').replace(/'use strict'[\\s\\S]*module.exports.default =/, 'export default'), 'utf8')\"",
     "gen:schema-TODO": "//TODO: use ajv compile --code-esm option after merge: https://github.com/ajv-validator/ajv-cli/pull/200",
@@ -185,11 +185,18 @@
       {
         "files": [
           "src/lib/vm/vmb-tests/bch-vmb-tests.ts",
-          "src/lib/vm/vmb-tests/generated/*.json",
           "src/lib/schema/generated/*.js"
         ],
         "options": {
           "printWidth": 400
+        }
+      },
+      {
+        "files": [
+          "src/lib/vm/vmb-tests/generated/bch/*.json"
+        ],
+        "options": {
+          "printWidth": 10000
         }
       }
     ]

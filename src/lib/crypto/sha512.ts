@@ -45,7 +45,7 @@ export interface Sha512 extends HashFunction {
   /**
    * Add input to an incremental sha512 hashing computation.
    *
-   * Returns a raw state which can again be passed to `update` with additional
+   * Returns a raw state that can again be passed to `update` with additional
    * input to continue the computation.
    *
    * When the computation has been updated with all input, pass the raw state to
@@ -59,7 +59,7 @@ export interface Sha512 extends HashFunction {
 
 /**
  * The most performant way to instantiate sha512 functionality. To avoid
- * using Node.js or DOM-specific APIs, you can use `instantiateSha512`.
+ * using Node.js or DOM-specific APIs, you can use {@link instantiateSha512}.
  *
  * @param webassemblyBytes - A buffer containing the sha512 binary.
  */
@@ -86,8 +86,8 @@ export const getEmbeddedSha512Binary = () =>
   base64ToBin(sha512Base64Bytes).buffer;
 
 /**
- * An ultimately-portable (but slower) version of `instantiateSha512Bytes`
- * which does not require the consumer to provide the sha512 binary buffer.
+ * An ultimately-portable (but slower) version of {@link instantiateSha512Bytes}
+ * that does not require the consumer to provide the sha512 binary buffer.
  */
 export const instantiateSha512 = async (): Promise<Sha512> =>
   instantiateSha512Bytes(getEmbeddedSha512Binary());

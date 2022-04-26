@@ -3,7 +3,7 @@ export enum ConsensusBCH2021 {
    * A.K.A. `MAX_SCRIPT_ELEMENT_SIZE`
    */
   maximumStackItemLength = 520,
-  maximumScriptNumberLength = 4,
+  maximumVmNumberLength = 4,
   /**
    * A.K.A. `MAX_OPS_PER_SCRIPT`
    */

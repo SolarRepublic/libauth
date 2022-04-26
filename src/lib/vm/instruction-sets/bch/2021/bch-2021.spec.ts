@@ -10,11 +10,11 @@ import {
   createAuthenticationProgramStateCommon,
   createCompilationContextCommonTesting,
   createTestAuthenticationProgramBCH,
+  decodeAuthenticationInstructions,
   decodeTransactionCommon,
   hexToBin,
   instantiateVirtualMachineBCH2021,
   OpcodesBCH2022,
-  parseBytecode,
   stringify,
 } from '../../../../lib.js';
 
@@ -32,7 +32,7 @@ const program = createCompilationContextCommonTesting({
 test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', (t) => {
   const vm = instantiateVirtualMachineBCH2021();
   const state = createAuthenticationProgramStateCommon({
-    instructions: parseBytecode(
+    instructions: decodeAuthenticationInstructions(
       Uint8Array.from([
         OpcodesBCH2022.OP_2,
         OpcodesBCH2022.OP_2,
@@ -70,7 +70,7 @@ test('[BCH VM] vm.stateEvaluate: OP_2 OP_2 OP_ADD', (t) => {
 test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', (t) => {
   const vm = instantiateVirtualMachineBCH2021();
   const state = createAuthenticationProgramStateCommon({
-    instructions: parseBytecode(
+    instructions: decodeAuthenticationInstructions(
       Uint8Array.from([
         OpcodesBCH2022.OP_2,
         OpcodesBCH2022.OP_2,
@@ -176,7 +176,7 @@ test('[BCH VM] vm.stateDebug: OP_2 OP_2 OP_ADD', (t) => {
 test('[BCH VM] vm.stateStep through: OP_2 OP_2 OP_ADD', (t) => {
   const vm = instantiateVirtualMachineBCH2021();
   const state0 = createAuthenticationProgramStateCommon({
-    instructions: parseBytecode(
+    instructions: decodeAuthenticationInstructions(
       Uint8Array.from([
         OpcodesBCH2022.OP_2,
         OpcodesBCH2022.OP_2,

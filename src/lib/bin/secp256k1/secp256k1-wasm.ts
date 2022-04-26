@@ -243,7 +243,7 @@ const alignMemory = (factor: number, size: number) =>
 
 /**
  * The most performant way to instantiate secp256k1 functionality. To avoid
- * using Node.js or DOM-specific APIs, you can use `instantiateSecp256k1`.
+ * using Node.js or DOM-specific APIs, you can use {@link instantiateSecp256k1}.
  *
  * Note, most of this method is translated and boiled-down from Emscripten's
  * preamble.js. Significant changes to the WASM build or breaking updates to
@@ -364,8 +364,9 @@ export const getEmbeddedSecp256k1Binary = () =>
   base64ToBin(secp256k1Base64Bytes).buffer;
 
 /**
- * An ultimately-portable (but slower) version of `instantiateSecp256k1Bytes`
- * which does not require the consumer to provide the secp256k1 binary buffer.
+ * An ultimately-portable (but slower) version of
+ * {@link instantiateSecp256k1Bytes} that does not require the consumer to
+ * provide the secp256k1 binary buffer.
  */
 export const instantiateSecp256k1Wasm = async (): Promise<Secp256k1Wasm> =>
   instantiateSecp256k1WasmBytes(getEmbeddedSecp256k1Binary());

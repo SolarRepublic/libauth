@@ -1,13 +1,15 @@
-import { sha256 as internalSha256 } from '../../../../crypto/default-crypto-instances.js';
 import type {
+  AuthenticationVirtualMachine,
   Input,
   Output,
-  Sha256,
   TransactionCommon as TransactionBCH,
 } from '../../../../lib';
 import {
+  decodeTransactionCommon as decodeTransactionBCH,
+  decodeTransactionUnsafeCommon as decodeTransactionUnsafeBCH,
+  encodeTransactionCommon as encodeTransactionBCH,
   encodeTransactionCommon,
-  getTransactionHashBE,
+  hashTransactionP2pOrder,
   hexToBin,
 } from '../../../../lib.js';
 import type {
@@ -23,7 +25,7 @@ export enum ConsensusBCH2022 {
    * A.K.A. `MAX_SCRIPT_ELEMENT_SIZE`
    */
   maximumStackItemLength = 520,
-  maximumScriptNumberLength = 8,
+  maximumVmNumberLength = 8,
   /**
    * A.K.A. `MAX_OPS_PER_SCRIPT`
    */
@@ -51,20 +53,28 @@ export interface AuthenticationProgramStateBCH
 
 export type { TransactionBCH };
 
-export { cloneAuthenticationProgramStateBCH };
+export {
+  cloneAuthenticationProgramStateBCH,
+  decodeTransactionBCH,
+  encodeTransactionBCH,
+  decodeTransactionUnsafeBCH,
+};
 
 export type CompilationContextBCH = CompilationContext<
   TransactionBCH<Input<Uint8Array | undefined>>
 >;
 
-export const createTestAuthenticationProgramBCH = (
-  {
-    lockingBytecode,
-    valueSatoshis,
-    unlockingBytecode,
-  }: Output & Pick<Input, 'unlockingBytecode'>,
-  sha256: { hash: Sha256['hash'] } = internalSha256
-) => {
+export type AuthenticationVirtualMachineBCH = AuthenticationVirtualMachine<
+  ResolvedTransactionBCH,
+  AuthenticationProgramBCH,
+  AuthenticationProgramStateBCH
+>;
+
+export const createTestAuthenticationProgramBCH = ({
+  lockingBytecode,
+  valueSatoshis,
+  unlockingBytecode,
+}: Output & Pick<Input, 'unlockingBytecode'>) => {
   const testFundingTransaction: TransactionBCH = {
     inputs: [
       {
@@ -84,8 +94,7 @@ export const createTestAuthenticationProgramBCH = (
     inputs: [
       {
         outpointIndex: 0,
-        outpointTransactionHash: getTransactionHashBE(
-          sha256,
+        outpointTransactionHash: hashTransactionP2pOrder(
           encodeTransactionCommon(testFundingTransaction)
         ),
 

@@ -25,21 +25,20 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
    * previous transaction.
    *
    * Encoded raw bitcoin transactions encode this value in little-endian byte
-   * order. However, it is more common to use big-endian byte order when
-   * displaying transaction hashes. (In part because the SHA-256 specification
-   * defines its output as big-endian, so this byte order is output by most
-   * cryptographic libraries.)
+   * order (see {@link hashTransactionP2pOrder}). However, it is more common to
+   * use big-endian byte order when displaying transaction hashes
+   * (see {@link hashTransactionUiOrder}).
    */
   outpointTransactionHash: HashRepresentation;
   /**
    * The positive, 32-bit unsigned integer used as the "sequence number" for
    * this input.
    *
-   * A sequence number is a complex bitfield which can encode several properties
+   * A sequence number is a complex bitfield that can encode several properties
    * about an input:
    * - **sequence age support** – whether or not the input can use
    * `OP_CHECKSEQUENCEVERIFY`, and the minimum number of blocks or length of
-   * time which has passed since this input's source transaction was mined (up
+   * time that has passed since this input's source transaction was mined (up
    * to approximately 1 year).
    * - **locktime support** – whether or not the input can use
    * `OP_CHECKLOCKTIMEVERIFY`
@@ -55,7 +54,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
    * input: a `lockingBytecode` can use the `OP_CHECKSEQUENCEVERIFY` operation
    * to verify that the funds being spent have been "locked" for a minimum
    * required amount of time (or block count). This can be used in protocols
-   * which require a reliable "proof-of-publication", like escrow, time-delayed
+   * that require a reliable "proof-of-publication", like escrow, time-delayed
    * withdrawals, and various payment channel protocols.
    *
    * Sequence age support is enabled unless the "disable bit" – the most
@@ -89,7 +88,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
    * intended for use in a multi-party signing protocol where parties updated
    * the "sequence number" to indicate to miners that this input should replace
    * a previously-signed input in an existing, not-yet-mined transaction. The
-   * original use-case was not completed and relied on behavior which can not be
+   * original use-case was not completed and relied on behavior that can not be
    * enforced by mining consensus, so the field was mostly-unused until it was
    * repurposed by BIP68 in block `419328`. See BIP68, BIP112, and BIP113 for
    * details.
@@ -97,7 +96,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
   sequenceNumber: number;
   /**
    * The bytecode used to unlock a transaction output. To spend an output,
-   * unlocking bytecode must be included in a transaction input which – when
+   * unlocking bytecode must be included in a transaction input that – when
    * evaluated in the authentication virtual machine with the locking bytecode –
    * completes in valid state.
    *
@@ -116,7 +115,7 @@ export interface Input<Bytecode = Uint8Array, HashRepresentation = Uint8Array> {
 export interface Output<Bytecode = Uint8Array, Amount = Uint8Array> {
   /**
    * The bytecode used to encumber this transaction output. To spend the output,
-   * unlocking bytecode must be included in a transaction input which – when
+   * unlocking bytecode must be included in a transaction input that – when
    * evaluated before the locking bytecode – completes in a valid state.
    *
    * A.K.A. `scriptPubKey` or "locking script"
@@ -130,7 +129,7 @@ export interface Output<Bytecode = Uint8Array, Amount = Uint8Array> {
    *
    * This value could be defined using a `number`, as `Number.MAX_SAFE_INTEGER`
    * (`9007199254740991`) is about 4 times larger than the maximum number of
-   * satoshis which should ever exist. I.e. even if all satoshis were
+   * satoshis that should ever exist. I.e. even if all satoshis were
    * consolidated into a single output, the transaction spending this output
    * could still be defined with a numeric `satoshis` value.
    *
@@ -149,15 +148,15 @@ export interface Output<Bytecode = Uint8Array, Amount = Uint8Array> {
    * included in the blockchain, e.g. for transaction size estimation or
    * off-chain Bitauth signatures.
    *
-   * To convert this value to and from a `BigInt` use `bigIntToBinUint64LE` and
-   * `binToBigIntUint64LE`, respectively.
+   * To convert this value to and from a `BigInt` use
+   * {@link bigIntToBinUint64LE} and {@link binToBigIntUint64LE}, respectively.
    */
   readonly valueSatoshis: Amount;
 }
 
 /**
  * The maximum uint64 value – an impossibly large, intentionally invalid value
- * for `valueSatoshis`. See `Transaction.valueSatoshis` for details.
+ * for `valueSatoshis`. See {@link Transaction.valueSatoshis} for details.
  */
 // prettier-ignore
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
@@ -205,7 +204,7 @@ export interface TransactionCommon<InputType = Input, OutputType = Output> {
    * to be properly validated without requiring the virtual machine to check the
    * sequence number of every other input (only that of the current input).
    *
-   * This is inconsequential for valid transactions, since any transaction which
+   * This is inconsequential for valid transactions, since any transaction that
    * disables `locktime` must have disabled locktime for all of its inputs;
    * `OP_CHECKLOCKTIMEVERIFY` is always properly enforced. However, because an
    * input can individually "disable locktime" without the full transaction
@@ -234,11 +233,11 @@ export interface CompilationDirectiveLocking<
   CompilationDataType
 > {
   /**
-   * The `Compiler` with which to generate bytecode.
+   * The {@link Compiler} with which to generate bytecode.
    */
   compiler: CompilerType;
   /**
-   * The `CompilationData` required to compile the specified script.
+   * The {@link CompilationData} required to compile the specified script.
    */
   data?: CompilationDataType;
   /**
@@ -252,8 +251,8 @@ export interface CompilationDirectiveUnlocking<
   CompilationDataType
 > extends CompilationDirectiveLocking<CompilerType, CompilationDataType> {
   /**
-   * The `satoshis` value of the `Output` being spent by this input. Required
-   * for use in signing serializations.
+   * The `satoshis` value of the {@link Output} being spent by this input.
+   * Required for use in signing serializations.
    */
   valueSatoshis: Output['valueSatoshis'];
 }
@@ -263,19 +262,19 @@ export interface CompilationDirectiveUnlockingEstimate<
   CompilationDataType
 > extends CompilationDirectiveUnlocking<CompilerType, CompilationDataType> {
   /**
-   * The scenario ID which can be used to estimate the final size of this
+   * The scenario ID that can be used to estimate the final size of this
    * unlocking script. This is required when using fee estimation.
    */
   estimate: string;
 }
 
 /**
- * An input which may optionally use a `CompilationDirectiveUnlocking` as its
- * `unlockingBytecode` property. During compilation, the final `lockingBytecode`
- * will be generated from this directive.
+ * An input that may optionally use a {@link CompilationDirectiveUnlocking} as
+ * its `unlockingBytecode` property. During compilation, the final
+ * `lockingBytecode` will be generated from this directive.
  *
  * If `RequireEstimate` is `true`, all input directives must include an
- * `estimate` scenario ID. See `estimateTransaction` for details.
+ * `estimate` scenario ID. See {@link estimateTransaction} for details.
  */
 export type InputTemplate<
   CompilerType,
@@ -289,13 +288,13 @@ export type InputTemplate<
 >;
 
 /**
- * An output which may optionally use a `CompilationDirectiveLocking` as its
- * `lockingBytecode` property. During compilation, the final `lockingBytecode`
- * will be generated from this directive.
+ * An output that may optionally use a {@link CompilationDirectiveLocking} as
+ * its `lockingBytecode` property. During compilation, the final
+ * `lockingBytecode` will be generated from this directive.
  *
  * If `EnableFeeEstimation` is `true`, the `valueSatoshis` value may also be
  * `undefined` (as estimated transactions always set output values to
- * `excessiveSatoshis`).
+ * {@link excessiveSatoshis}).
  */
 export type OutputTemplate<
   CompilerType,
@@ -307,8 +306,8 @@ export type OutputTemplate<
 >;
 
 /**
- * A `Transaction` which may optionally use compilation directives in place of
- * `lockingBytecode` and `unlockingBytecode` instances. During transaction
+ * A {@link Transaction} that may optionally use compilation directives in place
+ * of `lockingBytecode` and `unlockingBytecode` instances. During transaction
  * generation, VM bytecode will be generated from these directives.
  *
  *  If `EnableFeeEstimation` is `true`, all input directives must include an
@@ -329,18 +328,18 @@ export type TransactionTemplate<
  * A transaction template where all output amounts are provided (i.e. the values
  * of each "change" output has been decided). To estimate the final transaction
  * size given a transaction template (and from it, the required transaction
- * fee), see `estimateTransaction`.
+ * fee), see {@link estimateTransaction}.
  */
 export type TransactionTemplateFixed<CompilerType> =
   TransactionTemplate<CompilerType>;
 
 /**
- * A transaction template which enables fee estimation. The template must
+ * A transaction template that enables fee estimation. The template must
  * include a `totalInputValueSatoshis` value (the total satoshi value of all
  * transaction inputs); all unlocking compilation directives must provide an
- * `estimate` scenario ID which is used to estimate the size of the resulting
+ * `estimate` scenario ID that is used to estimate the size of the resulting
  * unlocking bytecode; and the `valueSatoshis` value of outputs is optional (all
- * satoshi values will be set to `impossibleSatoshis` in the estimated
+ * satoshi values will be set to {@link excessiveSatoshis} in the estimated
  * transaction).
  */
 export type TransactionTemplateEstimated<CompilerType> = TransactionTemplate<
@@ -369,17 +368,12 @@ export interface BytecodeGenerationErrorBase {
    */
   index: number;
   /**
-   * The stage of generation at which this error occurred – the `outputs` stage
-   * must complete before the `inputs` can begin.
-   */
-  // stage: 'outputs' | 'inputs';
-  /**
    * If the error occurred after the `parse` stage, the resolved script is
    * provided for analysis or processing (e.g. `getResolvedBytecode`).
    */
   resolved?: ResolvedScript;
   /**
-   * The compilation errors which occurred while generating this bytecode.
+   * The compilation errors that occurred while generating this bytecode.
    */
   errors: CompilationError[];
 }

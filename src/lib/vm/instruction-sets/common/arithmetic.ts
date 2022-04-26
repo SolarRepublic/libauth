@@ -5,15 +5,15 @@ import type {
 
 import {
   combineOperations,
-  useOneScriptNumber,
-  useThreeScriptNumbers,
-  useTwoScriptNumbers,
+  useOneVmNumber,
+  useThreeVmNumbers,
+  useTwoVmNumbers,
 } from './combinators.js';
 import {
   applyError,
   AuthenticationErrorCommon,
-  bigIntToScriptNumber,
-  booleanToScriptNumber,
+  bigIntToVmNumber,
+  booleanToVmNumber,
   pushToStack,
 } from './common.js';
 import { opVerify } from './flow-control.js';
@@ -24,8 +24,8 @@ export const op1Add = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
-    pushToStack(nextState, bigIntToScriptNumber(value + BigInt(1)))
+  useOneVmNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToVmNumber(value + BigInt(1)))
   );
 
 export const op1Sub = <
@@ -34,8 +34,8 @@ export const op1Sub = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
-    pushToStack(nextState, bigIntToScriptNumber(value - BigInt(1)))
+  useOneVmNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToVmNumber(value - BigInt(1)))
   );
 
 export const opNegate = <
@@ -44,8 +44,8 @@ export const opNegate = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
-    pushToStack(nextState, bigIntToScriptNumber(-value))
+  useOneVmNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToVmNumber(-value))
   );
 
 export const opAbs = <
@@ -54,8 +54,8 @@ export const opAbs = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
-    pushToStack(nextState, bigIntToScriptNumber(value < 0 ? -value : value))
+  useOneVmNumber(state, (nextState, [value]) =>
+    pushToStack(nextState, bigIntToVmNumber(value < 0 ? -value : value))
   );
 
 export const opNot = <
@@ -64,12 +64,12 @@ export const opNot = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
+  useOneVmNumber(state, (nextState, [value]) =>
     pushToStack(
       nextState,
       value === BigInt(0)
-        ? bigIntToScriptNumber(BigInt(1))
-        : bigIntToScriptNumber(BigInt(0))
+        ? bigIntToVmNumber(BigInt(1))
+        : bigIntToVmNumber(BigInt(0))
     )
   );
 
@@ -79,12 +79,12 @@ export const op0NotEqual = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, [value]) =>
+  useOneVmNumber(state, (nextState, [value]) =>
     pushToStack(
       nextState,
       value === BigInt(0)
-        ? bigIntToScriptNumber(BigInt(0))
-        : bigIntToScriptNumber(BigInt(1))
+        ? bigIntToVmNumber(BigInt(0))
+        : bigIntToVmNumber(BigInt(1))
     )
   );
 
@@ -94,8 +94,8 @@ export const opAdd = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, bigIntToScriptNumber(firstValue + secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, bigIntToVmNumber(firstValue + secondValue))
   );
 
 export const opSub = <
@@ -104,8 +104,8 @@ export const opSub = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, bigIntToScriptNumber(firstValue - secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, bigIntToVmNumber(firstValue - secondValue))
   );
 
 export const opBoolAnd = <
@@ -114,12 +114,10 @@ export const opBoolAnd = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
     pushToStack(
       nextState,
-      booleanToScriptNumber(
-        firstValue !== BigInt(0) && secondValue !== BigInt(0)
-      )
+      booleanToVmNumber(firstValue !== BigInt(0) && secondValue !== BigInt(0))
     )
   );
 
@@ -129,12 +127,10 @@ export const opBoolOr = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
     pushToStack(
       nextState,
-      booleanToScriptNumber(
-        firstValue !== BigInt(0) || secondValue !== BigInt(0)
-      )
+      booleanToVmNumber(firstValue !== BigInt(0) || secondValue !== BigInt(0))
     )
   );
 
@@ -144,8 +140,8 @@ export const opNumEqual = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue === secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue === secondValue))
   );
 
 export const opNumEqualVerify = combineOperations(opNumEqual, opVerify);
@@ -156,8 +152,8 @@ export const opNumNotEqual = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue !== secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue !== secondValue))
   );
 
 export const opLessThan = <
@@ -166,8 +162,8 @@ export const opLessThan = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue < secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue < secondValue))
   );
 
 export const opLessThanOrEqual = <
@@ -176,8 +172,8 @@ export const opLessThanOrEqual = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue <= secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue <= secondValue))
   );
 
 export const opGreaterThan = <
@@ -186,8 +182,8 @@ export const opGreaterThan = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue > secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue > secondValue))
   );
 
 export const opGreaterThanOrEqual = <
@@ -196,8 +192,8 @@ export const opGreaterThanOrEqual = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
-    pushToStack(nextState, booleanToScriptNumber(firstValue >= secondValue))
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
+    pushToStack(nextState, booleanToVmNumber(firstValue >= secondValue))
   );
 
 export const opMin = <
@@ -206,10 +202,10 @@ export const opMin = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
     pushToStack(
       nextState,
-      bigIntToScriptNumber(firstValue < secondValue ? firstValue : secondValue)
+      bigIntToVmNumber(firstValue < secondValue ? firstValue : secondValue)
     )
   );
 
@@ -219,10 +215,10 @@ export const opMax = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [firstValue, secondValue]) =>
+  useTwoVmNumbers(state, (nextState, [firstValue, secondValue]) =>
     pushToStack(
       nextState,
-      bigIntToScriptNumber(firstValue > secondValue ? firstValue : secondValue)
+      bigIntToVmNumber(firstValue > secondValue ? firstValue : secondValue)
     )
   );
 
@@ -232,15 +228,11 @@ export const opWithin = <
 >(
   state: State
 ) =>
-  useThreeScriptNumbers(
-    state,
-    (nextState, [firstValue, secondValue, thirdValue]) =>
-      pushToStack(
-        nextState,
-        booleanToScriptNumber(
-          secondValue <= firstValue && firstValue < thirdValue
-        )
-      )
+  useThreeVmNumbers(state, (nextState, [firstValue, secondValue, thirdValue]) =>
+    pushToStack(
+      nextState,
+      booleanToVmNumber(secondValue <= firstValue && firstValue < thirdValue)
+    )
   );
 
 export const opDiv = <
@@ -249,10 +241,10 @@ export const opDiv = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [a, b]) =>
+  useTwoVmNumbers(state, (nextState, [a, b]) =>
     b === BigInt(0)
       ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
-      : pushToStack(nextState, bigIntToScriptNumber(a / b))
+      : pushToStack(nextState, bigIntToVmNumber(a / b))
   );
 
 export const opMod = <
@@ -261,8 +253,8 @@ export const opMod = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(state, (nextState, [a, b]) =>
+  useTwoVmNumbers(state, (nextState, [a, b]) =>
     b === BigInt(0)
       ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
-      : pushToStack(nextState, bigIntToScriptNumber(a % b))
+      : pushToStack(nextState, bigIntToVmNumber(a % b))
   );

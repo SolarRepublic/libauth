@@ -6,8 +6,9 @@ import AuthenticationTemplateValidator from './ajv/validate-authentication-templ
 
 /**
  * Safely parse and validate an authentication template, returning either an
- * error message as a string or a valid `AuthenticationTemplate`. The template
- * may be provided either as an untrusted JSON string or as a pre-parsed object.
+ * error message as a string or a valid {@link AuthenticationTemplate}. The
+ * template may be provided either as an untrusted JSON string or as a
+ * pre-parsed object.
  *
  * This method validates both the structure and the contents of a template:
  * - All properties and sub-properties are verified to be of the expected type.
@@ -18,8 +19,8 @@ import AuthenticationTemplateValidator from './ajv/validate-authentication-templ
  * - The derivation paths of each HdKey are validated against each other.
  *
  * This method does not validate the CashAssembly contents of scripts (by
- * attempting compilation, evaluating `AuthenticationTemplateScriptTest`s, or
- * testing scenario generation).
+ * attempting compilation, evaluating {@link AuthenticationTemplateScriptTest}s,
+ * or testing scenario generation).
  *
  * @param untrustedJsonOrObject - the JSON string or object to validate as an
  * authentication template

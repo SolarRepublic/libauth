@@ -45,7 +45,7 @@ export interface Sha1 extends HashFunction {
   /**
    * Add input to an incremental sha1 hashing computation.
    *
-   * Returns a raw state which can again be passed to `update` with additional
+   * Returns a raw state that can again be passed to `update` with additional
    * input to continue the computation.
    *
    * When the computation has been updated with all input, pass the raw state to
@@ -59,7 +59,7 @@ export interface Sha1 extends HashFunction {
 
 /**
  * The most performant way to instantiate sha1 functionality. To avoid
- * using Node.js or DOM-specific APIs, you can use `instantiateSha1`.
+ * using Node.js or DOM-specific APIs, you can use {@link instantiateSha1}.
  *
  * @param webassemblyBytes - A buffer containing the sha1 binary.
  */
@@ -86,8 +86,8 @@ export const getEmbeddedSha1Binary = (): ArrayBuffer =>
   base64ToBin(sha1Base64Bytes).buffer;
 
 /**
- * An ultimately-portable (but slower) version of `instantiateSha1Bytes`
- * which does not require the consumer to provide the sha1 binary buffer.
+ * An ultimately-portable (but slower) version of {@link instantiateSha1Bytes}
+ * that does not require the consumer to provide the sha1 binary buffer.
  */
 export const instantiateSha1 = async (): Promise<Sha1> =>
   instantiateSha1Bytes(getEmbeddedSha1Binary());

@@ -1,20 +1,72 @@
-/**
- * This script generates all bch_vmb_tests, run it with: `yarn gen:tests`.
- */
-// import { mkdirSync } from 'node:fs';
+/* eslint-disable functional/no-expression-statement */
 
-import { bchVmbTests } from '../../lib.js';
+/**
+ * This script generates all bch_vmb_tests, run it with: `yarn gen:vmb-tests`.
+ */
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import { vmbTestsBCH } from '../../lib.js';
+
+import type { TestSet, VmbTest } from './bch-vmb-test-utils.js';
 
 /**
  * Script accepts one argument: an `outputDir` to which all generated files will
  * be saved.
  */
 const [, , outputDir] = process.argv;
+const outputAbsolutePath = resolve(outputDir);
 
-// const path = new URL(outputDir, import.meta.url);
+const testGroupsAndTypes = 2;
+const allTestCases = vmbTestsBCH.flat(testGroupsAndTypes);
 
-// eslint-disable-next-line functional/no-expression-statement, no-console
-console.log(import.meta.url, ',', outputDir);
+writeFileSync(
+  `${outputAbsolutePath}/bch_vmb_tests.json`,
+  JSON.stringify(allTestCases),
+  { encoding: 'utf8' }
+);
 
-// eslint-disable-next-line functional/no-expression-statement, no-console
-console.log(bchVmbTests);
+// iterate over allTestCases, split into files by testSets (case[6])
+
+const partitionedTestCases = allTestCases.reduce<{
+  [key in TestSet]?: VmbTest[];
+}>((accumulatedTestSets, testCase) => {
+  const [
+    shortId,
+    testDescription,
+    unlockingScriptAsm,
+    redeemOrLockingScriptAsm,
+    testTransactionHex,
+    sourceOutputsHex,
+    testSets,
+    inputIndex,
+  ] = testCase;
+
+  const withoutSets = [
+    shortId,
+    testDescription,
+    unlockingScriptAsm,
+    redeemOrLockingScriptAsm,
+    testTransactionHex,
+    sourceOutputsHex,
+    ...(inputIndex === undefined ? [] : [inputIndex]),
+  ] as VmbTest;
+
+  // eslint-disable-next-line functional/no-return-void
+  testSets.forEach((testSet) => {
+    // eslint-disable-next-line functional/immutable-data
+    accumulatedTestSets[testSet] = [
+      ...(accumulatedTestSets[testSet] ?? []),
+      withoutSets,
+    ];
+  });
+  return accumulatedTestSets;
+}, {});
+
+// eslint-disable-next-line functional/no-return-void
+Object.entries(partitionedTestCases).forEach(([testSetName, testSet]) => {
+  const filepath = testSetName.startsWith('CHIP')
+    ? `${outputAbsolutePath}/CHIPs/bch_vmb_tests_${testSetName}.json`
+    : `${outputAbsolutePath}/bch_vmb_tests_${testSetName}.json`;
+  writeFileSync(filepath, JSON.stringify(testSet), { encoding: 'utf8' });
+});

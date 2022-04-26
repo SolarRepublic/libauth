@@ -14,15 +14,15 @@ import type {
 
 export interface CompilerOperationDebug {
   /**
-   * An additional, complex property which may be returned by custom compiler
+   * An additional, complex property that may be returned by custom compiler
    * operations. For use in extending the compiler to support additional return
-   * information like `CompilerOperationSuccessSignature`.
+   * information like {@link CompilerOperationSuccessSignature}.
    */
   debug?: unknown;
 }
 
 /**
- * A non-recoverable error in a compiler operation. This is any error which
+ * A non-recoverable error in a compiler operation. This is any error that
  * cannot be resolved by simply providing a missing variable.
  */
 export interface CompilerOperationErrorFatal extends CompilerOperationDebug {
@@ -66,8 +66,8 @@ export interface CompilerOperationSuccessGeneric
 
 /**
  * A successful signature-generation compiler operation. This provides slightly
- * more debugging information than `CompilerOperationSuccessGeneric`. The
- * signing serialization or data message which was hashed to produce the
+ * more debugging information than {@link CompilerOperationSuccessGeneric}. The
+ * signing serialization or data message that was hashed to produce the
  * to-be-signed message is also provided in the result.
  */
 export type CompilerOperationSuccessSignatureType =
@@ -103,8 +103,8 @@ export interface CompilerOperationSuccessDataSignature
 }
 
 /**
- * An unsuccessful compiler operation result which should be skipped by the
- * compiler. See `attemptCompilerOperations` for details.
+ * An unsuccessful compiler operation result that should be skipped by the
+ * compiler. See {@link attemptCompilerOperations} for details.
  */
 export interface CompilerOperationSkip {
   status: 'skip';
@@ -116,23 +116,24 @@ export type CompilerOperationResult<CanBeSkipped extends boolean = false> =
     : CompilerOperationError | CompilerOperationSuccess;
 
 /**
- * A compiler operation method which accepts the identifier being evaluated, the
+ * A compiler operation method that accepts the identifier being evaluated, the
  * compilation data, and the compiler configuration, and returns a
- * `CompilerOperationResult`.
+ * {@link CompilerOperationResult}.
  *
- * @typeParam CompilationContext - the type of the `CompilationContext` in
+ * @typeParam CompilationContext - the type of the {@link CompilationContext} in
  * `CompilationData<CompilationContext>` expected by this operation
  * @typeParam CanBeSkipped - if true, this operation may return
  * `CompilerOperationSkip` to indicate that it cannot be applied and should be
  * skipped
- * @typeParam Data - the type of the `CompilationData` expected by this
+ * @typeParam Data - the type of the {@link CompilationData} expected by this
  * operation
- * @typeParam Configuration - the type of the `CompilerConfiguration` expected by
- * this operation
+ * @typeParam Configuration - the type of the {@link CompilerConfiguration}
+ * expected by this operation
  * @param identifier - The full identifier used to describe this operation, e.g.
  * `owner.signature.all_outputs`.
- * @param data - The `CompilationData` provided to the compiler
- * @param configuration - The `CompilerConfiguration` provided to the compiler
+ * @param data - The {@link CompilationData} provided to the compiler
+ * @param configuration - The {@link CompilerConfiguration} provided to
+ * the compiler
  */
 export type CompilerOperation<
   CompilationContext = unknown,
@@ -149,7 +150,7 @@ export type CompilerOperationsKeysCommon = 'public_key' | 'signature';
 
 /**
  * Valid identifiers for full transaction signing serialization algorithms. Each
- * full serialization is double-sha256 hashed to produce the digest which is
+ * full serialization is double-sha256 hashed to produce the digest that is
  * signed.
  */
 export type CompilerOperationsSigningSerializationFull =
@@ -195,11 +196,11 @@ export type CompilerOperationsSigningSerializationCommon =
  * The full context required to compile a given CashAssembly Template script –
  * everything required for the compiler to understand the CompilationData and
  * generate the compiled bytecode (targeting a specific
- * `AuthenticationVirtualMachine`).
+ * {@link AuthenticationVirtualMachine}).
  *
  * @remarks
- * A `CompilerConfiguration` must include a subset of the script's
- * `AuthenticationTemplate` – all the variables and scripts referenced
+ * A {@link CompilerConfiguration} must include a subset of the script's
+ * {@link AuthenticationTemplate} – all the variables and scripts referenced
  * (including children of children) by the script in question.
  *
  * The context must also include an object mapping of opcode identifiers to the
@@ -207,7 +208,7 @@ export type CompilerOperationsSigningSerializationCommon =
  *
  * If keys are used, an implementation of `sha256` and `secp256k1` is
  * required. If the script requires evaluations during compilation, the
- * evaluating `AuthenticationVirtualMachine` must also be included.
+ * evaluating {@link AuthenticationVirtualMachine} must also be included.
  *
  * @typeParam CompilationContext - additional data available to compiler
  * operations, e.g. transaction signing serialization components
@@ -243,10 +244,11 @@ export interface CompilerConfiguration<
   CompilerCurrentBlockTimeOperations extends string | false = false
 > {
   /**
-   * A method which accepts the compiled bytecode contents of a CashAssembly
-   * evaluation and produces the equivalent `AuthenticationProgram` to be
+   * A method that accepts the compiled bytecode contents of a CashAssembly
+   * evaluation and produces the equivalent {@link AuthenticationProgram} to be
    * evaluated by the VM. This method is used internally to compute CashAssembly
-   * evaluations. See `createAuthenticationProgramEvaluationCommon` for details.
+   * evaluations. See {@link createAuthenticationProgramEvaluationCommon}
+   * for details.
    */
   createAuthenticationProgram?:
     | ((
@@ -264,8 +266,8 @@ export interface CompilerConfiguration<
    *
    * To avoid compilation errors, this object must contain all `HdKey` variables
    * referenced by the script being compiled (including in child scripts). To
-   * enable support for error handling like `extractMissingVariables`, it's
-   * recommended that all variables be provided here.
+   * enable support for error handling like {@link extractMissingVariables},
+   * it's recommended that all variables be provided here.
    */
 
   entityOwnership?: { [variableId: string]: string } | undefined;
@@ -281,7 +283,7 @@ export interface CompilerConfiguration<
    * in a P2SH20 "redeemScript" format:
    * `OP_HASH160 <$(<result> OP_HASH160)> OP_EQUAL`
    *
-   * When compiling unlocking scripts which unlock locking scripts of type
+   * When compiling unlocking scripts that unlock locking scripts of type
    * `p2sh20`, the result will be transformed into the P2SH20 unlocking format:
    * `result <locking_script>` (where `locking_script` is the compiled bytecode
    * of the locking script, without the "redeemScript" transformation.)
@@ -359,13 +361,13 @@ export interface CompilerConfiguration<
   };
 
   /**
-   * An implementation of ripemd160 is required for any scripts which include
-   * `HdKey`s. This can be instantiated with `instantiateRipemd160`.
+   * An implementation of ripemd160 is required for any scripts that include
+   * `HdKey`s. This can be instantiated with {@link instantiateRipemd160}.
    */
   ripemd160?: { hash: Ripemd160['hash'] } | undefined;
   /**
    * An object mapping scenario identifiers to the
-   * `AuthenticationTemplateScenario`s they represent.
+   * {@link AuthenticationTemplateScenario}s they represent.
    */
   scenarios?:
     | { [scriptId: string]: AuthenticationTemplateScenario }
@@ -378,8 +380,8 @@ export interface CompilerConfiguration<
    */
   scripts: { [scriptId: string]: string };
   /**
-   * An implementation of secp256k1 is required for any scripts which include
-   * signatures. This can be instantiated with `instantiateSecp256k1`.
+   * An implementation of secp256k1 is required for any scripts that include
+   * signatures. This can be instantiated with {@link instantiateSecp256k1}.
    */
   secp256k1?:
     | {
@@ -391,27 +393,27 @@ export interface CompilerConfiguration<
       }
     | undefined;
   /**
-   * An implementation of sha256 is required for any scripts which include
-   * signatures. This can be instantiated with `instantiateSha256`.
+   * An implementation of sha256 is required for any scripts that include
+   * signatures. This can be instantiated with {@link instantiateSha256}.
    */
   sha256?: { hash: Sha256['hash'] } | undefined;
   /**
-   * An implementation of sha512 is required for any scripts which include
-   * `HdKey`s. This can be instantiated with `instantiateSha512`.
+   * An implementation of sha512 is required for any scripts that include
+   * `HdKey`s. This can be instantiated with {@link instantiateSha512}.
    */
   sha512?: { hash: Sha512['hash'] } | undefined;
   /**
-   * Only for use when recursively calling `compileScript` (e.g. in compiler
-   * operations).
+   * Only for use when recursively calling {@link compileScript} (e.g. in
+   * compiler operations).
    *
    * The "breadcrumb" path of script IDs currently being compiled, including the
    * current script. (E.g. `["grandparentId", "parentId", "scriptId"]`)
    *
    * CashAssembly identifier resolution must be acyclic. To prevent an infinite
-   * loop, `IdentifierResolutionFunction`s must abort resolution if they
+   * loop, {@link IdentifierResolutionFunction}s must abort resolution if they
    * encounter their own `id` while resolving another identifier. Likewise,
    * child scripts being resolved by a parent script may not reference any
-   * script which is already in the process of being resolved.
+   * script that is already in the process of being resolved.
    */
   sourceScriptIds?: string[] | undefined;
 
@@ -434,7 +436,7 @@ export interface CompilerConfiguration<
    * The `height` type indicates that the transaction's locktime is provided as
    * a block height (the `locktime` value is less than `500000000`).
    *
-   * See `AuthenticationTemplateScript.timeLockType` for details.
+   * See {@link AuthenticationTemplateScript.timeLockType} for details.
    */
   unlockingScriptTimeLockTypes?:
     | {
@@ -444,7 +446,7 @@ export interface CompilerConfiguration<
 
   /**
    * An object mapping template variable identifiers to the
-   * `AuthenticationTemplateVariable` describing them.
+   * {@link AuthenticationTemplateVariable} describing them.
    *
    * To avoid compilation errors, this object must contain all variables
    * referenced by the script being compiled (including in child scripts).
@@ -453,8 +455,8 @@ export interface CompilerConfiguration<
     | { [variableId: string]: AuthenticationTemplateVariable }
     | undefined;
   /**
-   * The AuthenticationVirtualMachine on which CashAssembly `evaluation` results
-   * will be computed.
+   * The {@link AuthenticationVirtualMachine} on which CashAssembly `evaluation`
+   * results will be computed.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vm?: AuthenticationVirtualMachine<any, any, any> | undefined;
@@ -469,7 +471,7 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
    * A map of full identifiers to pre-computed bytecode for this compilation.
    *
    * This is always used to provide bytecode for `AddressData` and `WalletData`,
-   * and it can also be used to provide public keys and signatures which have
+   * and it can also be used to provide public keys and signatures that have
    * been pre-computed by other entities (e.g. when computing these would
    * require access to private keys held by another entities).
    *
@@ -486,10 +488,10 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
    *
    * 1. When generating a `lockingBytecode` for a 2-of-2 wallet, a
    * malicious entity could provide a pre-computed value for `us.public_key`
-   * which is equal to `them.public_key` such that the resulting
+   * that is equal to `them.public_key` such that the resulting
    * `lockingBytecode` is entirely controlled by that entity.
    *
-   * 2. When generating an `unlockingBytecode` which includes a data signature,
+   * 2. When generating an `unlockingBytecode` that includes a data signature,
    * if a malicious entity can provide a pre-computed value for identifiers
    * present in the message, the malicious entity can trick the compiling entity
    * into signing an unintended message, e.g. creating a false attestation or
@@ -500,8 +502,8 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
    * first be evaluated only with trusted information (variables owned by or
    * previously validated by the compiling entity). On unsuccessful
    * compilations, missing variables can be extracted with
-   * `extractMissingVariables`, and each missing variable should be filled only
-   * by bytecode values provided by entities from which they were expected.
+   * {@link extractMissingVariables}, and each missing variable should be filled
+   * only by bytecode values provided by entities from which they were expected.
    */
   bytecode?: { [fullIdentifier: string]: Uint8Array };
   /**
@@ -529,15 +531,15 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
      * the dynamic index (`i`) used in each `privateDerivationPath` or
      * `publicDerivationPath`.
      *
-     * This is required for any compiler operation which requires derivation.
+     * This is required for any compiler operation that requires derivation.
      * Typically, the value is incremented by one for each address in a wallet.
      */
     addressIndex?: number;
     /**
      * A map of entity IDs to HD public keys. These HD public keys are used to
      * derive public keys for each `HdKey` variable assigned to that entity (as
-     * specified in `CompilerConfiguration.entityOwnership`) according to its
-     * `publicDerivationPath`.
+     * specified in {@link CompilerConfiguration.entityOwnership}) according to
+     * its `publicDerivationPath`.
      *
      * HD public keys may be encoded for either mainnet or testnet (the network
      * information is ignored).
@@ -550,8 +552,8 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
     /**
      * A map of entity IDs to master HD private keys. These master HD private
      * keys are used to derive each `HdKey` variable assigned to that entity (as
-     * specified in `CompilerConfiguration.entityOwnership`) according to its
-     * `privateDerivationPath`.
+     * specified in {@link CompilerConfiguration.entityOwnership}) according to
+     * its `privateDerivationPath`.
      *
      * HD private keys may be encoded for either mainnet or testnet (the network
      * information is ignored).
@@ -573,7 +575,7 @@ export interface CompilationData<CompilationContext = CompilationContextBCH> {
     privateKeys?: { [variableId: string]: Uint8Array };
   };
   /**
-   * The `CompilationContext` expected by this particular compiler for any
+   * The {@link CompilationContext} expected by this particular compiler for any
    * operations used in the compilation.
    */
   compilationContext?: CompilationContext;
@@ -612,7 +614,7 @@ export type BytecodeGenerationResult<ProgramState> =
 /**
  * A fully-generated authentication template scenario. Useful for estimating
  * transactions and testing/debugging authentication templates. See
- * `AuthenticationTemplateScenario` for details.
+ * {@link AuthenticationTemplateScenario} for details.
  */
 export interface Scenario {
   data: CompilationData;
@@ -620,12 +622,14 @@ export interface Scenario {
 }
 
 /**
- * A scenario generation result which includes all compilation information for
+ * A scenario generation result that includes all compilation information for
  * the scripts under test (in the scenario's "slot"s). This allows
  * authentication template editors to display debugging information in context.
  *
  * Note, scenarios can also include compilations for source outputs, inputs, and
- * outputs which are not under test – information for these compilations is included in the .
+ * outputs that are not under test – while debugging information is not
+ * provided for these other compilations, and errors will result in `scenario`
+ * being set to an error message (`string`).
  */
 export interface ScenarioGenerationDebuggingResult<ProgramState> {
   /**
@@ -645,8 +649,9 @@ export interface ScenarioGenerationDebuggingResult<ProgramState> {
 }
 
 /**
- * A `Compiler` is a wrapper around a specific `CompilerConfiguration` which
- * exposes a purely-functional interface and allows for stronger type checking.
+ * A {@link Compiler} is a wrapper around a specific
+ * {@link CompilerConfiguration} that exposes a purely-functional interface and
+ * allows for stronger type checking.
  */
 export interface Compiler<
   CompilationContext,
@@ -656,18 +661,23 @@ export interface Compiler<
   configuration: Configuration;
   /**
    * Generate the bytecode for the given script and compilation data.
-   *
-   * @param script - the identifier of the script to compile
-   * @param data - the compilation data required to compile this script
-   * @param debug - enable compilation debugging information (default: `false`)
    */
   generateBytecode: <Debug extends boolean>({
     data,
     debug,
     scriptId,
   }: {
+    /**
+     * The compilation data required to compile this script
+     */
     data: CompilationData<CompilationContext>;
+    /**
+     * Enable compilation debugging information (default: `false`)
+     */
     debug?: Debug;
+    /**
+     * The identifier of the script to compile
+     */
     scriptId: string;
   }) => Debug extends true
     ? CompilationResult<ProgramState>
@@ -681,19 +691,27 @@ export interface Compiler<
    * isolated scripts, i.e. scripts without either tests or any corresponding
    * unlocking scripts).
    *
-   * @param scenarioId - the identifier of the scenario to generate
-   * @param unlockingScriptId - the identifier of the unlocking script to use in
-   * the scenario's input slot (the matching locking script will be used in the
-   * source output slot)
-   * @param debug - enable compilation debugging information (default: `false`)
+   * @param scenarioId -
+   * @param unlockingScriptId -
+   * @param debug -
    */
   generateScenario: <Debug extends boolean>({
     debug,
     scenarioId,
     unlockingScriptId,
   }: {
+    /**
+     * Enable compilation debugging information (default: `false`)
+     */
     debug?: Debug;
+    /**
+     * The identifier of the scenario to generate
+     */
     scenarioId?: string | undefined;
+    /**
+     * The identifier of the unlocking script to use in the scenario's input
+     * slot (the matching locking script will be used in the source output slot)
+     */
     unlockingScriptId?: string | undefined;
   }) =>
     | string

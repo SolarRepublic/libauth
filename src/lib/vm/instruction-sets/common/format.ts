@@ -5,11 +5,11 @@ import type {
 } from '../../vm-types';
 import {
   applyError,
-  bigIntToScriptNumber,
+  bigIntToVmNumber,
   ConsensusCommon,
   pushToStack,
-  useOneScriptNumber,
   useOneStackItem,
+  useOneVmNumber,
   useTwoStackItems,
 } from '../instruction-sets.js';
 
@@ -36,7 +36,7 @@ export const opSplit = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, value) => {
+  useOneVmNumber(state, (nextState, value) => {
     const index = Number(value);
     return useOneStackItem(nextState, (finalState, [item]) =>
       index < 0 || index > item.length
@@ -50,20 +50,23 @@ enum Constants {
   negativeSign = 0x80,
 }
 
-export const padMinimallyEncodedScriptNumber = (
-  scriptNumber: Uint8Array,
+/**
+ * Pad a minimally-encoded VM number for `OP_NUM2BIN`.
+ */
+export const padMinimallyEncodedVmNumber = (
+  vmNumber: Uint8Array,
   length: number
 ) => {
   // eslint-disable-next-line functional/no-let
   let signBit = Constants.positiveSign;
   // eslint-disable-next-line functional/no-conditional-statement
-  if (scriptNumber.length > 0) {
+  if (vmNumber.length > 0) {
     // eslint-disable-next-line functional/no-expression-statement, no-bitwise
-    signBit = scriptNumber[scriptNumber.length - 1] & Constants.negativeSign;
+    signBit = vmNumber[vmNumber.length - 1] & Constants.negativeSign;
     // eslint-disable-next-line functional/no-expression-statement, no-bitwise, functional/immutable-data
-    scriptNumber[scriptNumber.length - 1] &= Constants.negativeSign - 1;
+    vmNumber[vmNumber.length - 1] &= Constants.negativeSign - 1;
   }
-  const result = Array.from(scriptNumber);
+  const result = Array.from(vmNumber);
   // eslint-disable-next-line functional/no-loop-statement
   while (result.length < length - 1) {
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
@@ -80,17 +83,17 @@ export const opNum2Bin = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, value) => {
+  useOneVmNumber(state, (nextState, value) => {
     const targetLength = Number(value);
     return targetLength > ConsensusCommon.maximumStackItemLength
       ? applyError(
           AuthenticationErrorCommon.exceededMaximumStackItemLength,
           nextState
         )
-      : useOneScriptNumber(
+      : useOneVmNumber(
           nextState,
           (finalState, [target]) => {
-            const minimallyEncoded = bigIntToScriptNumber(target);
+            const minimallyEncoded = bigIntToVmNumber(target);
             return minimallyEncoded.length > targetLength
               ? applyError(
                   AuthenticationErrorCommon.insufficientLength,
@@ -100,14 +103,11 @@ export const opNum2Bin = <
               ? pushToStack(finalState, minimallyEncoded)
               : pushToStack(
                   finalState,
-                  padMinimallyEncodedScriptNumber(
-                    minimallyEncoded,
-                    targetLength
-                  )
+                  padMinimallyEncodedVmNumber(minimallyEncoded, targetLength)
                 );
           },
           {
-            maximumScriptNumberByteLength:
+            maximumVmNumberByteLength:
               // TODO: is this right?
               ConsensusCommon.maximumStackItemLength,
             requireMinimalEncoding: false,
@@ -121,20 +121,20 @@ export const opBin2Num = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [target]) => {
-      const minimallyEncoded = bigIntToScriptNumber(target);
-      return minimallyEncoded.length > ConsensusCommon.maximumScriptNumberLength
+      const minimallyEncoded = bigIntToVmNumber(target);
+      return minimallyEncoded.length > ConsensusCommon.maximumVmNumberLength
         ? applyError(
-            AuthenticationErrorCommon.exceededMaximumScriptNumberLength,
+            AuthenticationErrorCommon.exceededMaximumVmNumberLength,
             nextState
           )
         : pushToStack(nextState, minimallyEncoded);
     },
     {
       // TODO: is this right?
-      maximumScriptNumberByteLength: ConsensusCommon.maximumStackItemLength,
+      maximumVmNumberByteLength: ConsensusCommon.maximumStackItemLength,
       requireMinimalEncoding: false,
     }
   );

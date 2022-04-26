@@ -1,3 +1,7 @@
+/**
+ * The `BCH_2022_05` instruction set.
+ */
+
 export enum OpcodesBCH2022 {
   /**
    * A.K.A. `OP_FALSE` or `OP_PUSHBYTES_0`

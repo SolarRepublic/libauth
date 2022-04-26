@@ -8,7 +8,7 @@ import {
   containsRange,
   createAuthenticationProgramEvaluationCommon,
   createCompilerBCH,
-  createCompilerCommonSynchronous,
+  createCompilerCommon,
   extractBytecodeResolutions,
   extractEvaluationSamples,
   extractEvaluationSamplesRecursive,
@@ -93,7 +93,7 @@ test('compileCashAssembly', (t) => {
 });
 
 test('extractBytecodeResolutions', (t) => {
-  const compiler = createCompilerCommonSynchronous({
+  const compiler = createCompilerCommon({
     scripts: {
       pushNumbers: '<1> var',
       t: 'pushNumbers OP_ADD <0x03> OP_EQUAL <"abc"> OP_DROP <0b11> OP_EQUAL var2',
@@ -223,7 +223,7 @@ const compiler = createCompilerBCH({
     docs: '0x00 0x01 0xab01 0xcd9300 $(OP_3 <0x00> OP_SWAP OP_CAT) 0x010203',
     /**
      * Second node closes an open sample, then fails during an internal state.
-     * The sample should use the error state and the instruction which caused
+     * The sample should use the error state and the instruction that caused
      * it, ignoring any later (unexecuted) instructions.
      */
     error1: '0x01 $(<0xab OP_RETURN OP_0>)',
@@ -1491,7 +1491,7 @@ test.failing(
   }
 );
 
-test('extractEvaluationSamples: node which closes an open sample with an error', (t) => {
+test('extractEvaluationSamples: node that closes an open sample with an error', (t) => {
   const result = compiler.generateBytecode({
     data: {},
     debug: true,

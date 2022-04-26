@@ -45,7 +45,7 @@ export interface Ripemd160 extends HashFunction {
   /**
    * Add input to an incremental ripemd160 hashing computation.
    *
-   * Returns a raw state which can again be passed to `update` with additional
+   * Returns a raw state that can again be passed to `update` with additional
    * input to continue the computation.
    *
    * When the computation has been updated with all input, pass the raw state to
@@ -59,7 +59,7 @@ export interface Ripemd160 extends HashFunction {
 
 /**
  * The most performant way to instantiate ripemd160 functionality. To avoid
- * using Node.js or DOM-specific APIs, you can use `instantiateRipemd160`.
+ * using Node.js or DOM-specific APIs, you can use {@link instantiateRipemd160}.
  *
  * @param webassemblyBytes - A buffer containing the ripemd160 binary.
  */
@@ -86,8 +86,9 @@ export const getEmbeddedRipemd160Binary = () =>
   base64ToBin(ripemd160Base64Bytes).buffer;
 
 /**
- * An ultimately-portable (but slower) version of `instantiateRipemd160Bytes`
- * which does not require the consumer to provide the ripemd160 binary buffer.
+ * An ultimately-portable (but slower) version of
+ * {@link instantiateRipemd160Bytes} that does not require the consumer to
+ * provide the ripemd160 binary buffer.
  */
 export const instantiateRipemd160 = async (): Promise<Ripemd160> =>
   instantiateRipemd160Bytes(getEmbeddedRipemd160Binary());

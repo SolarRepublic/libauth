@@ -36,12 +36,12 @@ export type WalletImportFormatType =
  *
  * WIF encodes the 32-byte private key, a 4-byte checksum, and a `type`
  * indicating the intended usage for the private key. See
- * `WalletImportFormatType` for details.
+ * {@link WalletImportFormatType} for details.
  *
  * @remarks
  * WIF-encoding uses the Base58Address format with version
- * `Base58AddressFormatVersion.wif` (`128`/`0x80`) or
- * `Base58AddressFormatVersion.wifTestnet` (`239`/`0xef`), respectively.
+ * {@link Base58AddressFormatVersion.wif} (`128`/`0x80`) or
+ * {@link Base58AddressFormatVersion.wifTestnet} (`239`/`0xef`), respectively.
  *
  * To indicate that the private key is intended for use in a P2PKH address using
  * the compressed form of its derived public key, a `0x01` is appended to the
@@ -50,8 +50,8 @@ export type WalletImportFormatType =
  *
  * @param privateKey - a 32-byte Secp256k1 ECDSA private key
  * @param type - the intended usage of the private key (e.g. `mainnet` or
- * @param sha256 - an implementation of sha256
  * `testnet`)
+ * @param sha256 - an implementation of sha256
  */
 export const encodePrivateKeyWif = (
   privateKey: Uint8Array,
@@ -75,7 +75,7 @@ export const encodePrivateKeyWif = (
 
 /**
  * Decode a private key using Wallet Import Format (WIF). See
- * `encodePrivateKeyWif` for details.
+ * {@link encodePrivateKeyWif} for details.
  *
  * @param wifKey - the private key to decode (in Wallet Import Format)
  * @param sha256 - an implementation of sha256

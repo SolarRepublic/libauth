@@ -7,7 +7,7 @@ import type {
   CompilationContextCommon,
 } from '../../lib';
 import type { CompilationData, CompilerConfiguration } from '../template';
-import { createCompilerCommonSynchronous } from '../template.js';
+import { createCompilerCommon } from '../template.js';
 
 import type {
   CompilationResult,
@@ -50,8 +50,8 @@ export const describeExpectedInput = (expectedArray: string[]) => {
 };
 
 /**
- * This method is generally for internal use. The `compileScript` method is the
- * recommended API for direct compilation.
+ * This method is generally for internal use. The {@link compileScript} method
+ * is the recommended API for direct compilation.
  */
 export const compileScriptContents = <
   ProgramState extends AuthenticationProgramStateControlStack &
@@ -120,8 +120,8 @@ const emptyRange = () => ({
 });
 
 /**
- * This method is generally for internal use. The `compileScript` method is the
- * recommended API for direct compilation.
+ * This method is generally for internal use. The {@link compileScript} method
+ * is the recommended API for direct compilation.
  */
 export const compileScriptRaw = <
   ProgramState extends AuthenticationProgramStateControlStack &
@@ -196,7 +196,7 @@ export const compileScriptP2sh20Locking = <
       >
     | undefined;
 }) => {
-  const compiler = createCompilerCommonSynchronous({
+  const compiler = createCompilerCommon({
     scripts: {
       p2sh20Locking: 'OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL',
     },
@@ -218,7 +218,7 @@ export const compileScriptP2sh20Unlocking = <ProgramState>({
   lockingBytecode: Uint8Array;
   unlockingBytecode: Uint8Array;
 }) => {
-  const compiler = createCompilerCommonSynchronous({
+  const compiler = createCompilerCommon({
     scripts: {
       p2sh20Unlocking: 'unlockingBytecode <lockingBytecode>',
     },
@@ -303,7 +303,7 @@ export const compileScript = <
       errorType: 'parse',
       errors: [
         {
-          error: `The script "${scriptId}" requires a locktime, but this input's sequence number is set to disable transaction locktime (0xffffffff). This will cause the OP_CHECKLOCKTIMEVERIFY operation to error when the transaction is verified. To be valid, this input must use a sequence number which does not disable locktime.`,
+          error: `The script "${scriptId}" requires a locktime, but this input's sequence number is set to disable transaction locktime (0xffffffff). This will cause the OP_CHECKLOCKTIMEVERIFY operation to error when the transaction is verified. To be valid, this input must use a sequence number that does not disable locktime.`,
           range: emptyRange(),
         },
       ],

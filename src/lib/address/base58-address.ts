@@ -100,7 +100,8 @@ export type Base58AddressNetwork = 'copayBCH' | 'mainnet' | 'testnet';
  * The checksum is the first 4 bytes of the double-SHA256 hash of the version
  * byte followed by the payload.
  *
- * @param version - the address version byte (see `Base58Version`)
+ * @param version - the address version byte (see
+ * {@link Base58AddressFormatVersion})
  * @param payload - the Uint8Array payload to encode
  * @param sha256 - an implementation of sha256 (defaults to the internal WASM
  * implementation)
@@ -126,8 +127,8 @@ export const encodeBase58AddressFormat = <
  * returned string will not be a valid Base58Address if `hash` is not exactly 20
  * bytes. If needed, validate the length of `hash` before calling this method.
  *
- * For other standards which use the Base58Address format but have other version
- * or length requirements, use `encodeCashAddressFormat`.
+ * For other standards that use the Base58Address format but have other version
+ * or length requirements, use {@link encodeCashAddressFormat}.
  *
  * @param type - the type of address to encode: `p2pkh`, `p2sh20`,
  * `p2pkh-testnet`, or `p2sh20-testnet`
@@ -170,7 +171,7 @@ export enum Base58AddressError {
 
 /**
  * Attempt to decode a Base58Address-formatted string. This is more lenient than
- * `decodeCashAddress`, which also validates the address version.
+ * {@link decodeCashAddress}, which also validates the address version.
  *
  * Returns the contents of the address or an error message as a string.
  *
@@ -213,15 +214,16 @@ export const decodeBase58AddressFormat = (
  * Decode and validate a Base58Address, strictly checking the version and
  * payload length.
  *
- * For other address-like standards which closely follow the Base58Address
+ * For other address-like standards that closely follow the Base58Address
  * format (but have alternative version byte requirements), use
- * `decodeBase58AddressFormat`.
+ * {@link decodeBase58AddressFormat}.
  *
  * @remarks
  * Because the Wallet Import Format (WIF) private key serialization format uses
  * the Base58Address format, some libraries allow WIF key decoding via the same
  * method as base58 address decoding. This method strictly accepts only
- * Base58Address types, but WIF keys can be decoded with `decodePrivateKeyWif`.
+ * Base58Address types, but WIF keys can be decoded with
+ * {@link decodePrivateKeyWif}.
  *
  * @param address - the string to decode as a base58 address
  * @param sha256 - an implementation of sha256 (defaults to the internal WASM

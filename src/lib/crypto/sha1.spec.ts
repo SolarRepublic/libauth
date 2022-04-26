@@ -14,15 +14,15 @@ const abcHash = new Uint8Array([169, 153, 62, 54, 71, 6, 129, 106, 186, 62, 37, 
 const testHash = new Uint8Array([169, 74, 143, 229, 204, 177, 155, 166, 28, 76, 8, 115, 211, 145, 233, 135, 152, 47, 187, 211]);
 
 // prettier-ignore
-const bitcoinTsHash = new Uint8Array([172, 243, 119, 55, 165, 187, 137, 56, 129, 102, 231, 172, 37, 23, 43, 80, 241, 124, 241, 186]);
+const libauthHash = new Uint8Array([0, 53, 165, 162, 96, 82, 50, 137, 170, 76, 156, 212, 51, 123, 185, 71, 205, 18, 93, 14]);
 
 testHashFunction<Sha1>({
   abcHash,
-  bitcoinTsHash,
   getEmbeddedBinary: getEmbeddedSha1Binary,
   hashFunctionName: 'sha1',
   instantiate: instantiateSha1,
   instantiateBytes: instantiateSha1Bytes,
+  libauthHash,
   nodeJsAlgorithm: 'sha1',
   testHash,
 });

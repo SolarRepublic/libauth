@@ -63,7 +63,7 @@ pendingTests.map((expectation, currentTest) => {
       sourceOutputs,
       transaction: tx,
     });
-    const serialization = encodeSigningSerializationBCH(sha256, {
+    const serialization = encodeSigningSerializationBCH({
       correspondingOutput: components.correspondingOutput,
       coveredBytecode: lockingBytecode,
       forkId: signingSerializationType.slice(1, 4),

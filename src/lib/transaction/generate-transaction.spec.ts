@@ -20,7 +20,7 @@ const maybeP2pkhTemplate: unknown = {
       scripts: ['lock', 'unlock'],
       variables: {
         owner: {
-          description: 'The private key which controls this wallet.',
+          description: 'The private key that controls this wallet.',
           name: "Owner's Key",
           type: 'Key',
         },

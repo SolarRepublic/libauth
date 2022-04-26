@@ -10,7 +10,7 @@ export interface BaseConverter {
 }
 
 /**
- * Create a `BaseConverter`, which exposes methods for encoding and decoding
+ * Create a {@link BaseConverter}, exposing methods for encoding and decoding
  * `Uint8Array`s using bitcoin-style padding: each leading zero in the input is
  * replaced with the zero-index character of the `alphabet`, then the remainder
  * of the input is encoded as a large number in the specified alphabet.
@@ -25,7 +25,7 @@ export interface BaseConverter {
  *
  * If the alphabet is malformed, this method returns the error as a `string`.
  *
- * @param alphabet - an ordered string which maps each index to a character,
+ * @param alphabet - an ordered string that maps each index to a character,
  * e.g. `0123456789`.
  */
 // Algorithm from the `base-x` implementation (derived from the original Satoshi implementation): https://github.com/cryptocoinjs/base-x
@@ -167,7 +167,7 @@ const base58 = createBaseConverter(bitcoinBase58Alphabet) as BaseConverter;
 /**
  * Convert a bitcoin-style base58-encoded string to a Uint8Array.
  *
- * See `createBaseConverter` for format details.
+ * See {@link createBaseConverter} for format details.
  * @param input - a valid base58-encoded string to decode
  */
 export const base58ToBin = base58.decode;
@@ -175,7 +175,7 @@ export const base58ToBin = base58.decode;
 /**
  * Convert a Uint8Array to a bitcoin-style base58-encoded string.
  *
- * See `createBaseConverter` for format details.
+ * See {@link createBaseConverter} for format details.
  * @param input - the Uint8Array to base58 encode
  */
 export const binToBase58 = base58.encode;

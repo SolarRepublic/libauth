@@ -5,15 +5,13 @@ import {
   bigIntToBinUint64LE,
   decodeTransactionCommon,
   encodeTransactionCommon,
-  getTransactionHash,
-  getTransactionHashBE,
-  getTransactionHashLE,
+  hashTransaction,
+  hashTransactionP2pOrder,
+  hashTransactionUiOrder,
   hexToBin,
-  instantiateSha256,
+  sha256,
   TransactionDecodingError,
 } from '../lib.js';
-
-const sha256Promise = instantiateSha256();
 
 test('decodeTransaction', (t) => {
   /**
@@ -218,16 +216,37 @@ test('decodeTransaction: invalid', (t) => {
   );
 });
 
-test('getTransactionHash, getTransactionHashBE, getTransactionHashLE', async (t) => {
-  const sha256 = await sha256Promise;
+test('hashTransaction, hashTransactionUiOrder, hashTransactionP2pOrder', (t) => {
   const tx =
     '3eb87070042d16f9469b0080a3c1fe8de0feae345200beef8b1e0d7c62501ae0df899dca1e03000000066a0065525365ffffffffd14a9a335e8babddd89b5d0b6a0f41dd6b18848050a0fc48ce32d892e11817fd030000000863acac00535200527ff62cf3ad30d9064e180eaed5e6303950121a8086b5266b55156e4f7612f2c7ebf223e0020000000100ffffffff6273ca3aceb55931160fa7a3064682b4790ee016b4a5c0c0d101fd449dff88ba01000000055351ac526aa3b8223d0421f25b0400000000026552f92db70500000000075253516a656a53c4a908010000000000b5192901000000000652525251516aa148ca38';
-  const txid =
-    'fbc40e8ef481fa11e5ffd2477a28297bcceab8bed0d28405774e372b4ffead67';
-  t.deepEqual(getTransactionHash(sha256, hexToBin(tx)), txid);
-  t.deepEqual(getTransactionHashBE(sha256, hexToBin(tx)), hexToBin(txid));
+  const txId =
+    '67adfe4f2b374e770584d2d0beb8eacc7b29287a47d2ffe511fa81f48e0ec4fb';
+  const halTx =
+    '0100000001c997a5e56e104102fa209c6a852dd90660a20b2d9c352423edce25857fcd3704000000004847304402204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd410220181522ec8eca07de4860a4acdd12909d831cc56cbbac4622082221a8768d1d0901ffffffff0200ca9a3b00000000434104ae1a62fe09c5f51b13905f07f06b99a2f7159b2225f374cd378d71302fa28414e7aab37397f554a7df5f142c21c1b7303b8a0626f1baded5c72a704f7e6cd84cac00286bee0000000043410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac00000000';
+  const halTxId =
+    'f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16';
+
+  t.deepEqual(hashTransaction(hexToBin(tx)), txId);
+  t.deepEqual(hashTransactionUiOrder(hexToBin(tx)), hexToBin(txId));
+  t.deepEqual(hashTransactionUiOrder(hexToBin(tx), sha256), hexToBin(txId));
+  t.deepEqual(hashTransactionP2pOrder(hexToBin(tx)), hexToBin(txId).reverse());
   t.deepEqual(
-    getTransactionHashLE(sha256, hexToBin(tx)),
-    hexToBin(txid).reverse()
+    hashTransactionP2pOrder(hexToBin(tx), sha256),
+    hexToBin(txId).reverse()
+  );
+
+  t.deepEqual(hashTransaction(hexToBin(halTx)), halTxId);
+  t.deepEqual(hashTransactionUiOrder(hexToBin(halTx)), hexToBin(halTxId));
+  t.deepEqual(
+    hashTransactionUiOrder(hexToBin(halTx), sha256),
+    hexToBin(halTxId)
+  );
+  t.deepEqual(
+    hashTransactionP2pOrder(hexToBin(halTx)),
+    hexToBin(halTxId).reverse()
+  );
+  t.deepEqual(
+    hashTransactionP2pOrder(hexToBin(halTx), sha256),
+    hexToBin(halTxId).reverse()
   );
 });

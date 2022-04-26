@@ -46,7 +46,7 @@ import {
  * create an instance of the BCH 2021 virtual machine instruction set.
  *
  * @param standard - If `true`, the additional `isStandard` validations will be
- * enabled. Transactions which fail these rules are often called "non-standard"
+ * enabled. Transactions that fail these rules are often called "non-standard"
  * and can technically be included by miners in valid blocks, but most network
  * nodes will refuse to relay them. (Default: `true`)
  */

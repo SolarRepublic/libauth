@@ -8,8 +8,8 @@ export const opNopDisallowed = <State>(state: State) =>
   applyError(AuthenticationErrorCommon.calledUpgradableNop, state);
 
 /**
- * "Disabled" operations are explicitly forbidden from occurring anywhere in a
- * script, even within an unexecuted branch.
+ * "Disabled" operations are explicitly forbidden from occurring anywhere in VM
+ * bytecode, even within an unexecuted branch.
  */
 export const disabledOperation = <
   State extends AuthenticationProgramStateError

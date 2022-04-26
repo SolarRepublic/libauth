@@ -6,14 +6,14 @@ import {
   authenticationTemplateP2pkh,
   authenticationTemplateP2pkhNonHd,
   authenticationTemplateToCompilerConfiguration,
-  createCompilerCommonSynchronous,
+  createCompilerCommon,
   hexToBin,
   stringify,
   stringifyTestVector,
 } from '../lib.js';
 
-test('createCompilerCommonSynchronous', (t) => {
-  const compiler = createCompilerCommonSynchronous({
+test('createCompilerCommon', (t) => {
+  const compiler = createCompilerCommon({
     scripts: {
       lock: 'OP_DUP OP_HASH160 <some_public_key> OP_EQUALVERIFY OP_CHECKSIG',
     },
@@ -60,7 +60,7 @@ test('authenticationTemplateToCompilerConfiguration: authenticationTemplateP2pkh
       },
       variables: {
         key: {
-          description: 'The private key which controls this wallet.',
+          description: 'The private key that controls this wallet.',
           name: 'Key',
           type: 'Key',
         },
@@ -93,7 +93,7 @@ test('authenticationTemplateToCompilerConfiguration: authenticationTemplateP2pkh
       },
       variables: {
         key: {
-          description: 'The private key which controls this wallet.',
+          description: 'The private key that controls this wallet.',
           name: 'Key',
           type: 'HdKey',
         },

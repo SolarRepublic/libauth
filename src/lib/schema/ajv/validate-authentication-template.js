@@ -10,7 +10,7 @@ const schema22 = {
       properties: {
         $schema: {
           description:
-            'The URI which identifies the JSON Schema used by this template. Try: `https://libauth.org/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.',
+            'The URI that identifies the JSON Schema used by this template. Try: `https://libauth.org/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.',
           type: 'string',
         },
         description: {
@@ -119,7 +119,7 @@ const schema22 = {
             $ref: '#/definitions/AuthenticationTemplateVariable',
           },
           description:
-            "A map of variables which must be provided by this entity for use in the template's scripts. Some variables are required before locking script generation, while some variables can or must be resolved only before unlocking script generation.\n\nObject keys are used as variable identifiers, and by convention, should use `snake_case`.",
+            "A map of variables that must be provided by this entity for use in the template's scripts. Some variables are required before locking script generation, while some variables can or must be resolved only before unlocking script generation.\n\nObject keys are used as variable identifiers, and by convention, should use `snake_case`.",
           type: 'object',
         },
       },
@@ -150,12 +150,12 @@ const schema22 = {
         },
         privateDerivationPath: {
           description:
-            "The derivation path used to derive this `HdKey` from the owning entity's HD private key. By default, `m/i`.\n\nThis path uses the notation specified in BIP32 and the `i` character to represent the location of the `addressIndex`:\n\nThe first character must be `m` (private derivation), followed by sets of `/` and a number representing the child index used in the derivation at that depth. Hardened derivation is represented by a trailing `'`, and hardened child indexes are represented with the hardened index offset (`2147483648`) subtracted. The `i` character is replaced with the value of `addressIndex` plus this `HdKey`'s `addressOffset`. If the `i` character is followed by `'`, the hardened index offset is added (`2147483648`) and hardened derivation is used.\n\nFor example, `m/0/1'/i'` uses 3 levels of derivation, with child indexes in the following order:\n\n`derive(derive(derive(node, 0), 2147483648 + 1), 2147483648 + addressIndex + addressOffset)`\n\nBecause hardened derivation requires knowledge of the private key, `HdKey` variables with `derivationPath`s which include hardened derivation cannot use HD public derivation (the `hdPublicKeys` property in `CompilationData`). Instead, compilation requires the respective HD private key (`CompilationData.hdKeys.hdPrivateKeys`) or the fully-derived public key (`CompilationData.hdKeys.derivedPublicKeys`).",
+            "The derivation path used to derive this `HdKey` from the owning entity's HD private key. By default, `m/i`.\n\nThis path uses the notation specified in BIP32 and the `i` character to represent the location of the `addressIndex`:\n\nThe first character must be `m` (private derivation), followed by sets of `/` and a number representing the child index used in the derivation at that depth. Hardened derivation is represented by a trailing `'`, and hardened child indexes are represented with the hardened index offset (`2147483648`) subtracted. The `i` character is replaced with the value of `addressIndex` plus this `HdKey`'s `addressOffset`. If the `i` character is followed by `'`, the hardened index offset is added (`2147483648`) and hardened derivation is used.\n\nFor example, `m/0/1'/i'` uses 3 levels of derivation, with child indexes in the following order:\n\n`derive(derive(derive(node, 0), 2147483648 + 1), 2147483648 + addressIndex + addressOffset)`\n\nBecause hardened derivation requires knowledge of the private key, `HdKey` variables with `derivationPath`s that include hardened derivation cannot use HD public derivation (the `hdPublicKeys` property in `CompilationData`). Instead, compilation requires the respective HD private key (`CompilationData.hdKeys.hdPrivateKeys`) or the fully-derived public key (`CompilationData.hdKeys.derivedPublicKeys`).",
           type: 'string',
         },
         publicDerivationPath: {
           description:
-            "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` which follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible.) However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
+            "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` that follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible.) However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
           type: 'string',
         },
         type: {
@@ -208,7 +208,7 @@ const schema22 = {
         },
         extends: {
           description:
-            "The identifier of the scenario which this scenario extends. Any `data` or `transaction` properties not defined in this scenario inherit from the extended parent scenario.\n\nIf undefined, this scenario is assumed to extend the default scenario:\n\n- The default values for `data` are set:   - The identifiers of all `Key` variables and entities in this template are lexicographically sorted, then each is assigned an incrementing positive integer – beginning with `1` – encoded as an unsigned, 256-bit, big-endian integer (i.e. `0x0000...0001` (32 bytes), `0x0000...0002`, `0x0000...0003`, etc.). For `Key`s, this assigned value is used as the private key; For entities, the assigned value is used as the master seed of that entity's `HdPrivateKey`. If `hdKey` is set, the `addressIndex` is set to `0`.   - `currentBlockHeight` is set to `2`. This is the height of the second mined block after the genesis block: `000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd`. This default value was chosen to be low enough to simplify the debugging of block height offsets while remaining differentiated from `0` and `1` which are used both as boolean return values and for control flow.   - `currentBlockTime` is set to `1231469665`. This is the Median Time-Past block time (BIP113) of block `2`.\n\n- Then `transaction` is set based on use:   - if the scenario is being used for transaction estimation, all transaction properties are taken from the transaction being estimated.   - if the scenario is being used for script testing and validation, the default value for each `transaction` property is used.\n\nWhen a scenario is extended, each property of `data` and `transaction` is extended individually: if the extending scenario does not provide a new value for `data.bytecode.value` or `transaction.property`, the parent value is used. To avoid inheriting a parent value, each child value must be individually overridden.",
+            "The identifier of the scenario that this scenario extends. Any `data` or `transaction` properties not defined in this scenario inherit from the extended parent scenario.\n\nIf undefined, this scenario is assumed to extend the default scenario:\n\n- The default values for `data` are set:   - The identifiers of all `Key` variables and entities in this template are lexicographically sorted, then each is assigned an incrementing positive integer – beginning with `1` – encoded as an unsigned, 256-bit, big-endian integer (i.e. `0x0000...0001` (32 bytes), `0x0000...0002`, `0x0000...0003`, etc.). For `Key`s, this assigned value is used as the private key; For entities, the assigned value is used as the master seed of that entity's `HdPrivateKey`. If `hdKey` is set, the `addressIndex` is set to `0`.   - `currentBlockHeight` is set to `2`. This is the height of the second mined block after the genesis block: `000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd`. This default value was chosen to be low enough to simplify the debugging of block height offsets while remaining differentiated from `0` and `1`, which are used both as boolean return values and for control flow.   - `currentBlockTime` is set to `1231469665`. This is the Median Time-Past block time (BIP113) of block `2`.\n\n- Then `transaction` is set based on use:   - if the scenario is being used for transaction estimation, all transaction properties are taken from the transaction being estimated.   - if the scenario is being used for script testing and validation, the default value for each `transaction` property is used.\n\nWhen a scenario is extended, each property of `data` and `transaction` is extended individually: if the extending scenario does not provide a new value for `data.bytecode.value` or `transaction.property`, the parent value is used. To avoid inheriting a parent value, each child value must be individually overridden.",
           type: 'string',
         },
         name: {
@@ -218,7 +218,7 @@ const schema22 = {
         },
         sourceOutputs: {
           description:
-            'The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input which spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `["slot"]` – the output at the same index as the `["slot"]` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ "lockingBytecode": ["slot"] }]`.',
+            'The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input that spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `["slot"]` – the output at the same index as the `["slot"]` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ "lockingBytecode": ["slot"] }]`.',
           items: {
             $ref: '#/definitions/AuthenticationTemplateScenarioSourceOutput',
           },
@@ -227,7 +227,7 @@ const schema22 = {
         transaction: {
           additionalProperties: false,
           description:
-            'The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   "inputs": [{ "unlockingBytecode": [\'slot\'] }],   "locktime": 0,   "outputs": [{ "lockingBytecode": {} }],   "version": 2 } ```\n\nAny `transaction` property which is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   "outpointIndex": 0,   "outpointTransactionHash":     "0000000000000000000000000000000000000000000000000000000000000000",   "sequenceNumber": 0,   "unlockingBytecode": [\'slot\'] } ``` And an output of `{}` is interpreted as: ```json {   "lockingBytecode": {     "script": [\'copy\'],     "overrides": { "hdKeys": { "addressIndex": 1 } }   },   "valueSatoshis": 0 } ```',
+            'The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   "inputs": [{ "unlockingBytecode": [\'slot\'] }],   "locktime": 0,   "outputs": [{ "lockingBytecode": {} }],   "version": 2 } ```\n\nAny `transaction` property that is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   "outpointIndex": 0,   "outpointTransactionHash":     "0000000000000000000000000000000000000000000000000000000000000000",   "sequenceNumber": 0,   "unlockingBytecode": [\'slot\'] } ``` And an output of `{}` is interpreted as: ```json {   "lockingBytecode": {     "script": [\'copy\'],     "overrides": { "hdKeys": { "addressIndex": 1 } }   },   "valueSatoshis": 0 } ```',
           properties: {
             inputs: {
               description:
@@ -270,7 +270,7 @@ const schema22 = {
             overrides: {
               $ref: '#/definitions/AuthenticationTemplateScenarioData',
               description:
-                'Scenario data which extends the scenario\'s top-level `data` during script compilation.\n\nEach property is extended individually – to modify a property set by the top-level scenario `data`, the new value must be listed here.\n\nDefaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults to `{ "hdKeys": { "addressIndex": 1 } }` for `transaction.outputs`.',
+                'Scenario data that extends the scenario\'s top-level `data` during script compilation.\n\nEach property is extended individually – to modify a property set by the top-level scenario `data`, the new value must be listed here.\n\nDefaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults to `{ "hdKeys": { "addressIndex": 1 } }` for `transaction.outputs`.',
             },
             script: {
               anyOf: [
@@ -290,7 +290,7 @@ const schema22 = {
         },
       ],
       description:
-        'A type which describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nFor `sourceOutputs` and `transaction.inputs`, defaults to `{ script: ["copy"], overrides: {} }`. For `transaction.outputs`, defaults to `{ script: ["copy"], overrides: { "hdKeys": { "addressIndex": 1 } } }`.',
+        'A type that describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nFor `sourceOutputs` and `transaction.inputs`, defaults to `{ script: ["copy"], overrides: {} }`. For `transaction.outputs`, defaults to `{ script: ["copy"], overrides: { "hdKeys": { "addressIndex": 1 } } }`.',
     },
     AuthenticationTemplateScenarioData: {
       additionalProperties: false,
@@ -300,7 +300,7 @@ const schema22 = {
         bytecode: {
           additionalProperties: { type: 'string' },
           description:
-            "A map of full identifiers to CashAssembly scripts which compile to each identifier's value for this scenario. Allowing `bytecode` to be specified as scripts (rather than e.g. hex) offers greater power and flexibility.\n\nBytecode scripts have access to each other and all other template scripts and defined variables, however, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations which themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode` (though the default scenario automatically includes reasonable values), and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario.` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario.my_foo`.",
+            "A map of full identifiers to CashAssembly scripts that compile to each identifier's value for this scenario. Allowing `bytecode` to be specified as scripts (rather than e.g. hex) offers greater power and flexibility.\n\nBytecode scripts have access to each other and all other template scripts and defined variables, however, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations that themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode` (though the default scenario automatically includes reasonable values), and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario.` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario.my_foo`.",
           type: 'object',
         },
         currentBlockHeight: {
@@ -320,7 +320,7 @@ const schema22 = {
           properties: {
             addressIndex: {
               description:
-                'The current address index to be used for this scenario. The `addressIndex` gets added to each `HdKey`s `addressOffset` to calculate the dynamic index (`i`) used in each `privateDerivationPath` or `publicDerivationPath`.\n\nThis is required for any compiler operation which requires derivation. Typically, the value is incremented by one for each address in a wallet.\n\nDefaults to `0`.',
+                'The current address index to be used for this scenario. The `addressIndex` gets added to each `HdKey`s `addressOffset` to calculate the dynamic index (`i`) used in each `privateDerivationPath` or `publicDerivationPath`.\n\nThis is required for any compiler operation that requires derivation. Typically, the value is incremented by one for each address in a wallet.\n\nDefaults to `0`.',
               type: 'number',
             },
             hdPrivateKeys: {
@@ -468,7 +468,7 @@ const schema22 = {
       properties: {
         lockingType: {
           description:
-            'Indicates if P2SH20 infrastructure should be used when producing bytecode related to this script. For more information on P2SH20, see BIP16.\n\nWhen compiling locking scripts of type `p2sh20`, the result will be placed in a P2SH20 "redeem script" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts which unlock locking scripts of type `p2sh20`, the result will be transformed into the P2SH20 unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the "redeem script" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.',
+            'Indicates if P2SH20 infrastructure should be used when producing bytecode related to this script. For more information on P2SH20, see BIP16.\n\nWhen compiling locking scripts of type `p2sh20`, the result will be placed in a P2SH20 "redeem script" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts that unlock locking scripts of type `p2sh20`, the result will be transformed into the P2SH20 unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the "redeem script" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.',
           enum: ['p2sh20', 'standard'],
           type: 'string',
         },
@@ -495,13 +495,13 @@ const schema22 = {
         },
         fails: {
           description:
-            'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in bytecode which fails program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in bytecode that fails program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
         invalid: {
           description:
-            'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in a compilation error. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in a compilation error. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
@@ -512,13 +512,13 @@ const schema22 = {
         },
         passes: {
           description:
-            'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in bytecode which passes program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in bytecode that passes program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
         setup: {
           description:
-            'A script to evaluate before the script being tested. This can be used to push values to the stack which are operated on by the tested script.\n\nIn scenario testing, this script is treated as the unlocking script.',
+            'A script to evaluate before the script being tested. This can be used to push values to the stack that are operated on by the tested script.\n\nIn scenario testing, this script is treated as the unlocking script.',
           type: 'string',
         },
       },
@@ -535,7 +535,7 @@ const schema22 = {
         },
         pushed: {
           description:
-            'If set to `true`, indicates that this script should be wrapped in a push statement for testing.\n\nThis is useful for scripts which serve as "bytecode templates" – e.g. formatted messages or signature preimages. These scripts are typically not evaluated as bytecode but appear within push statements elsewhere in the template.\n\nDefaults to `false`.',
+            'If set to `true`, indicates that this script should be wrapped in a push statement for testing.\n\nThis is useful for scripts that serve as "bytecode templates" – e.g. formatted messages or signature preimages. These scripts are typically not evaluated as bytecode but appear within push statements elsewhere in the template.\n\nDefaults to `false`.',
           type: 'boolean',
         },
         script: {
@@ -547,7 +547,7 @@ const schema22 = {
             $ref: '#/definitions/AuthenticationTemplateScriptTest',
           },
           description:
-            'One or more tests which can be used during development and during template validation to confirm the correctness of this tested script.',
+            'One or more tests that can be used during development and during template validation to confirm the correctness of this tested script.',
           type: 'object',
         },
       },
@@ -559,23 +559,23 @@ const schema22 = {
       properties: {
         ageLock: {
           description:
-            'TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a CashAssembly script which must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the "type bit" and the 2-byte "value" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains "age-locked" can be displayed in user interfaces (by parsing the "type bit" and "value" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.',
+            'TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a CashAssembly script that must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the "type bit" and the 2-byte "value" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains "age-locked" can be displayed in user interfaces (by parsing the "type bit" and "value" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.',
           type: 'string',
         },
         estimate: {
           description:
-            'The identifier of the scenario to use for this unlocking script when compiling an estimated transaction.\n\nUsing estimate scenarios, it\'s possible for wallet software to compute an "estimated transaction", an invalid transaction which is guaranteed to be the same byte length as the final transaction. This length can be used to calculate the required transaction fee and assign values to the transaction\'s change output(s). Because estimate scenarios provide "estimated" values for all variables, this estimation can be done by a single entity without input from other entities.\n\nIf not provided, the default scenario will be used for estimation. The default scenario only provides values for each `Key` and `HdKey` variable, so compilations requiring other variables will produce errors. See `AuthenticationTemplateScenario.extends` for details.',
+            'The identifier of the scenario to use for this unlocking script when compiling an estimated transaction.\n\nUsing estimate scenarios, it\'s possible for wallet software to compute an "estimated transaction", an invalid transaction that is guaranteed to be the same byte length as the final transaction. This length can be used to calculate the required transaction fee and assign values to the transaction\'s change output(s). Because estimate scenarios provide "estimated" values for all variables, this estimation can be done by a single entity without input from other entities.\n\nIf not provided, the default scenario will be used for estimation. The default scenario only provides values for each `Key` and `HdKey` variable, so compilations requiring other variables will produce errors. See `AuthenticationTemplateScenario.extends` for details.',
           type: 'string',
         },
         fails: {
           description:
-            'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in bytecode which fails program verification.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in bytecode that fails program verification.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
         invalid: {
           description:
-            'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in a compilation error.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in a compilation error.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
@@ -586,7 +586,7 @@ const schema22 = {
         },
         passes: {
           description:
-            'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in bytecode which passes program verification.\n\nThese scenarios can be used to test this script in development and review.',
+            'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in bytecode that passes program verification.\n\nThese scenarios can be used to test this script in development and review.',
           items: { type: 'string' },
           type: 'array',
         },
@@ -602,7 +602,7 @@ const schema22 = {
         },
         unlocks: {
           description:
-            'The identifier of the script which can be unlocked by this script.\n\nThe presence of the `unlocks` property indicates that this script is an unlocking script, and the script it unlocks must be a locking script.',
+            'The identifier of the script that can be unlocked by this script.\n\nThe presence of the `unlocks` property indicates that this script is an unlocking script, and the script it unlocks must be a locking script.',
           type: 'string',
         },
       },
@@ -633,7 +633,7 @@ const schema22 = {
         type: {
           const: 'WalletData',
           description:
-            'The `WalletData` type provides a static piece of data which should be collected once and stored at the time of wallet creation. `WalletData` should be persistent for the life of the wallet, rather than changing from locking script to locking script.\n\nFor address-specific data, use `AddressData`.',
+            'The `WalletData` type provides a static piece of data that should be collected once and stored at the time of wallet creation. `WalletData` should be persistent for the life of the wallet, rather than changing from locking script to locking script.\n\nFor address-specific data, use `AddressData`.',
           type: 'string',
         },
       },
@@ -672,7 +672,7 @@ const schema23 = {
   properties: {
     $schema: {
       description:
-        'The URI which identifies the JSON Schema used by this template. Try: `https://libauth.org/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.',
+        'The URI that identifies the JSON Schema used by this template. Try: `https://libauth.org/schemas/authentication-template-v0.schema.json` to enable documentation, autocompletion, and validation in JSON documents.',
       type: 'string',
     },
     description: {
@@ -753,7 +753,7 @@ const schema38 = {
   properties: {
     lockingType: {
       description:
-        'Indicates if P2SH20 infrastructure should be used when producing bytecode related to this script. For more information on P2SH20, see BIP16.\n\nWhen compiling locking scripts of type `p2sh20`, the result will be placed in a P2SH20 "redeem script" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts which unlock locking scripts of type `p2sh20`, the result will be transformed into the P2SH20 unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the "redeem script" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.',
+        'Indicates if P2SH20 infrastructure should be used when producing bytecode related to this script. For more information on P2SH20, see BIP16.\n\nWhen compiling locking scripts of type `p2sh20`, the result will be placed in a P2SH20 "redeem script" format: `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`\n\nWhen compiling unlocking scripts that unlock locking scripts of type `p2sh20`, the result will be transformed into the P2SH20 unlocking format: `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the compiled bytecode of the locking script, without the "redeem script" transformation.)\n\nThe presence of the `lockingType` property indicates that this script is a locking script. It must be present on any script referenced by the `unlocks` property of another script.',
       enum: ['p2sh20', 'standard'],
       type: 'string',
     },
@@ -775,23 +775,23 @@ const schema41 = {
   properties: {
     ageLock: {
       description:
-        'TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a CashAssembly script which must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the "type bit" and the 2-byte "value" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains "age-locked" can be displayed in user interfaces (by parsing the "type bit" and "value" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.',
+        'TODO: not yet implemented\n\nThe minimum input age required for this unlocking script to become valid.\n\nThis value is provided as a CashAssembly script that must compile to the least significant 3 bytes of the minimum sequence number required for this unlocking script to be valid (the "type bit" and the 2-byte "value" – see BIP68 for details). This script has access to all other template scripts and variables, but cyclical references will produce an error at compile time.\n\nIn supporting wallets, this value can be computed at address creation time, and the remaining time for which any UTXO remains "age-locked" can be displayed in user interfaces (by parsing the "type bit" and "value" as described in BIP68).\n\nNote, because the precise value used by `OP_CHECKSEQUENCEVERIFY` can be provided in the unlocking script, it is trivial to create an unlocking script for which a proper value for `ageLock` is not possible to determine until the spending transaction is prepared. These cases are intentionally out-of-scope for this property. Instead, `ageLock` should only be used for unlocking scripts where the expected value can be compiled at address creation time.',
       type: 'string',
     },
     estimate: {
       description:
-        'The identifier of the scenario to use for this unlocking script when compiling an estimated transaction.\n\nUsing estimate scenarios, it\'s possible for wallet software to compute an "estimated transaction", an invalid transaction which is guaranteed to be the same byte length as the final transaction. This length can be used to calculate the required transaction fee and assign values to the transaction\'s change output(s). Because estimate scenarios provide "estimated" values for all variables, this estimation can be done by a single entity without input from other entities.\n\nIf not provided, the default scenario will be used for estimation. The default scenario only provides values for each `Key` and `HdKey` variable, so compilations requiring other variables will produce errors. See `AuthenticationTemplateScenario.extends` for details.',
+        'The identifier of the scenario to use for this unlocking script when compiling an estimated transaction.\n\nUsing estimate scenarios, it\'s possible for wallet software to compute an "estimated transaction", an invalid transaction that is guaranteed to be the same byte length as the final transaction. This length can be used to calculate the required transaction fee and assign values to the transaction\'s change output(s). Because estimate scenarios provide "estimated" values for all variables, this estimation can be done by a single entity without input from other entities.\n\nIf not provided, the default scenario will be used for estimation. The default scenario only provides values for each `Key` and `HdKey` variable, so compilations requiring other variables will produce errors. See `AuthenticationTemplateScenario.extends` for details.',
       type: 'string',
     },
     fails: {
       description:
-        'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in bytecode which fails program verification.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in bytecode that fails program verification.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
     invalid: {
       description:
-        'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in a compilation error.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in a compilation error.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
@@ -802,7 +802,7 @@ const schema41 = {
     },
     passes: {
       description:
-        'A list of the scenario identifiers which – when used to compile this unlocking script and the script it unlocks – result in bytecode which passes program verification.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this unlocking script and the script it unlocks – result in bytecode that passes program verification.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
@@ -818,7 +818,7 @@ const schema41 = {
     },
     unlocks: {
       description:
-        'The identifier of the script which can be unlocked by this script.\n\nThe presence of the `unlocks` property indicates that this script is an unlocking script, and the script it unlocks must be a locking script.',
+        'The identifier of the script that can be unlocked by this script.\n\nThe presence of the `unlocks` property indicates that this script is an unlocking script, and the script it unlocks must be a locking script.',
       type: 'string',
     },
   },
@@ -874,7 +874,7 @@ const schema24 = {
         $ref: '#/definitions/AuthenticationTemplateVariable',
       },
       description:
-        "A map of variables which must be provided by this entity for use in the template's scripts. Some variables are required before locking script generation, while some variables can or must be resolved only before unlocking script generation.\n\nObject keys are used as variable identifiers, and by convention, should use `snake_case`.",
+        "A map of variables that must be provided by this entity for use in the template's scripts. Some variables are required before locking script generation, while some variables can or must be resolved only before unlocking script generation.\n\nObject keys are used as variable identifiers, and by convention, should use `snake_case`.",
       type: 'object',
     },
   },
@@ -935,12 +935,12 @@ const schema27 = {
     },
     privateDerivationPath: {
       description:
-        "The derivation path used to derive this `HdKey` from the owning entity's HD private key. By default, `m/i`.\n\nThis path uses the notation specified in BIP32 and the `i` character to represent the location of the `addressIndex`:\n\nThe first character must be `m` (private derivation), followed by sets of `/` and a number representing the child index used in the derivation at that depth. Hardened derivation is represented by a trailing `'`, and hardened child indexes are represented with the hardened index offset (`2147483648`) subtracted. The `i` character is replaced with the value of `addressIndex` plus this `HdKey`'s `addressOffset`. If the `i` character is followed by `'`, the hardened index offset is added (`2147483648`) and hardened derivation is used.\n\nFor example, `m/0/1'/i'` uses 3 levels of derivation, with child indexes in the following order:\n\n`derive(derive(derive(node, 0), 2147483648 + 1), 2147483648 + addressIndex + addressOffset)`\n\nBecause hardened derivation requires knowledge of the private key, `HdKey` variables with `derivationPath`s which include hardened derivation cannot use HD public derivation (the `hdPublicKeys` property in `CompilationData`). Instead, compilation requires the respective HD private key (`CompilationData.hdKeys.hdPrivateKeys`) or the fully-derived public key (`CompilationData.hdKeys.derivedPublicKeys`).",
+        "The derivation path used to derive this `HdKey` from the owning entity's HD private key. By default, `m/i`.\n\nThis path uses the notation specified in BIP32 and the `i` character to represent the location of the `addressIndex`:\n\nThe first character must be `m` (private derivation), followed by sets of `/` and a number representing the child index used in the derivation at that depth. Hardened derivation is represented by a trailing `'`, and hardened child indexes are represented with the hardened index offset (`2147483648`) subtracted. The `i` character is replaced with the value of `addressIndex` plus this `HdKey`'s `addressOffset`. If the `i` character is followed by `'`, the hardened index offset is added (`2147483648`) and hardened derivation is used.\n\nFor example, `m/0/1'/i'` uses 3 levels of derivation, with child indexes in the following order:\n\n`derive(derive(derive(node, 0), 2147483648 + 1), 2147483648 + addressIndex + addressOffset)`\n\nBecause hardened derivation requires knowledge of the private key, `HdKey` variables with `derivationPath`s that include hardened derivation cannot use HD public derivation (the `hdPublicKeys` property in `CompilationData`). Instead, compilation requires the respective HD private key (`CompilationData.hdKeys.hdPrivateKeys`) or the fully-derived public key (`CompilationData.hdKeys.derivedPublicKeys`).",
       type: 'string',
     },
     publicDerivationPath: {
       description:
-        "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` which follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible.) However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
+        "The derivation path used to derive this `HdKey`'s public key from the owning entity's HD public key. If not set, the public equivalent of `privateDerivationPath` is used. For the `privateDerivationPath` default of `m/i`, this is `M/i`.\n\nIf `privateDerivationPath` uses hardened derivation for some levels, but later derivation levels use non-hardened derivation, `publicDerivationPath` can be used to specify a public derivation path beginning from `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a non-hardened segment of `privateDerivationPath` that follows `hdPublicKeyDerivationPath`).\n\nThe first character must be `M` (public derivation), followed by sets of `/` and a number representing the child index used in the non-hardened derivation at that depth.\n\nFor example, if `privateDerivationPath` is `m/0'/i`, it is not possible to derive the equivalent public key with only the HD public key `M`. (The path \"`M/0'/i`\" is impossible.) However, given the HD public key for `m/0'`, it is possible to derive the public key of `m/0'/i` for any `i`. In this case, `hdPublicKeyDerivationPath` would be `m/0'` and `publicDerivationPath` would be the remaining `M/i`.",
       type: 'string',
     },
     type: {
@@ -991,7 +991,7 @@ const schema29 = {
     type: {
       const: 'WalletData',
       description:
-        'The `WalletData` type provides a static piece of data which should be collected once and stored at the time of wallet creation. `WalletData` should be persistent for the life of the wallet, rather than changing from locking script to locking script.\n\nFor address-specific data, use `AddressData`.',
+        'The `WalletData` type provides a static piece of data that should be collected once and stored at the time of wallet creation. `WalletData` should be persistent for the life of the wallet, rather than changing from locking script to locking script.\n\nFor address-specific data, use `AddressData`.',
       type: 'string',
     },
   },
@@ -1952,7 +1952,7 @@ const schema30 = {
     },
     extends: {
       description:
-        "The identifier of the scenario which this scenario extends. Any `data` or `transaction` properties not defined in this scenario inherit from the extended parent scenario.\n\nIf undefined, this scenario is assumed to extend the default scenario:\n\n- The default values for `data` are set:   - The identifiers of all `Key` variables and entities in this template are lexicographically sorted, then each is assigned an incrementing positive integer – beginning with `1` – encoded as an unsigned, 256-bit, big-endian integer (i.e. `0x0000...0001` (32 bytes), `0x0000...0002`, `0x0000...0003`, etc.). For `Key`s, this assigned value is used as the private key; For entities, the assigned value is used as the master seed of that entity's `HdPrivateKey`. If `hdKey` is set, the `addressIndex` is set to `0`.   - `currentBlockHeight` is set to `2`. This is the height of the second mined block after the genesis block: `000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd`. This default value was chosen to be low enough to simplify the debugging of block height offsets while remaining differentiated from `0` and `1` which are used both as boolean return values and for control flow.   - `currentBlockTime` is set to `1231469665`. This is the Median Time-Past block time (BIP113) of block `2`.\n\n- Then `transaction` is set based on use:   - if the scenario is being used for transaction estimation, all transaction properties are taken from the transaction being estimated.   - if the scenario is being used for script testing and validation, the default value for each `transaction` property is used.\n\nWhen a scenario is extended, each property of `data` and `transaction` is extended individually: if the extending scenario does not provide a new value for `data.bytecode.value` or `transaction.property`, the parent value is used. To avoid inheriting a parent value, each child value must be individually overridden.",
+        "The identifier of the scenario that this scenario extends. Any `data` or `transaction` properties not defined in this scenario inherit from the extended parent scenario.\n\nIf undefined, this scenario is assumed to extend the default scenario:\n\n- The default values for `data` are set:   - The identifiers of all `Key` variables and entities in this template are lexicographically sorted, then each is assigned an incrementing positive integer – beginning with `1` – encoded as an unsigned, 256-bit, big-endian integer (i.e. `0x0000...0001` (32 bytes), `0x0000...0002`, `0x0000...0003`, etc.). For `Key`s, this assigned value is used as the private key; For entities, the assigned value is used as the master seed of that entity's `HdPrivateKey`. If `hdKey` is set, the `addressIndex` is set to `0`.   - `currentBlockHeight` is set to `2`. This is the height of the second mined block after the genesis block: `000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd`. This default value was chosen to be low enough to simplify the debugging of block height offsets while remaining differentiated from `0` and `1`, which are used both as boolean return values and for control flow.   - `currentBlockTime` is set to `1231469665`. This is the Median Time-Past block time (BIP113) of block `2`.\n\n- Then `transaction` is set based on use:   - if the scenario is being used for transaction estimation, all transaction properties are taken from the transaction being estimated.   - if the scenario is being used for script testing and validation, the default value for each `transaction` property is used.\n\nWhen a scenario is extended, each property of `data` and `transaction` is extended individually: if the extending scenario does not provide a new value for `data.bytecode.value` or `transaction.property`, the parent value is used. To avoid inheriting a parent value, each child value must be individually overridden.",
       type: 'string',
     },
     name: {
@@ -1962,7 +1962,7 @@ const schema30 = {
     },
     sourceOutputs: {
       description:
-        'The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input which spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `["slot"]` – the output at the same index as the `["slot"]` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ "lockingBytecode": ["slot"] }]`.',
+        'The list of source outputs (a.k.a. UTXOs) to use when generating the compilation context for this scenario.\n\nThe `sourceOutputs` property must have the same length as `transaction.inputs`, and each source output must be ordered to match the index of the input that spends it.\n\nTo be valid the `sourceOutputs` property must have exactly one source output with `lockingBytecode` set to `["slot"]` – the output at the same index as the `["slot"]` input in `transaction.inputs`.\n\nIf undefined, defaults to `[{ "lockingBytecode": ["slot"] }]`.',
       items: {
         $ref: '#/definitions/AuthenticationTemplateScenarioSourceOutput',
       },
@@ -1971,7 +1971,7 @@ const schema30 = {
     transaction: {
       additionalProperties: false,
       description:
-        'The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   "inputs": [{ "unlockingBytecode": [\'slot\'] }],   "locktime": 0,   "outputs": [{ "lockingBytecode": {} }],   "version": 2 } ```\n\nAny `transaction` property which is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   "outpointIndex": 0,   "outpointTransactionHash":     "0000000000000000000000000000000000000000000000000000000000000000",   "sequenceNumber": 0,   "unlockingBytecode": [\'slot\'] } ``` And an output of `{}` is interpreted as: ```json {   "lockingBytecode": {     "script": [\'copy\'],     "overrides": { "hdKeys": { "addressIndex": 1 } }   },   "valueSatoshis": 0 } ```',
+        'The transaction within which this scenario should be evaluated. This is used for script testing and validation.\n\nIf undefined, inherits the default value for each property: ```json {   "inputs": [{ "unlockingBytecode": [\'slot\'] }],   "locktime": 0,   "outputs": [{ "lockingBytecode": {} }],   "version": 2 } ```\n\nAny `transaction` property that is not set will be inherited from the scenario specified by `extends`. when specifying the `inputs` and `outputs` properties, each input and output extends the default values for inputs and outputs, respectively.\n\nFor example, an input of `{}` is interpreted as: ```json {   "outpointIndex": 0,   "outpointTransactionHash":     "0000000000000000000000000000000000000000000000000000000000000000",   "sequenceNumber": 0,   "unlockingBytecode": [\'slot\'] } ``` And an output of `{}` is interpreted as: ```json {   "lockingBytecode": {     "script": [\'copy\'],     "overrides": { "hdKeys": { "addressIndex": 1 } }   },   "valueSatoshis": 0 } ```',
       properties: {
         inputs: {
           description:
@@ -2010,7 +2010,7 @@ const schema31 = {
     bytecode: {
       additionalProperties: { type: 'string' },
       description:
-        "A map of full identifiers to CashAssembly scripts which compile to each identifier's value for this scenario. Allowing `bytecode` to be specified as scripts (rather than e.g. hex) offers greater power and flexibility.\n\nBytecode scripts have access to each other and all other template scripts and defined variables, however, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations which themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode` (though the default scenario automatically includes reasonable values), and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario.` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario.my_foo`.",
+        "A map of full identifiers to CashAssembly scripts that compile to each identifier's value for this scenario. Allowing `bytecode` to be specified as scripts (rather than e.g. hex) offers greater power and flexibility.\n\nBytecode scripts have access to each other and all other template scripts and defined variables, however, cyclical references will produce an error at compile time. Also, because the results of these compilations will be used to generate the compilation context for this scenario, these scripts may not use compiler operations that themselves require access to compilation context (e.g. signatures).\n\nThe provided `fullIdentifier` should match the complete identifier for each item, e.g. `some_wallet_data`, `variable_id.public_key`, or `variable_id.signature.all_outputs`.\n\nAll `AddressData` and `WalletData` variables must be provided via `bytecode` (though the default scenario automatically includes reasonable values), and pre-computed results for operations of other variable types (e.g. `key.public_key`) may also be provided via this property.\n\nBecause each bytecode identifier may precisely match the identifier of the variable it defines for this scenario, references between these scripts must refer to the target script with a `_scenario.` prefix. E.g. to reference a sibling script `my_foo` from `my_bar`, the `my_bar` script must use the identifier `_scenario.my_foo`.",
       type: 'object',
     },
     currentBlockHeight: {
@@ -2030,7 +2030,7 @@ const schema31 = {
       properties: {
         addressIndex: {
           description:
-            'The current address index to be used for this scenario. The `addressIndex` gets added to each `HdKey`s `addressOffset` to calculate the dynamic index (`i`) used in each `privateDerivationPath` or `publicDerivationPath`.\n\nThis is required for any compiler operation which requires derivation. Typically, the value is incremented by one for each address in a wallet.\n\nDefaults to `0`.',
+            'The current address index to be used for this scenario. The `addressIndex` gets added to each `HdKey`s `addressOffset` to calculate the dynamic index (`i`) used in each `privateDerivationPath` or `publicDerivationPath`.\n\nThis is required for any compiler operation that requires derivation. Typically, the value is incremented by one for each address in a wallet.\n\nDefaults to `0`.',
           type: 'number',
         },
         hdPrivateKeys: {
@@ -2100,7 +2100,7 @@ const schema33 = {
         overrides: {
           $ref: '#/definitions/AuthenticationTemplateScenarioData',
           description:
-            'Scenario data which extends the scenario\'s top-level `data` during script compilation.\n\nEach property is extended individually – to modify a property set by the top-level scenario `data`, the new value must be listed here.\n\nDefaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults to `{ "hdKeys": { "addressIndex": 1 } }` for `transaction.outputs`.',
+            'Scenario data that extends the scenario\'s top-level `data` during script compilation.\n\nEach property is extended individually – to modify a property set by the top-level scenario `data`, the new value must be listed here.\n\nDefaults to `{}` for `sourceOutputs` and `transaction.inputs`; defaults to `{ "hdKeys": { "addressIndex": 1 } }` for `transaction.outputs`.',
         },
         script: {
           anyOf: [
@@ -2120,7 +2120,7 @@ const schema33 = {
     },
   ],
   description:
-    'A type which describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nFor `sourceOutputs` and `transaction.inputs`, defaults to `{ script: ["copy"], overrides: {} }`. For `transaction.outputs`, defaults to `{ script: ["copy"], overrides: { "hdKeys": { "addressIndex": 1 } } }`.',
+    'A type that describes the configuration for a particular locking or unlocking bytecode within an authentication template scenario.\n\nBytecode may be specified as either a hexadecimal-encoded string or an object describing the required compilation.\n\nFor `sourceOutputs` and `transaction.inputs`, defaults to `{ script: ["copy"], overrides: {} }`. For `transaction.outputs`, defaults to `{ script: ["copy"], overrides: { "hdKeys": { "addressIndex": 1 } } }`.',
 };
 function validate28(
   data,
@@ -4309,7 +4309,7 @@ const schema39 = {
     },
     pushed: {
       description:
-        'If set to `true`, indicates that this script should be wrapped in a push statement for testing.\n\nThis is useful for scripts which serve as "bytecode templates" – e.g. formatted messages or signature preimages. These scripts are typically not evaluated as bytecode but appear within push statements elsewhere in the template.\n\nDefaults to `false`.',
+        'If set to `true`, indicates that this script should be wrapped in a push statement for testing.\n\nThis is useful for scripts that serve as "bytecode templates" – e.g. formatted messages or signature preimages. These scripts are typically not evaluated as bytecode but appear within push statements elsewhere in the template.\n\nDefaults to `false`.',
       type: 'boolean',
     },
     script: {
@@ -4321,7 +4321,7 @@ const schema39 = {
         $ref: '#/definitions/AuthenticationTemplateScriptTest',
       },
       description:
-        'One or more tests which can be used during development and during template validation to confirm the correctness of this tested script.',
+        'One or more tests that can be used during development and during template validation to confirm the correctness of this tested script.',
       type: 'object',
     },
   },
@@ -4338,13 +4338,13 @@ const schema40 = {
     },
     fails: {
       description:
-        'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in bytecode which fails program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in bytecode that fails program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
     invalid: {
       description:
-        'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in a compilation error. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in a compilation error. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
@@ -4355,13 +4355,13 @@ const schema40 = {
     },
     passes: {
       description:
-        'A list of the scenario identifiers which – when used to compile this test and the script it tests – result in bytecode which passes program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
+        'A list of the scenario identifiers that – when used to compile this test and the script it tests – result in bytecode that passes program verification. The `setup` script is used in place of an unlocking script, and the concatenation of the script under test and the `check` script are used in place of a locking script.\n\nThese scenarios can be used to test this script in development and review.',
       items: { type: 'string' },
       type: 'array',
     },
     setup: {
       description:
-        'A script to evaluate before the script being tested. This can be used to push values to the stack which are operated on by the tested script.\n\nIn scenario testing, this script is treated as the unlocking script.',
+        'A script to evaluate before the script being tested. This can be used to push values to the stack that are operated on by the tested script.\n\nIn scenario testing, this script is treated as the unlocking script.',
       type: 'string',
     },
   },

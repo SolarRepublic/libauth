@@ -1,4 +1,4 @@
-import { bigIntToScriptNumber, hexToBin, utf8ToBin } from '../../lib.js';
+import { bigIntToVmNumber, hexToBin, utf8ToBin } from '../../lib.js';
 import type {
   AnyCompilerConfiguration,
   AuthenticationTemplateVariable,
@@ -99,9 +99,7 @@ export const resolveScriptSegment = (
           literalType: 'BigIntLiteral' as const,
           range,
           type: 'bytecode' as const,
-          value: bigIntToScriptNumber(
-            BigInt(removeNumericSeparators(child.value))
-          ),
+          value: bigIntToVmNumber(BigInt(removeNumericSeparators(child.value))),
         };
       case 'BinaryLiteral':
         return {
@@ -109,7 +107,7 @@ export const resolveScriptSegment = (
           literalType: 'BinaryLiteral' as const,
           range,
           type: 'bytecode' as const,
-          value: bigIntToScriptNumber(
+          value: bigIntToVmNumber(
             BigInt(`0b${removeNumericSeparators(child.value)}`)
           ),
         };
@@ -215,8 +213,9 @@ const attemptCompilerOperation = <
  *
  * @param identifier - The full identifier used to describe this operation, e.g.
  * `owner.signature.all_outputs`.
- * @param data - The `CompilationData` provided to the compiler
- * @param configuration - The `CompilerConfiguration` provided to the compiler
+ * @param data - The {@link CompilationData} provided to the compiler
+ * @param configuration - The {@link CompilerConfiguration} provided to
+ * the compiler
  */
 export const resolveVariableIdentifier = <
   CompilationContext,
@@ -314,25 +313,28 @@ export const resolveVariableIdentifier = <
  *
  * @remarks
  * If the identifier can be successfully resolved as a script, the script is
- * compiled and returned as a CompilationResultSuccess. If an error occurs in
- * compiling it, the error is returned as a string.
+ * compiled and returned as a {@link CompilationResultSuccess}. If an error
+ * occurs in compiling it, the error is returned as a string.
  *
  * Otherwise, the identifier is not recognized as a script, and this method
  * simply returns `false`.
- *
- * @param identifier - the identifier of the script to be resolved
- * @param data - the provided CompilationData
- * @param configuration - the provided CompilationEnvironment
- * @param parentIdentifier - the identifier of the script which references the
- * script being resolved (for detecting circular dependencies)
  */
 export const resolveScriptIdentifier = <CompilationContext, ProgramState>({
   data,
   configuration,
   identifier,
 }: {
+  /**
+   * The identifier of the script to be resolved
+   */
   identifier: string;
+  /**
+   * The provided {@link CompilationData}
+   */
   data: CompilationData<CompilationContext>;
+  /**
+   * the provided {@link CompilerConfiguration}
+   */
   configuration: CompilerConfiguration<CompilationContext>;
 }): CompilationResultSuccess<ProgramState> | string | false => {
   if ((configuration.scripts[identifier] as string | undefined) === undefined) {
@@ -351,36 +353,29 @@ export const resolveScriptIdentifier = <CompilationContext, ProgramState>({
   return `Compilation error in resolved script "${identifier}": ${stringifyErrors(
     result.errors
   )}`;
-
-  /*
-   * result.errors.reduce(
-   *   (all, { error, range }) =>
-   *     `${
-   *       all === '' ? '' : `${all}; `
-   *     } [${
-   *       range.startLineNumber
-   *     }, ${range.startColumn}]: ${error}`,
-   *   ''
-   * );
-   */
 };
 
 /**
- * Return an `IdentifierResolutionFunction` for use in `resolveScriptSegment`.
+ * Return an {@link IdentifierResolutionFunction} for use in
+ * {@link resolveScriptSegment}.
  *
  * @param scriptId - the `id` of the script for which the resulting
  * `IdentifierResolutionFunction` will be used.
- * @param configuration - a snapshot of the configuration around `scriptId`. See
- * `CompilationEnvironment` for details.
- * @param data - the actual variable values (private keys, shared wallet data,
- * shared address data, etc.) to use in resolving variables.
  */
 export const createIdentifierResolver =
   <CompilationContext>({
     data,
     configuration,
   }: {
+    /**
+     * The actual variable values (private keys, shared wallet data, shared
+     * address data, etc.) to use in resolving variables.
+     */
     data: CompilationData<CompilationContext>;
+    /**
+     * A snapshot of the configuration around `scriptId`, see
+     * {@link CompilerConfiguration} for details
+     */
     configuration: CompilerConfiguration<CompilationContext>;
   }): IdentifierResolutionFunction =>
   // eslint-disable-next-line complexity

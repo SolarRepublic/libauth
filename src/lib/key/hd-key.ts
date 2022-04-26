@@ -17,7 +17,7 @@ import {
 import { validateSecp256k1PrivateKey } from './key.js';
 
 /**
- * The networks which can be referenced by an HD public or private key.
+ * The networks that can be referenced by an HD public or private key.
  */
 export type HdKeyNetwork = 'mainnet' | 'testnet';
 
@@ -33,7 +33,7 @@ export interface HdKeyParameters<
 
 interface HdNodeBase {
   /**
-   * 32 bytes of additional entropy which can be used to derive HD child nodes.
+   * 32 bytes of additional entropy that can be used to derive HD child nodes.
    */
   chainCode: Uint8Array;
   /**
@@ -58,7 +58,7 @@ interface HdNodeBase {
    * The first 4 bytes of the parent node's identifier. This is used to quickly
    * identify the parent node in data structures, but collisions can occur. To
    * resolve collisions, use the full parent identifier. (See
-   * `deriveHdPublicNodeIdentifier` for details.)
+   * {@link deriveHdPublicNodeIdentifier} for details.)
    */
   parentFingerprint: Uint8Array;
   /**
@@ -96,7 +96,7 @@ export interface HdPrivateNodeValid extends HdNodeBase {
  */
 export interface HdPrivateNodeInvalid extends HdNodeBase {
   /**
-   * The 32-byte derivation result which is not a valid Secp256k1 private key.
+   * The 32-byte derivation result that is not a valid Secp256k1 private key.
    * This is almost impossibly rare in a securely-random 32-byte Uint8Array,
    * with a probability less than 1 in 2^127.
    *
@@ -242,8 +242,8 @@ export const deriveHdPublicNodeIdentifier = (
 ) => crypto.ripemd160.hash(crypto.sha256.hash(node.publicKey));
 
 /**
- * The 4-byte version indicating the network and type of an `HdPrivateKey` or
- * `HdPublicKey`.
+ * The 4-byte version indicating the network and type of an {@link HdPrivateKey}
+ * or {@link HdPublicKey}.
  */
 export enum HdKeyVersion {
   /**
@@ -805,9 +805,9 @@ type ReductionResults<NodeType> = NodeType extends HdPrivateNodeValid
  *
  * `derivePublic(derivePublic(derivePublic(node, 3), 4), 5)`
  *
- * Because hardened derivation requires a private node, paths which specify
+ * Because hardened derivation requires a private node, paths that specify
  * public derivation (`M`) using hardened derivation (`'`) will return an error.
- * To derive the public node associated with a child private node which requires
+ * To derive the public node associated with a child private node that requires
  * hardened derivation, begin with private derivation, then provide the result
  * to `deriveHdPublicNode`.
  *

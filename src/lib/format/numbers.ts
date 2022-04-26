@@ -264,9 +264,9 @@ export const numberToBinInt32TwosCompliment = (value: number) => {
   const bitsInAByte = 8;
   const bin = new Uint8Array(bytes);
   // eslint-disable-next-line functional/no-let, functional/no-loop-statement, no-plusplus
-  for (let offset = 0; offset < bytes; offset++) {
+  for (let index = 0; index < bytes; index++) {
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    bin[offset] = value;
+    bin[index] = value;
     // eslint-disable-next-line functional/no-expression-statement, no-bitwise, no-param-reassign
     value >>>= bitsInAByte;
   }
@@ -458,33 +458,35 @@ export const varIntPrefixToSize = (firstByte: number) => {
 };
 
 /**
- * Read a Bitcoin VarInt (Variable-length integer) from a Uint8Array, returning
- * the `nextOffset` after the VarInt and the value as a BigInt.
+ * Decode a VarInt (Satoshi's Variable-length integer format) from a Uint8Array,
+ * returning the `nextIndex` after the VarInt and the value as a BigInt.
  *
  * @param bin - the Uint8Array from which to read the VarInt
- * @param offset - the offset at which the VarInt begins
+ * @param index - the index at which the VarInt begins
  */
-export const readBitcoinVarInt = (bin: Uint8Array, offset = 0) => {
-  const bytes = varIntPrefixToSize(bin[offset]);
+export const decodeVarInt = (bin: Uint8Array, index = 0) => {
+  const bytes = varIntPrefixToSize(bin[index]);
   const hasPrefix = bytes !== 1;
   return {
-    nextOffset: offset + bytes,
+    nextIndex: index + bytes,
     value: hasPrefix
-      ? binToBigIntUintLE(bin.subarray(offset + 1, offset + bytes), bytes - 1)
-      : binToBigIntUintLE(bin.subarray(offset, offset + bytes), 1),
+      ? binToBigIntUintLE(bin.subarray(index + 1, index + bytes), bytes - 1)
+      : binToBigIntUintLE(bin.subarray(index, index + bytes), 1),
   };
 };
 
 /**
- * Encode a positive BigInt as a Bitcoin VarInt (Variable-length integer).
+ * Encode a positive BigInt as a VarInt (Satoshi's Variable-length integer).
  *
- * Note: the maximum value of a Bitcoin VarInt is `0xffff_ffff_ffff_ffff`. This
- * method will return an incorrect result for values outside of the range `0` to
- * `0xffff_ffff_ffff_ffff`.
+ * Note: the maximum value of a VarInt is `0xffff_ffff_ffff_ffff`. This method
+ * will return an incorrect result for values outside of the range `0` to
+ * `0xffff_ffff_ffff_ffff`. If applicable, applications should handle such cases
+ * prior to calling this method.
  *
- * @param value - the BigInt to encode (no larger than `0xffff_ffff_ffff_ffff`)
+ * @param value - the BigInt to encode (must be no larger than
+ * `0xffff_ffff_ffff_ffff`)
  */
-export const bigIntToBitcoinVarInt = (value: bigint) =>
+export const bigIntToVarInt = (value: bigint) =>
   value <= BigInt(VarInt.uint8MaxValue)
     ? Uint8Array.of(Number(value))
     : value <= BigInt(VarInt.uint16MaxValue)

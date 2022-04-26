@@ -91,7 +91,7 @@ export enum CashAddressVersionByte {
 
 /**
  * The address types currently defined in the CashAddress specification. See
- * also: `CashAddressVersionByte`.
+ * also: {@link CashAddressVersionByte}.
  */
 export enum CashAddressType {
   /**
@@ -115,11 +115,12 @@ export type CashAddressAvailableSizes = keyof typeof cashAddressBitToSize;
 
 /**
  * Encode a CashAddress version byte for the given address type and hash length.
- * See `CashAddressVersionByte` for more information.
+ * See {@link CashAddressVersionByte} for more information.
  *
  * The `type` parameter must be a number between `0` and `15`, and `bitLength`
  * must be one of the standardized lengths. To use the contents of a variable,
- * cast it to `CashAddressType` or `CashAddressSize` respectively, e.g.:
+ * cast it to {@link CashAddressType} or {@link CashAddressSize} respectively,
+ * e.g.:
  * ```ts
  * const type = 3 as CashAddressType;
  * const size = 160 as CashAddressSize;
@@ -168,8 +169,8 @@ export const decodeCashAddressVersionByte = (version: number) =>
 const asciiCaseInsensitiveBits = 0b11111;
 
 /**
- * Convert a string into an array of 5-bit numbers, representing the
- * characters in a case-insensitive way.
+ * Convert a string into an array of 5-bit numbers, representing the characters
+ * in a case-insensitive way.
  * @param prefix - the prefix to mask
  */
 export const maskCashAddressPrefix = (prefix: string) => {
@@ -272,9 +273,10 @@ const base32WordLength = 5;
 const base256WordLength = 8;
 
 /**
- * Convert the checksum returned by `cashAddressPolynomialModulo` to an array of
- * 5-bit positive integers which can be Base32 encoded.
- * @param checksum - a 40 bit checksum returned by `cashAddressPolynomialModulo`
+ * Convert the checksum returned by {@link cashAddressPolynomialModulo} to an
+ * array of 5-bit positive integers that can be Base32 encoded.
+ * @param checksum - a 40 bit checksum returned by
+ * {@link cashAddressPolynomialModulo}
  */
 export const cashAddressChecksumToUint5Array = (checksum: number) => {
   const result = [];
@@ -294,7 +296,7 @@ const payloadSeparator = 0;
 /**
  * Encode a hash as a CashAddress-like string using the CashAddress format.
  *
- * To encode a standard CashAddress, use `encodeCashAddress`.
+ * To encode a standard CashAddress, use {@link encodeCashAddress}.
  *
  * @param prefix - a valid prefix indicating the network for which to encode the
  * address – must be only lowercase letters
@@ -343,13 +345,13 @@ const isValidBitLength = (
  * Encode a hash as a CashAddress.
  *
  * Note, this method does not enforce error handling via the type system. The
- * returned string may be a `CashAddressEncodingError.unsupportedHashLength`
- * if `hash` is not a valid length. Check the result if the input is potentially
- * malformed.
+ * returned string may be a
+ * {@link CashAddressEncodingError.unsupportedHashLength} if `hash` is not a
+ * valid length. Check the result if the input is potentially malformed.
  *
- * For other address standards which closely follow the CashAddress
+ * For other address standards that closely follow the CashAddress
  * specification (but have alternative version byte requirements), use
- * `encodeCashAddressFormat`.
+ * {@link encodeCashAddressFormat}.
  *
  * @param prefix - a valid prefix indicating the network for which to encode the
  * address (usually a `CashAddressNetworkPrefix`) – must be only lowercase
@@ -389,12 +391,12 @@ export enum CashAddressDecodingError {
 
 /**
  * Decode and validate a string using the CashAddress format. This is more
- * lenient than `decodeCashAddress`, which also validates the contents of the
- * version byte.
+ * lenient than {@link decodeCashAddress}, which also validates the contents of
+ * the version byte.
  *
  * Note, this method requires `address` to include a network prefix. To
  * decode a string with an unknown prefix, try
- * `decodeCashAddressFormatWithoutPrefix`.
+ * {@link decodeCashAddressFormatWithoutPrefix}.
  *
  * @param address - the CashAddress-like string to decode
  */
@@ -443,13 +445,13 @@ export const decodeCashAddressFormat = (address: string) => {
  * according to the CashAddress specification. This is important for error
  * detection in CashAddresses.
  *
- * For other address-like standards which closely follow the CashAddress
+ * For other address-like standards that closely follow the CashAddress
  * specification (but have alternative version byte requirements), use
- * `decodeCashAddressFormat`.
+ * {@link decodeCashAddressFormat}.
  *
  * Note, this method requires that CashAddresses include a network prefix. To
  * decode an address with an unknown prefix, try
- * `decodeCashAddressFormatWithoutPrefix`.
+ * {@link decodeCashAddressFormatWithoutPrefix}.
  *
  * @param address - the CashAddress to decode
  */
@@ -477,7 +479,7 @@ export const decodeCashAddress = (address: string) => {
 
 /**
  * Attempt to decode and validate a CashAddress against a list of possible
- * prefixes. If the correct prefix is known, use `decodeCashAddress`.
+ * prefixes. If the correct prefix is known, use {@link decodeCashAddress}.
  *
  * @param address - the CashAddress to decode
  * @param possiblePrefixes - the network prefixes to try
@@ -548,7 +550,7 @@ const finiteFieldOrder = 32;
  * effectively equivalent to burning the funds.
  *
  * Only 2 substitution errors can be corrected (or a single swap) – deletions
- * and insertions (errors which shift many other characters and change the
+ * and insertions (errors that shift many other characters and change the
  * length of the payload) can never be safely corrected and will produce an
  * error.
  *

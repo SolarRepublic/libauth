@@ -63,11 +63,12 @@ export const verifyCashAssemblyEvaluationState = <
  * Reduce a resolved script, returning the resulting bytecode and a trace of the
  * reduction process.
  *
- * This method will return an error if provided a `resolvedScript` with
- * resolution errors. To check for resolution errors, use `getResolutionErrors`.
+ * This method will return an error if provided a {@link resolvedScript} with
+ * resolution errors. To check for resolution errors, use
+ * {@link getResolutionErrors}.
  *
- * @param resolvedScript - the `CompiledScript` to reduce
- * @param vm - the `AuthenticationVirtualMachine` to use for evaluations
+ * @param resolvedScript - the {@link CompiledScript} to reduce
+ * @param vm - the {@link AuthenticationVirtualMachine} to use for evaluations
  * @param createEvaluationProgram - a method which accepts the compiled bytecode
  * of an evaluation and returns the authentication program used to evaluate it
  */

@@ -17,13 +17,13 @@ import {
  * address type represents a commonly used locking bytecode pattern.
  *
  * @remarks
- * Addresses are strings which encode information about the network and
+ * Addresses are strings that encode information about the network and
  * `lockingBytecode` to which a transaction output can pay.
  *
  * Several address formats exist – `Base58Address` was the format used by the
  * original satoshi client, and is still in use on several active chains (see
- * `encodeBase58Address`). On Bitcoin Cash, the `CashAddress` standard is most
- * common (See `encodeCashAddress`).
+ * {@link encodeBase58Address}). On Bitcoin Cash, the `CashAddress` standard is
+ * most common (See {@link encodeCashAddress}).
  */
 export enum AddressType {
   /**
@@ -41,7 +41,7 @@ export enum AddressType {
    */
   p2pkh = 'P2PKH',
   /**
-   * 20-byte Pay to Script Hash (P2SH20). An address type which locks funds to
+   * 20-byte Pay to Script Hash (P2SH20). An address type that locks funds to
    * the 20-byte hash of a script provided in the spending transaction. See
    * BIPs 13 and 16 for details.
    */
@@ -66,21 +66,22 @@ export interface AddressContents {
 
 /**
  * Attempt to match a lockingBytecode to a standard address type for use in
- * address encoding. (See `AddressType` for details.)
+ * address encoding. (See {@link AddressType} for details.)
  *
  * For a locking bytecode matching the Pay to Public Key Hash (P2PKH) pattern,
- * the returned `type` is `AddressType.p2pkh` and `payload` is the `HASH160` of
- * the public key.
+ * the returned `type` is {@link AddressType.p2pkh} and `payload` is the
+ * `HASH160` of the public key.
  *
  * For a locking bytecode matching the 20-byte Pay to Script Hash (P2SH20)
- * pattern, the returned `type` is `AddressType.p2sh20` and `payload` is the
- * `HASH160` of the redeeming bytecode, A.K.A. "redeem script hash".
+ * pattern, the returned `type` is {@link AddressType.p2sh20} and `payload` is
+ * the `HASH160` of the redeeming bytecode, A.K.A. "redeem script hash".
  *
  * For a locking bytecode matching the Pay to Public Key (P2PK) pattern, the
- * returned `type` is `AddressType.p2pk` and `payload` is the full public key.
+ * returned `type` is {@link AddressType.p2pk} and `payload` is the full
+ * public key.
  *
- * Any other locking bytecode will return a `type` of `AddressType.unknown` and
- * a payload of the unmodified `bytecode`.
+ * Any other locking bytecode will return a `type` of
+ * {@link AddressType.unknown} and a payload of the unmodified `bytecode`.
  *
  * @param bytecode - the locking bytecode to match
  */
@@ -143,11 +144,11 @@ export const lockingBytecodeToAddressContents = (
 };
 
 /**
- * Get the locking bytecode for a valid `AddressContents` object. See
- * `lockingBytecodeToAddressContents` for details.
+ * Get the locking bytecode for a valid {@link AddressContents}. See
+ * {@link lockingBytecodeToAddressContents} for details.
  *
- * For `AddressContents` of `type` `AddressType.unknown`, this method returns
- * the `payload` without modification.
+ * For {@link AddressContents} of `type` {@link AddressType.unknown}, this
+ * method returns the `payload` without modification.
  *
  * @param addressContents - the `AddressContents` to encode
  */
@@ -196,7 +197,7 @@ export const addressContentsToLockingBytecode = (
  * address type and returned as a valid CashAddress (string).
  *
  * If `bytecode` cannot be encoded as an address (i.e. because the pattern is
- * not standard), the resulting `AddressContents` is returned.
+ * not standard), the resulting {@link AddressContents} is returned.
  *
  * @param bytecode - the locking bytecode to encode
  * @param prefix - the network prefix to use, e.g. `bitcoincash`, `bchtest`, or
@@ -265,13 +266,13 @@ export const cashAddressToLockingBytecode = (address: string) => {
  * address type and returned as a valid Base58Address (string).
  *
  * If `bytecode` cannot be encoded as an address (i.e. because the pattern is
- * not standard), the resulting `AddressContents` is returned.
+ * not standard), the resulting {@link AddressContents} is returned.
  *
  * @param bytecode - the locking bytecode to encode
  * @param network - the network for which to encode the address (`mainnet` or
+ * `testnet`)
  * @param sha256 - an implementation of sha256 (defaults to the internal WASM
  * implementation)
- * `testnet`)
  */
 export const lockingBytecodeToBase58Address = (
   bytecode: Uint8Array,

@@ -299,7 +299,7 @@ _.many = function () {
         /* istanbul ignore if */ if (i === result.index) {
           throw new Error(
             'infinite loop detected in .many() parser --- calling .many() on ' +
-              'a parser which can accept zero characters is usually the cause'
+              'a parser that can accept zero characters is usually the cause'
           );
         }
         i = result.index;

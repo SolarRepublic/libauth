@@ -1,6 +1,6 @@
 /**
  * The "common" instruction set includes all virtual machine (VM) operations,
- * types, and utilities which are used by more than one Libauth-supported VM.
+ * types, and utilities that are used by more than one Libauth-supported VM.
  */
 export * from './arithmetic.js';
 export * from './bitwise.js';

@@ -6,7 +6,7 @@ import {
   bigIntToBinUint64LE,
   bigIntToBinUint64LEClamped,
   bigIntToBinUintLE,
-  bigIntToBitcoinVarInt,
+  bigIntToVarInt,
   binToBigIntUint256BE,
   binToBigIntUint64LE,
   binToBigIntUintBE,
@@ -17,6 +17,7 @@ import {
   binToNumberUint16LE,
   binToNumberUint32LE,
   binToNumberUintLE,
+  decodeVarInt,
   hexToBin,
   numberToBinInt16LE,
   numberToBinInt32LE,
@@ -28,7 +29,6 @@ import {
   numberToBinUint32LE,
   numberToBinUint32LEClamped,
   numberToBinUintLE,
-  readBitcoinVarInt,
   varIntPrefixToSize,
 } from '../lib.js';
 
@@ -209,9 +209,9 @@ test('bigIntToBinUint64LE vs. bigIntToBinUint64LEClamped: behavior on negative n
   );
 });
 
-test('bigIntToBitcoinVarInt: larger values return modulo result after opcode', (t) => {
+test('bigIntToVarInt: larger values return modulo result after opcode', (t) => {
   t.deepEqual(
-    bigIntToBitcoinVarInt(BigInt('0x010000000000000001')),
+    bigIntToVarInt(BigInt('0x010000000000000001')),
     Uint8Array.from([0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
   );
 });
@@ -436,23 +436,23 @@ test('binToBigIntUint64LE', (t) => {
   );
 });
 
-test('readBitcoinVarInt: offset is optional', (t) => {
-  t.deepEqual(readBitcoinVarInt(hexToBin('00')), {
-    nextOffset: 1,
+test('decodeVarInt: index is optional', (t) => {
+  t.deepEqual(decodeVarInt(hexToBin('00')), {
+    nextIndex: 1,
     value: BigInt(0x00),
   });
 });
 
 const varIntVector = test.macro<[string, bigint, number, number?, string?]>({
   // eslint-disable-next-line max-params
-  exec: (t, hex, value, nextOffset, start = 0, expected = hex) => {
-    t.deepEqual(readBitcoinVarInt(hexToBin(hex), start), {
-      nextOffset,
+  exec: (t, hex, value, nextIndex, start = 0, expected = hex) => {
+    t.deepEqual(decodeVarInt(hexToBin(hex), start), {
+      nextIndex,
       value,
     });
-    t.deepEqual(bigIntToBitcoinVarInt(value), hexToBin(expected));
+    t.deepEqual(bigIntToVarInt(value), hexToBin(expected));
   },
-  title: (_, string) => `readBitcoinVarInt/bigIntToBitcoinVarInt: ${string}`,
+  title: (_, string) => `decodeVarInt/bigIntToVarInt: ${string}`,
 });
 
 /* spell-checker: disable */
@@ -492,12 +492,12 @@ test(varIntVector, 'ff1111111111111111', BigInt('0x1111111111111111'), 9);
 test(varIntVector, 'ff1234567890abcdef', BigInt('0xefcdab9078563412'), 9);
 
 testProp(
-  '[fast-check] bigIntToBitcoinVarInt <-> readBitcoinVarInt',
+  '[fast-check] bigIntToVarInt <-> decodeVarInt',
   [fc.bigUintN(64)],
   (t, uint64) => {
-    const varInt = bigIntToBitcoinVarInt(uint64);
-    const expectedOffset = varIntPrefixToSize(varInt[0]);
-    const result = readBitcoinVarInt(varInt);
-    t.deepEqual(result, { nextOffset: expectedOffset, value: uint64 });
+    const varInt = bigIntToVarInt(uint64);
+    const expectedIndex = varIntPrefixToSize(varInt[0]);
+    const result = decodeVarInt(varInt);
+    t.deepEqual(result, { nextIndex: expectedIndex, value: uint64 });
   }
 );

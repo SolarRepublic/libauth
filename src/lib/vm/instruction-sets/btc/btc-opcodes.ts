@@ -1,5 +1,5 @@
 /**
- *  `OpcodesBCH` currently represents the `BTC_2017_08` instruction set.
+ *  `OpcodesBTC` currently represents the `BTC_2017_08` instruction set.
  */
 export enum OpcodesBTC {
   OP_0 = 0x00,

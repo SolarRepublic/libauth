@@ -36,8 +36,8 @@ import {
 const defaultScenarioOutputLockingBytecode = () => ({});
 
 /**
- * The contents of an `AuthenticationTemplateScenario` without the `name` and
- * `description`.
+ * The contents of an {@link AuthenticationTemplateScenario} without the `name`
+ * and `description`.
  */
 export type ScenarioDefinition = Pick<
   AuthenticationTemplateScenario,
@@ -65,11 +65,11 @@ export type ExtendedScenarioDefinition = Required<
   RequiredTwoLevels<Pick<ScenarioDefinition, 'transaction'>>;
 
 /**
- * Given a compiler configuration, generate the default scenario which is
+ * Given a compiler configuration, generate the default scenario that is
  * extended by all the configuration's scenarios.
  *
  * For details on default scenario generation, see
- * `AuthenticationTemplateScenario.extends`.
+ * {@link AuthenticationTemplateScenario.extends}.
  *
  * @param configuration - the compiler configuration from which to generate the
  * default scenario
@@ -204,9 +204,9 @@ export const generateDefaultScenarioDefinition = <
  * Extend the `data` property of a scenario definition with values from a parent
  * scenario definition. Returns the extended value for `data`.
  *
- * @param parentData - the scenario `data` which is extended by the child
+ * @param parentData - the scenario `data` that is extended by the child
  * scenario
- * @param childData - the scenario `data` which may override values from the
+ * @param childData - the scenario `data` that may override values from the
  * parent scenario
  */
 // eslint-disable-next-line complexity
@@ -267,8 +267,8 @@ export const extendScenarioDefinitionData = (
  * definition. Returns the extended values for `data`, `transaction`, and
  * `value`.
  *
- * @param parentScenario - the scenario which is extended by the child scenario
- * @param childScenario - the scenario which may override values from the parent
+ * @param parentScenario - the scenario that is extended by the child scenario
+ * @param childScenario - the scenario that may override values from the parent
  * scenario
  */
 // eslint-disable-next-line complexity
@@ -308,17 +308,9 @@ export const extendScenarioDefinition = <
     : ScenarioDefinition);
 
 /**
- * Generate the full scenario which is extended by the provided scenario
+ * Generate the full scenario that is extended by the provided scenario
  * identifier. Scenarios for which `extends` is `undefined` extend the default
  * scenario for the provided compiler configuration.
- *
- * @param scenarioId - the identifier of the scenario for from which to select
- * the extended scenario
- * @param configuration - the compiler configuration from which to generate the
- * extended scenario
- * @param sourceScenarioIds - an array of scenario identifiers indicating the
- * path taken to arrive at the current scenario - used to detect and prevent
- * cycles in extending scenarios (defaults to `[]`)
  */
 // eslint-disable-next-line complexity
 export const generateExtendedScenario = <
@@ -329,8 +321,19 @@ export const generateExtendedScenario = <
   scenarioId,
   sourceScenarioIds = [],
 }: {
+  /**
+   * The compiler configuration from which to generate the extended scenario
+   */
   configuration: Configuration;
+  /**
+   * The identifier of the scenario from which to generate the extended scenario
+   */
   scenarioId?: string | undefined;
+  /**
+   * an array of scenario identifiers indicating the path taken to arrive at the
+   * current scenario - used to detect and prevent cycles in extending scenarios
+   * (defaults to `[]`)
+   */
   sourceScenarioIds?: string[];
 }): ExtendedScenarioDefinition | string => {
   if (scenarioId === undefined) {
@@ -366,9 +369,10 @@ export const generateExtendedScenario = <
 };
 
 /**
- * Derive standard `CompilationData` properties from an extended scenario
+ * Derive standard {@link CompilationData} properties from an extended scenario
  * definition.
- * @param definition - a scenario definition which has been extended by the
+ *
+ * @param definition - a scenario definition that has been extended by the
  * default scenario definition
  */
 // eslint-disable-next-line complexity
@@ -713,7 +717,7 @@ export const generateScenarioBCH = <
     Array.isArray(input.unlockingBytecode)
   );
   if (testedInputs.length !== 1) {
-    return `Cannot generate ${scenarioName}: the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input which has "unlockingBytecode" set to ["slot"].`;
+    return `Cannot generate ${scenarioName}: the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input that has "unlockingBytecode" set to ["slot"].`;
   }
   const testedInputIndex = extendedScenario.transaction.inputs.findIndex(
     (input) => Array.isArray(input.unlockingBytecode)
@@ -723,7 +727,7 @@ export const generateScenarioBCH = <
     Array.isArray(output.lockingBytecode)
   );
   if (testedSourceOutputs.length !== 1) {
-    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – "sourceOutputs" must include exactly one output which has "lockingBytecode" set to ["slot"].`;
+    return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – "sourceOutputs" must include exactly one output that has "lockingBytecode" set to ["slot"].`;
   }
 
   if (

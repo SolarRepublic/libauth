@@ -17,7 +17,7 @@
  */
 export interface AuthenticationTemplate {
   /**
-   * The URI which identifies the JSON Schema used by this template. Try:
+   * The URI that identifies the JSON Schema used by this template. Try:
    * `https://libauth.org/schemas/authentication-template-v0.schema.json`
    * to enable documentation, autocompletion, and validation in JSON documents.
    */
@@ -149,7 +149,7 @@ export interface AuthenticationTemplateEntity {
    */
   scripts?: string[];
   /**
-   * A map of variables which must be provided by this entity for use in the
+   * A map of variables that must be provided by this entity for use in the
    * template's scripts. Some variables are required before locking script
    * generation, while some variables can or must be resolved only before
    * unlocking script generation.
@@ -165,7 +165,7 @@ export interface AuthenticationTemplateEntity {
  */
 export interface AuthenticationTemplateScenarioData {
   /**
-   * A map of full identifiers to CashAssembly scripts which compile to each
+   * A map of full identifiers to CashAssembly scripts that compile to each
    * identifier's value for this scenario. Allowing `bytecode` to be specified
    * as scripts (rather than e.g. hex) offers greater power and flexibility.
    *
@@ -173,7 +173,7 @@ export interface AuthenticationTemplateScenarioData {
    * and defined variables, however, cyclical references will produce an error
    * at compile time. Also, because the results of these compilations will be
    * used to generate the compilation context for this scenario, these scripts
-   * may not use compiler operations which themselves require access to
+   * may not use compiler operations that themselves require access to
    * compilation context (e.g. signatures).
    *
    * The provided `fullIdentifier` should match the complete identifier for
@@ -219,7 +219,7 @@ export interface AuthenticationTemplateScenarioData {
      * the dynamic index (`i`) used in each `privateDerivationPath` or
      * `publicDerivationPath`.
      *
-     * This is required for any compiler operation which requires derivation.
+     * This is required for any compiler operation that requires derivation.
      * Typically, the value is incremented by one for each address in a wallet.
      *
      * Defaults to `0`.
@@ -266,7 +266,7 @@ export interface AuthenticationTemplateScenarioData {
 }
 
 /**
- * A type which describes the configuration for a particular locking or
+ * A type that describes the configuration for a particular locking or
  * unlocking bytecode within an authentication template scenario.
  *
  * Bytecode may be specified as either a hexadecimal-encoded string or an object
@@ -288,7 +288,7 @@ export type AuthenticationTemplateScenarioBytecode =
        */
       script?: string | ['copy'];
       /**
-       * Scenario data which extends the scenario's top-level `data` during
+       * Scenario data that extends the scenario's top-level `data` during
        * script compilation.
        *
        * Each property is extended individually – to modify a property set by
@@ -329,11 +329,11 @@ export interface AuthenticationTemplateScenarioInput {
    * If undefined, this defaults to `0`.
    *
    * @remarks
-   * A sequence number is a complex bitfield which can encode several properties
+   * A sequence number is a complex bitfield that can encode several properties
    * about an input:
    * - **sequence age support** – whether or not the input can use
    * `OP_CHECKSEQUENCEVERIFY`, and the minimum number of blocks or length of
-   * time which has passed since this input's source transaction was mined (up
+   * time that has passed since this input's source transaction was mined (up
    * to approximately 1 year).
    * - **locktime support** – whether or not the input can use
    * `OP_CHECKLOCKTIMEVERIFY`
@@ -349,7 +349,7 @@ export interface AuthenticationTemplateScenarioInput {
    * input: a `lockingBytecode` can use the `OP_CHECKSEQUENCEVERIFY` operation
    * to verify that the funds being spent have been "locked" for a minimum
    * required amount of time (or block count). This can be used in protocols
-   * which require a reliable "proof-of-publication", like escrow, time-delayed
+   * that require a reliable "proof-of-publication", like escrow, time-delayed
    * withdrawals, and various payment channel protocols.
    *
    * Sequence age support is enabled unless the "disable bit" – the most
@@ -384,7 +384,7 @@ export interface AuthenticationTemplateScenarioInput {
    * intended for use in a multi-party signing protocol where parties updated
    * the "sequence number" to indicate to miners that this input should replace
    * a previously-signed input in an existing, not-yet-mined transaction. The
-   * original use-case was not completed and relied on behavior which can not be
+   * original use-case was not completed and relied on behavior that can not be
    * enforced by mining consensus, so the field was mostly-unused until it was
    * repurposed by BIP68 in block `419328`. See BIP68, BIP112, and BIP113 for
    * details.
@@ -483,7 +483,7 @@ export interface AuthenticationTemplateScenario {
    */
   description?: string;
   /**
-   * The identifier of the scenario which this scenario extends. Any `data` or
+   * The identifier of the scenario that this scenario extends. Any `data` or
    * `transaction` properties not defined in this scenario inherit from the
    * extended parent scenario.
    *
@@ -502,7 +502,7 @@ export interface AuthenticationTemplateScenario {
    * mined block after the genesis block:
    * `000000006a625f06636b8bb6ac7b960a8d03705d1ace08b1a19da3fdcc99ddbd`. This
    * default value was chosen to be low enough to simplify the debugging of
-   * block height offsets while remaining differentiated from `0` and `1` which
+   * block height offsets while remaining differentiated from `0` and `1`, which
    * are used both as boolean return values and for control flow.
    *   - `currentBlockTime` is set to `1231469665`. This is the Median Time-Past
    * block time (BIP113) of block `2`.
@@ -539,7 +539,7 @@ export interface AuthenticationTemplateScenario {
    * }
    * ```
    *
-   * Any `transaction` property which is not set will be inherited from the
+   * Any `transaction` property that is not set will be inherited from the
    * scenario specified by `extends`. when specifying the `inputs` and `outputs`
    * properties, each input and output extends the default values for inputs and
    * outputs, respectively.
@@ -613,7 +613,7 @@ export interface AuthenticationTemplateScenario {
      * input).
      *
      * This is inconsequential for valid transactions, since any transaction
-     * which disables `locktime` must have disabled locktime for all of its
+     * that disables `locktime` must have disabled locktime for all of its
      * inputs; `OP_CHECKLOCKTIMEVERIFY` is always properly enforced. However,
      * because an input can individually "disable locktime" without the full
      * transaction *actually disabling locktime*, it is possible that a
@@ -642,7 +642,7 @@ export interface AuthenticationTemplateScenario {
    *
    * The `sourceOutputs` property must have the same length as
    * `transaction.inputs`, and each source output must be ordered to match the
-   * index of the input which spends it.
+   * index of the input that spends it.
    *
    * To be valid the `sourceOutputs` property must have exactly one source
    * output with `lockingBytecode` set to `["slot"]` – the output at the same
@@ -676,7 +676,7 @@ export interface AuthenticationTemplateScriptUnlocking
    *
    * The minimum input age required for this unlocking script to become valid.
    *
-   * This value is provided as a CashAssembly script which must compile to the
+   * This value is provided as a CashAssembly script that must compile to the
    * least significant 3 bytes of the minimum sequence number required for this
    * unlocking script to be valid (the "type bit" and the 2-byte "value" – see
    * BIP68 for details). This script has access to all other template scripts
@@ -702,7 +702,7 @@ export interface AuthenticationTemplateScriptUnlocking
    * compiling an estimated transaction.
    *
    * Using estimate scenarios, it's possible for wallet software to compute
-   * an "estimated transaction", an invalid transaction which is guaranteed to
+   * an "estimated transaction", an invalid transaction that is guaranteed to
    * be the same byte length as the final transaction. This length can be used
    * to calculate the required transaction fee and assign values to the
    * transaction's change output(s). Because estimate scenarios provide
@@ -716,23 +716,23 @@ export interface AuthenticationTemplateScriptUnlocking
    */
   estimate?: string;
   /**
-   * A list of the scenario identifiers which – when used to compile this
-   * unlocking script and the script it unlocks – result in bytecode which fails
+   * A list of the scenario identifiers that – when used to compile this
+   * unlocking script and the script it unlocks – result in bytecode that fails
    * program verification.
    *
    * These scenarios can be used to test this script in development and review.
    */
   fails?: string[];
   /**
-   * A list of the scenario identifiers which – when used to compile this
+   * A list of the scenario identifiers that – when used to compile this
    * unlocking script and the script it unlocks – result in a compilation error.
    *
    * These scenarios can be used to test this script in development and review.
    */
   invalid?: string[];
   /**
-   * A list of the scenario identifiers which – when used to compile this
-   * unlocking script and the script it unlocks – result in bytecode which
+   * A list of the scenario identifiers that – when used to compile this
+   * unlocking script and the script it unlocks – result in bytecode that
    * passes program verification.
    *
    * These scenarios can be used to test this script in development and review.
@@ -761,7 +761,7 @@ export interface AuthenticationTemplateScriptUnlocking
    */
   timeLockType?: 'height' | 'timestamp';
   /**
-   * The identifier of the script which can be unlocked by this script.
+   * The identifier of the script that can be unlocked by this script.
    *
    * The presence of the `unlocks` property indicates that this script is an
    * unlocking script, and the script it unlocks must be a locking script.
@@ -779,7 +779,7 @@ export interface AuthenticationTemplateScriptLocking
    * in a P2SH20 "redeem script" format:
    * `OP_HASH160 <$(<lockingBytecode> OP_HASH160)> OP_EQUAL`
    *
-   * When compiling unlocking scripts which unlock locking scripts of type
+   * When compiling unlocking scripts that unlock locking scripts of type
    * `p2sh20`, the result will be transformed into the P2SH20 unlocking format:
    * `unlockingBytecode <lockingBytecode>` (where `lockingBytecode` is the
    * compiled bytecode of the locking script, without the "redeem script"
@@ -798,7 +798,7 @@ export interface AuthenticationTemplateScriptTested
    * If set to `true`, indicates that this script should be wrapped in a push
    * statement for testing.
    *
-   * This is useful for scripts which serve as "bytecode templates" – e.g.
+   * This is useful for scripts that serve as "bytecode templates" – e.g.
    * formatted messages or signature preimages. These scripts are typically not
    * evaluated as bytecode but appear within push statements elsewhere in the
    * template.
@@ -807,7 +807,7 @@ export interface AuthenticationTemplateScriptTested
    */
   pushed?: boolean;
   /**
-   * One or more tests which can be used during development and during template
+   * One or more tests that can be used during development and during template
    * validation to confirm the correctness of this tested script.
    */
   tests: { [testId: string]: AuthenticationTemplateScriptTest };
@@ -834,8 +834,8 @@ export interface AuthenticationTemplateScriptTest {
    */
   name?: string;
   /**
-   * A list of the scenario identifiers which – when used to compile this
-   * test and the script it tests – result in bytecode which fails program
+   * A list of the scenario identifiers that – when used to compile this
+   * test and the script it tests – result in bytecode that fails program
    * verification. The `setup` script is used in place of an unlocking
    * script, and the concatenation of the script under test and the `check`
    * script are used in place of a locking script.
@@ -844,7 +844,7 @@ export interface AuthenticationTemplateScriptTest {
    */
   fails?: string[];
   /**
-   * A list of the scenario identifiers which – when used to compile this
+   * A list of the scenario identifiers that – when used to compile this
    * test and the script it tests – result in a compilation error. The `setup`
    * script is used in place of an unlocking script, and the concatenation of
    * the script under test and the `check` script are used in place of a locking
@@ -854,8 +854,8 @@ export interface AuthenticationTemplateScriptTest {
    */
   invalid?: string[];
   /**
-   * A list of the scenario identifiers which – when used to compile this
-   * test and the script it tests – result in bytecode which passes program
+   * A list of the scenario identifiers that – when used to compile this
+   * test and the script it tests – result in bytecode that passes program
    * verification. The `setup` script is used in place of an unlocking
    * script, and the concatenation of the script under test and the `check`
    * script are used in place of a locking script.
@@ -865,7 +865,7 @@ export interface AuthenticationTemplateScriptTest {
   passes?: string[];
   /**
    * A script to evaluate before the script being tested. This can be used to
-   * push values to the stack which are operated on by the tested script.
+   * push values to the stack that are operated on by the tested script.
    *
    * In scenario testing, this script is treated as the unlocking script.
    */
@@ -884,13 +884,6 @@ export interface AuthenticationTemplateVariableBase {
    */
   name?: string;
   type: string;
-  /**
-   * TODO: revisit in future versions
-   *
-   * a script which must leave a 1 on the stack if the variable input is valid
-   * (e.g. to check unusual signatures from each signer as they are received)
-   */
-  // validate?: string;
 }
 
 export interface AuthenticationTemplateHdKey
@@ -947,7 +940,7 @@ export interface AuthenticationTemplateHdKey
    * `derive(derive(derive(node, 0), 2147483648 + 1), 2147483648 + addressIndex + addressOffset)`
    *
    * Because hardened derivation requires knowledge of the private key, `HdKey`
-   * variables with `derivationPath`s which include hardened derivation cannot
+   * variables with `derivationPath`s that include hardened derivation cannot
    * use HD public derivation (the `hdPublicKeys` property in
    * `CompilationData`). Instead, compilation requires the respective HD private
    * key (`CompilationData.hdKeys.hdPrivateKeys`) or the fully-derived public
@@ -964,7 +957,7 @@ export interface AuthenticationTemplateHdKey
    * later derivation levels use non-hardened derivation, `publicDerivationPath`
    * can be used to specify a public derivation path beginning from
    * `hdPublicKeyDerivationPath` (i.e. `publicDerivationPath` should always be a
-   * non-hardened segment of `privateDerivationPath` which follows
+   * non-hardened segment of `privateDerivationPath` that follows
    * `hdPublicKeyDerivationPath`).
    *
    * The first character must be `M` (public derivation), followed by sets of
@@ -1027,7 +1020,7 @@ export interface AuthenticationTemplateWalletData
    */
   name?: string;
   /**
-   * The `WalletData` type provides a static piece of data which should be
+   * The `WalletData` type provides a static piece of data that should be
    * collected once and stored at the time of wallet creation. `WalletData`
    * should be persistent for the life of the wallet, rather than changing from
    * locking script to locking script.
@@ -1047,15 +1040,6 @@ export interface AuthenticationTemplateAddressData
    * A single-line, Title Case, human-readable name for this address data.
    */
   name?: string;
-  /**
-   * A script ID used to compile this AddressData. When a `source` is provided,
-   * wallet implementations can automatically compile the expected value without
-   * prompting users. This is particularly useful for sharing the result of a
-   * script with other entities as a variable.
-   *
-   * TODO: implement? - also requires support in data_signature and importAuthenticationTemplate
-   */
-  // source?: string;
   /**
    * `AddressData` is the most low-level variable type. It must be collected
    * and stored each time a script is generated (usually, a locking script).

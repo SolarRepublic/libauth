@@ -1,7 +1,7 @@
 import type { AuthenticationTemplate } from '../template';
 
 /**
- * A standard single-factor authentication template which uses
+ * A standard single-factor authentication template that uses
  * Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use
  * on the network.
  *
@@ -14,7 +14,7 @@ import type { AuthenticationTemplate } from '../template';
 export const authenticationTemplateP2pkhNonHd: AuthenticationTemplate = {
   $schema: 'https://bitauth.com/schemas/authentication-template-v0.schema.json',
   description:
-    'A standard single-factor authentication template which uses Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use on the network.\n\nThis P2PKH template uses BCH Schnorr signatures, reducing the size of transactions.',
+    'A standard single-factor authentication template that uses Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use on the network.\n\nThis P2PKH template uses BCH Schnorr signatures, reducing the size of transactions.',
   entities: {
     owner: {
       description: 'The individual who can spend from this wallet.',
@@ -22,7 +22,7 @@ export const authenticationTemplateP2pkhNonHd: AuthenticationTemplate = {
       scripts: ['lock', 'unlock'],
       variables: {
         key: {
-          description: 'The private key which controls this wallet.',
+          description: 'The private key that controls this wallet.',
           name: 'Key',
           type: 'Key',
         },
@@ -48,7 +48,7 @@ export const authenticationTemplateP2pkhNonHd: AuthenticationTemplate = {
 };
 
 /**
- * A standard single-factor authentication template which uses
+ * A standard single-factor authentication template that uses
  * Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use
  * on the network.
  *
@@ -61,11 +61,11 @@ export const authenticationTemplateP2pkhNonHd: AuthenticationTemplate = {
 export const authenticationTemplateP2pkh: AuthenticationTemplate = {
   $schema: 'https://bitauth.com/schemas/authentication-template-v0.schema.json',
   description:
-    'A standard single-factor authentication template which uses Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use on the network.\n\nThis P2PKH template uses BCH Schnorr signatures, reducing the size of transactions. Because the template uses a Hierarchical Deterministic (HD) key, it also supports an "Observer (Watch-Only)" entity.',
+    'A standard single-factor authentication template that uses Pay-to-Public-Key-Hash (P2PKH), the most common authentication scheme in use on the network.\n\nThis P2PKH template uses BCH Schnorr signatures, reducing the size of transactions. Because the template uses a Hierarchical Deterministic (HD) key, it also supports an "Observer (Watch-Only)" entity.',
   entities: {
     observer: {
       description:
-        'An entity which can generate addresses but cannot spend funds from this wallet.',
+        'An entity that can generate addresses but cannot spend funds from this wallet.',
       name: 'Observer (Watch-Only)',
       scripts: ['lock'],
     },
@@ -75,7 +75,7 @@ export const authenticationTemplateP2pkh: AuthenticationTemplate = {
       scripts: ['lock', 'unlock'],
       variables: {
         key: {
-          description: 'The private key which controls this wallet.',
+          description: 'The private key that controls this wallet.',
           name: 'Key',
           type: 'HdKey',
         },

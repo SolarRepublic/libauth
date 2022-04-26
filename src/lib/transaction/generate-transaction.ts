@@ -262,7 +262,7 @@ export const extractResolvedVariables = (
  * TODO: fundamentally unsound, migrate to PST format
  *
  * Given an unsuccessful transaction generation result, extract a map of the
- * identifiers missing from the compilation mapped to the entity which owns each
+ * identifiers missing from the compilation mapped to the entity that owns each
  * variable.
  *
  * Returns `false` if any errors are fatal (the error either cannot be resolved

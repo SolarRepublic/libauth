@@ -54,8 +54,8 @@ export const opIf = <
 
 /**
  * Note, `OP_NOTIF` is not completely equivalent to `OP_NOT OP_IF`. `OP_NOT`
- * operates on a Script Number (as the inverse of `OP_0NOTEQUAL`), while
- * `OP_NOTIF` checks the "truthy-ness" of a stack item like `OP_IF`.
+ * operates on a VM Number (as the inverse of `OP_0NOTEQUAL`), while `OP_NOTIF`
+ * checks the "truthy-ness" of a stack item like `OP_IF`.
  */
 export const opNotIf = <
   State extends AuthenticationProgramStateControlStack &

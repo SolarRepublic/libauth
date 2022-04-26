@@ -1,3 +1,9 @@
+import {
+  ripemd160 as internalRipemd160,
+  secp256k1 as internalSecp256k1,
+  sha256 as internalSha256,
+  sha512 as internalSha512,
+} from '../crypto/default-crypto-instances.js';
 import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateCommon,
@@ -22,7 +28,8 @@ import type { AuthenticationTemplate } from './template-types';
 import { compileScript } from './template.js';
 
 /**
- * Create a `Compiler.generateBytecode` method given a compiler configuration.
+ * Create a {@link Compiler.generateBytecode} method given a compiler
+ * configuration.
  */
 export const createCompilerGenerateBytecodeFunction =
   <
@@ -64,12 +71,11 @@ export const createCompilerGenerateBytecodeFunction =
   };
 
 /**
- * Create a `Compiler` from the provided compiler configuration. This method
- * requires a full `CompilerConfiguration` and does not instantiate any new
+ * Create a {@link Compiler} from the provided compiler configuration. This
+ * method requires a full {@link CompilerConfiguration} and does not provide any
  * crypto or VM implementations.
  *
- * @param configuration - the configuration from which to create the
- * compiler
+ * @param configuration - the configuration from which to create the compiler
  */
 export const compilerConfigurationToCompilerBCH = <
   Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
@@ -100,11 +106,12 @@ export const compilerConfigurationToCompilerBCH = <
 const nullHashLength = 32;
 
 /**
- * A common `createAuthenticationProgram` implementation for most compilers.
+ * A common {@link createAuthenticationProgram} implementation for
+ * most compilers.
  *
  * Accepts the compiled contents of an evaluation and produces a
- * `AuthenticationProgramCommon` which can be evaluated to produce the resulting
- * program state.
+ * {@link AuthenticationProgramCommon} that can be evaluated to produce the
+ * resulting program state.
  *
  * The precise shape of the authentication program produced by this method is
  * critical to the determinism of CashAssembly evaluations for the compiler in
@@ -145,16 +152,14 @@ export const createAuthenticationProgramEvaluationCommon = (
 });
 
 /**
- * Synchronously create a compiler using the default common compiler
- * configuration. Because this compiler has no access to Secp256k1, Sha256, or a
- * VM, it cannot compile evaluations or operations which require key derivation
- * or hashing.
+ * Create a compiler using the default common compiler configuration. Because
+ * this compiler has no access to a VM, it cannot compile evaluations.
  *
  * @param scriptsAndOverrides - a compiler configuration from which properties
  * will be used to override properties of the default common compiler
  * configuration – must include the `scripts` property
  */
-export const createCompilerCommonSynchronous = <
+export const createCompilerCommon = <
   Configuration extends AnyCompilerConfiguration<CompilationContextBCH>,
   ProgramState extends AuthenticationProgramStateCommon
 >(
@@ -165,19 +170,24 @@ export const createCompilerCommonSynchronous = <
       createAuthenticationProgram: createAuthenticationProgramEvaluationCommon,
       opcodes: generateBytecodeMap(Opcodes),
       operations: compilerOperationsCommon,
+      ripemd160: internalRipemd160,
+      secp256k1: internalSecp256k1,
+      sha256: internalSha256,
+      sha512: internalSha512,
     },
     ...scriptsAndOverrides,
   });
 
 /**
- * Create a partial `CompilerConfiguration` from an `AuthenticationTemplate` by
- * extracting and formatting the `scripts` and `variables` properties.
+ * Create a partial {@link CompilerConfiguration} from an
+ * {@link AuthenticationTemplate} by extracting and formatting the `scripts` and
+ * `variables` properties.
  *
- * Note, if this `AuthenticationTemplate` might be malformed, first validate it
- * with `importAuthenticationTemplate`.
+ * Note, if this {@link AuthenticationTemplate} might be malformed, first
+ * validate it with {@link importAuthenticationTemplate}.
  *
- * @param template - the `AuthenticationTemplate` from which to extract the
- * compiler configuration
+ * @param template - the {@link AuthenticationTemplate} from which to extract
+ * the compiler configuration
  */
 export const authenticationTemplateToCompilerConfiguration = (
   template: AuthenticationTemplate

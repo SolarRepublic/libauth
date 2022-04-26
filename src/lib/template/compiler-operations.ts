@@ -1,11 +1,11 @@
 import {
-  bigIntToBitcoinVarInt,
-  bigIntToScriptNumber,
+  bigIntToVarInt,
+  bigIntToVmNumber,
   decodeHdPublicKey,
   deriveHdPath,
-  encodeOutpoints,
-  encodeOutputsForSigning,
-  encodeSequenceNumbersForSigning,
+  encodeTransactionInputSequenceNumbersForSigning,
+  encodeTransactionOutpoints,
+  encodeTransactionOutputsForSigning,
   generateSigningSerializationComponentsBCH,
   numberToBinUint32LE,
 } from '../lib.js';
@@ -72,7 +72,7 @@ export const compilerOperationCurrentBlockHeight = compilerOperationRequires({
   configurationProperties: [],
   dataProperties: ['currentBlockHeight'],
   operation: (_, data) => ({
-    bytecode: bigIntToScriptNumber(BigInt(data.currentBlockHeight)),
+    bytecode: bigIntToVmNumber(BigInt(data.currentBlockHeight)),
     status: 'success',
   }),
 });
@@ -137,9 +137,7 @@ const compilerOperationHelperSigningSerializationCoveredBytecode = (
       }
 
       return {
-        bytecode: returnLength
-          ? bigIntToBitcoinVarInt(BigInt(result.length))
-          : result,
+        bytecode: returnLength ? bigIntToVarInt(BigInt(result.length)) : result,
         status: 'success',
       };
     },
@@ -227,7 +225,9 @@ export const compilerOperationSigningSerializationTransactionOutpoints =
     configurationProperties: [],
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: encodeOutpoints(data.compilationContext.transaction.inputs),
+      bytecode: encodeTransactionOutpoints(
+        data.compilationContext.transaction.inputs
+      ),
       status: 'success',
     }),
   });
@@ -240,7 +240,7 @@ export const compilerOperationSigningSerializationTransactionOutpointsHash =
     operation: (_, data, configuration) => ({
       bytecode: configuration.sha256.hash(
         configuration.sha256.hash(
-          encodeOutpoints(data.compilationContext.transaction.inputs)
+          encodeTransactionOutpoints(data.compilationContext.transaction.inputs)
         )
       ),
       status: 'success',
@@ -253,7 +253,7 @@ export const compilerOperationSigningSerializationTransactionOutputs =
     configurationProperties: [],
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: encodeOutputsForSigning(
+      bytecode: encodeTransactionOutputsForSigning(
         data.compilationContext.transaction.outputs
       ),
       status: 'success',
@@ -268,7 +268,9 @@ export const compilerOperationSigningSerializationTransactionOutputsHash =
     operation: (_, data, configuration) => ({
       bytecode: configuration.sha256.hash(
         configuration.sha256.hash(
-          encodeOutputsForSigning(data.compilationContext.transaction.outputs)
+          encodeTransactionOutputsForSigning(
+            data.compilationContext.transaction.outputs
+          )
         )
       ),
       status: 'success',
@@ -281,7 +283,7 @@ export const compilerOperationSigningSerializationTransactionSequenceNumbers =
     configurationProperties: [],
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
-      bytecode: encodeSequenceNumbersForSigning(
+      bytecode: encodeTransactionInputSequenceNumbersForSigning(
         data.compilationContext.transaction.inputs
       ),
       status: 'success',
@@ -296,7 +298,7 @@ export const compilerOperationSigningSerializationTransactionSequenceNumbersHash
     operation: (_, data, configuration) => ({
       bytecode: configuration.sha256.hash(
         configuration.sha256.hash(
-          encodeSequenceNumbersForSigning(
+          encodeTransactionInputSequenceNumbersForSigning(
             data.compilationContext.transaction.inputs
           )
         )

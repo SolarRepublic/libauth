@@ -28,17 +28,6 @@ export enum BitRegroupingError {
  * `true`, this method will never error.
  *
  * A.K.A. `convertbits`
- *
- * @param bin - an array of numbers representing the bits to regroup. Each item
- * must be a number within the range of `sourceWordLength`
- * @param sourceWordLength - the bit-length of each number in `bin`, e.g. to
- * regroup bits from a `Uint8Array`, use `8` (must be a positive integer)
- * @param resultWordLength - the bit-length of each number in the desired result
- * array, e.g. to regroup bits into 4-bit numbers, use `4` (must be a positive
- * integer)
- * @param allowPadding - whether to allow the use of padding for `bin` values
- * where the provided number of bits cannot be directly mapped to an equivalent
- * result array (remaining bits are filled with `0`), defaults to `true`
  */
 // Derived from: https://github.com/sipa/bech32
 export const regroupBits = ({
@@ -47,9 +36,26 @@ export const regroupBits = ({
   resultWordLength,
   allowPadding = true,
 }: {
+  /**
+   * An array of numbers representing the bits to regroup. Each item must be a
+   * number within the range of `sourceWordLength`.
+   */
   bin: Immutable<Uint8Array> | readonly number[];
+  /**
+   * The bit-length of each number in `bin`, e.g. to regroup bits from a
+   * `Uint8Array`, use `8` (must be a positive integer)
+   */
   sourceWordLength: number;
+  /**
+   * The bit-length of each number in the desired result array, e.g. to regroup
+   * bits into 4-bit numbers, use `4` (must be a positive integer)
+   */
   resultWordLength: number;
+  /**
+   * Whether to allow the use of padding for `bin` values where the provided
+   * number of bits cannot be directly mapped to an equivalent result array
+   * (remaining bits are filled with `0`), defaults to `true`
+   */
   allowPadding?: boolean;
 }) => {
   let accumulator = 0;
@@ -110,7 +116,8 @@ export const encodeBech32 = (base32IntegerArray: readonly number[]) => {
  *
  * Note, this method always completes. If `validBech32` is not valid bech32,
  * an incorrect result will be returned. If `validBech32` is potentially
- * malformed, check it with `isBech32` before calling this method.
+ * malformed, check it with {@link isBech32CharacterSet} before calling
+ * this method.
  *
  * @param validBech32 - the bech32-encoded string to decode
  */
@@ -151,7 +158,7 @@ export enum Bech32DecodingError {
  * 5-bit integers would require padding to be regrouped into 8-bit bytes, this
  * method returns an error message.
  *
- * This method is the reverse of `binToBech32Padded`.
+ * This method is the reverse of {@link binToBech32Padded}.
  *
  * @param bech32Padded - the padded bech32-encoded string to decode
  */
@@ -171,7 +178,7 @@ export const bech32PaddedToBin = (bech32Padded: string) => {
  * Convert a Uint8Array to a padded bech32-encoded string (without a checksum),
  * adding padding bits as necessary to convert all bytes to 5-bit integers.
  *
- * This method is the reverse of `bech32PaddedToBin`.
+ * This method is the reverse of {@link bech32PaddedToBin}.
  *
  * @param bytes - the Uint8Array to bech32 encode
  */

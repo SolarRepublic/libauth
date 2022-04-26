@@ -170,7 +170,7 @@ test(
     errors: [
       {
         error:
-          'The script "test" requires a locktime, but this input\'s sequence number is set to disable transaction locktime (0xffffffff). This will cause the OP_CHECKLOCKTIMEVERIFY operation to error when the transaction is verified. To be valid, this input must use a sequence number which does not disable locktime.',
+          'The script "test" requires a locktime, but this input\'s sequence number is set to disable transaction locktime (0xffffffff). This will cause the OP_CHECKLOCKTIMEVERIFY operation to error when the transaction is verified. To be valid, this input must use a sequence number that does not disable locktime.',
         range: {
           endColumn: 0,
           endLineNumber: 0,
@@ -607,7 +607,7 @@ test(
     errors: [
       {
         error:
-          'Identifier "signing_serialization.covered_bytecode" requires a signing serialization which covers an unknown locking script, "some_unknown_script".',
+          'Identifier "signing_serialization.covered_bytecode" requires a signing serialization that covers an unknown locking script, "some_unknown_script".',
         range: {
           endColumn: 40,
           endLineNumber: 1,

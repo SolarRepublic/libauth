@@ -10,11 +10,9 @@ import fc from 'fast-check';
 import hashJs from 'hash.js';
 
 import type { HashFunction } from '../lib';
+import { utf8ToBin } from '../lib.js';
 
 const testLength = 10000;
-
-const stringToCharsUint8Array = (str: string) =>
-  new Uint8Array([...str].map((c) => c.charCodeAt(0)));
 
 const maxUint8Number = 255;
 const fcUint8Array = (minLength: number, maxLength: number) =>
@@ -27,7 +25,7 @@ const fcUint8Array = (minLength: number, maxLength: number) =>
 
 export const testHashFunction = <T extends HashFunction>({
   abcHash,
-  bitcoinTsHash,
+  libauthHash,
   getEmbeddedBinary,
   hashFunctionName,
   instantiate,
@@ -41,7 +39,7 @@ export const testHashFunction = <T extends HashFunction>({
   instantiateBytes: (webassemblyBytes: ArrayBuffer) => Promise<T>;
   abcHash: Uint8Array;
   testHash: Uint8Array;
-  bitcoinTsHash: Uint8Array;
+  libauthHash: Uint8Array;
   nodeJsAlgorithm: 'ripemd160' | 'sha1' | 'sha256' | 'sha512';
 }) => {
   const binary = getEmbeddedBinary();
@@ -65,12 +63,9 @@ export const testHashFunction = <T extends HashFunction>({
 
   test(`[crypto] ${hashFunctionName} instantiated with embedded binary`, async (t) => {
     const hashFunction = await instantiate();
-    t.deepEqual(hashFunction.hash(stringToCharsUint8Array('abc')), abcHash);
-    t.deepEqual(hashFunction.hash(stringToCharsUint8Array('test')), testHash);
-    t.deepEqual(
-      hashFunction.hash(stringToCharsUint8Array('bitcoin-ts')),
-      bitcoinTsHash
-    );
+    t.deepEqual(hashFunction.hash(utf8ToBin('abc')), abcHash);
+    t.deepEqual(hashFunction.hash(utf8ToBin('test')), testHash);
+    t.deepEqual(hashFunction.hash(utf8ToBin('libauth')), libauthHash);
   });
 
   test(`[fast-check] [crypto] ${hashFunctionName} instantiated with bytes`, async (t) => {
@@ -121,37 +116,28 @@ export const testHashFunction = <T extends HashFunction>({
       hashFunction.final(
         hashFunction.update(
           hashFunction.update(
-            hashFunction.update(
-              hashFunction.init(),
-              stringToCharsUint8Array('a')
-            ),
-            stringToCharsUint8Array('b')
+            hashFunction.update(hashFunction.init(), utf8ToBin('a')),
+            utf8ToBin('b')
           ),
-          stringToCharsUint8Array('c')
+          utf8ToBin('c')
         )
       ),
       abcHash
     );
     t.deepEqual(
       hashFunction.final(
-        hashFunction.update(
-          hashFunction.init(),
-          stringToCharsUint8Array('test')
-        )
+        hashFunction.update(hashFunction.init(), utf8ToBin('test'))
       ),
       testHash
     );
     t.deepEqual(
       hashFunction.final(
         hashFunction.update(
-          hashFunction.update(
-            hashFunction.init(),
-            stringToCharsUint8Array('bitcoin')
-          ),
-          stringToCharsUint8Array('-ts')
+          hashFunction.update(hashFunction.init(), utf8ToBin('lib')),
+          utf8ToBin('auth')
         )
       ),
-      bitcoinTsHash
+      libauthHash
     );
 
     const equivalentToSinglePass = fc.property(

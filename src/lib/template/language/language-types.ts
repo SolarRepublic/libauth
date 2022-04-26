@@ -78,7 +78,7 @@ export interface ResolvedSegmentVariableBytecode
   value: Uint8Array;
   /**
    * The full identifier (including any compilation operations) of the variable
-   * which resolved to this `value`, e.g. `my_key.signature.all_outputs` or
+   * that resolved to this `value`, e.g. `my_key.signature.all_outputs` or
    * `my_key.public_key`.
    */
   variable: string;
@@ -86,11 +86,12 @@ export interface ResolvedSegmentVariableBytecode
 
 export interface ResolvedSegmentScriptBytecode extends ResolvedSegmentBase {
   /**
-   * The full identifier of the script which resolved to this `value`.
+   * The full identifier of the script that resolved to this `value`.
    */
   script: string;
   /**
-   * The source `ResolvedScript` which was compiled to produce this `value`.
+   * The source {@link ResolvedScript} that was compiled to produce
+   * this `value`.
    */
   source: ResolvedScript;
   type: 'bytecode';
@@ -172,9 +173,10 @@ export enum IdentifierResolutionErrorType {
 
 export interface ResolutionDebug {
   /**
-   * An additional, complex property which may be returned by custom
+   * An additional, complex property that may be returned by custom
    * compiler operations. For use in extending the compiler to support
-   * additional return information like `CompilerOperationSuccessSignature`.
+   * additional return information like
+   * {@link CompilerOperationSuccessSignature}.
    */
   debug?: unknown;
 }
@@ -199,7 +201,7 @@ export interface ResolutionSignature {
 }
 
 /**
- * A method which accepts a string and returns either the successfully resolved
+ * A method that accepts a string and returns either the successfully resolved
  * bytecode or an error. The string will never be empty (`''`), so resolution
  * can skip checking the string's length.
  */
@@ -287,7 +289,7 @@ export interface TraceSample<ProgramState> {
 }
 
 /**
- * A group of instructions which when read together are not malformed (contain
+ * A group of instructions that when read together are not malformed (contain
  * incomplete push instructions). For example, the CashAssembly
  * `0x03 'a' 'b' 'c'` would be malformed if not evaluated together, since the
  * `0x03` becomes `OP_PUSHBYTES_3`, and the UTF8 literals compile to `0x616263`.
@@ -313,7 +315,7 @@ export interface InstructionAggregationError {
 /**
  * An evaluation sample extracted from a script reduction trace – includes the
  * range of the evaluation from which the sample was extracted, the instruction
- * which was evaluated, the range in the source script over which the
+ * that was evaluated, the range in the source script over which the
  * instruction was defined, and the resulting program state.
  */
 export interface EvaluationSample<ProgramState> {
@@ -325,7 +327,7 @@ export interface EvaluationSample<ProgramState> {
    */
   evaluationRange: Range;
   /**
-   * The final instruction which was evaluated during this sample.
+   * The final instruction that was evaluated during this sample.
    *
    * Note, the first sample from any evaluation is the initial state before any
    * instructions are executed, so its `instruction` is `undefined`. For all
@@ -333,13 +335,13 @@ export interface EvaluationSample<ProgramState> {
    */
   instruction?: AuthenticationInstruction;
   /**
-   * An ordered array of instructions and program states which occurred within
+   * An ordered array of instructions and program states that occurred within
    * the range of a single reduction trace node before the final instruction and
    * state (assigned to `instruction` and `state`, respectively).
    *
    * This occurs in unusual cases where multiple opcodes are defined in the same
    * reduced node, e.g. a long hex literal of operations as bytecode or an
-   * evaluation which is not wrapped in a push.
+   * evaluation that is not wrapped in a push.
    *
    * Usually, this will be an empty array.
    */
@@ -380,7 +382,7 @@ export type CompilationError =
 /**
  * A compilation error from which it is not possible to recover. This includes
  * problems with the authentication template, missing dependencies in the
- * compiler configuration, and other errors which likely require meaningful
+ * compiler configuration, and other errors that likely require meaningful
  * software changes.
  */
 export interface CompilationErrorFatal {
@@ -407,12 +409,12 @@ export interface CompilationErrorFatal {
  */
 export interface CompilationErrorRecoverable extends CompilationErrorFatal {
   /**
-   * The variable ID of the variable which – if provided in the compilation data
+   * The variable ID of the variable that – if provided in the compilation data
    * – would resolve this error.
    */
   missingIdentifier: string;
   /**
-   * The ID of the entity which owns the variable referenced by
+   * The ID of the entity that owns the variable referenced by
    * `missingIdentifier`.
    */
   owningEntity: string;

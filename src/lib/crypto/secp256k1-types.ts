@@ -6,7 +6,7 @@ export interface RecoverableSignature {
 }
 
 /**
- * An object which exposes a set of purely-functional Secp256k1 methods.
+ * An object that exposes a set of purely-functional Secp256k1 methods.
  *
  * ## Example
  *
@@ -109,7 +109,7 @@ export interface Secp256k1 {
    * Malleate a compact-encoded ECDSA signature.
    *
    * This is done by negating the S value modulo the order of the curve,
-   * "flipping" the sign of the random point R which is not included in the
+   * "flipping" the sign of the random point R that is not included in the
    * signature.
    *
    * Returns an error message if compact-signature parsing fails.
@@ -125,7 +125,7 @@ export interface Secp256k1 {
    * Malleate a DER-encoded ECDSA signature.
    *
    * This is done by negating the S value modulo the order of the curve,
-   * "flipping" the sign of the random point R which is not included in the
+   * "flipping" the sign of the random point R that is not included in the
    * signature.
    *
    * Returns an error message if DER-signature parsing fails.

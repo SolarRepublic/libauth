@@ -161,9 +161,9 @@ export const compilerOperationHelperComputeSignatureBCH = ({
     };
   }
   const serialization = generateSigningSerializationBCH(
-    sha256,
     compilationContext,
-    { coveredBytecode, signingSerializationType }
+    { coveredBytecode, signingSerializationType },
+    sha256
   );
   const digest = sha256.hash(sha256.hash(serialization));
   const bitcoinEncodedSignature = Uint8Array.from([
@@ -554,10 +554,14 @@ export const compilerOperationSigningSerializationFullBCH =
 
       const { compilationContext } = data;
       return {
-        bytecode: generateSigningSerializationBCH(sha256, compilationContext, {
-          coveredBytecode: result,
-          signingSerializationType,
-        }),
+        bytecode: generateSigningSerializationBCH(
+          compilationContext,
+          {
+            coveredBytecode: result,
+            signingSerializationType,
+          },
+          sha256
+        ),
         status: 'success',
       };
     },

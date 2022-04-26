@@ -7,9 +7,9 @@ const base64GroupLength = 4;
 const nonBase64Chars = new RegExp(`[^${chars}=]`, 'u');
 
 /**
- * For use before `base64ToBin`. Returns true if the provided string is valid
- * base64 (length is divisible by 4, only uses base64 characters).
- * @param maybeHex - a string to test
+ * For use before {@link base64ToBin}. Returns true if the provided string is
+ * valid base64 (length is divisible by 4, only uses base64 characters).
+ * @param maybeBase64 - a string to test
  */
 export const isBase64 = (maybeBase64: string) =>
   maybeBase64.length % base64GroupLength === 0 &&
@@ -22,7 +22,7 @@ export const isBase64 = (maybeBase64: string) =>
  *
  * Note, this method always completes. If `validBase64` is not valid base64, an
  * incorrect result will be returned. If `validBase64` is potentially malformed,
- * check it with `isBase64` before calling this method.
+ * check it with {@link isBase64} before calling this method.
  *
  * @param validBase64 - a valid base64-encoded string to decode
  */

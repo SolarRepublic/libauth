@@ -56,11 +56,7 @@ export enum CompressionFlag {
 /* eslint-enable no-bitwise, @typescript-eslint/no-magic-numbers, @typescript-eslint/prefer-literal-enum-member */
 
 /**
- * An object which wraps the WebAssembly implementation of `libsecp256k1`.
- *
- * Because WebAssembly modules are dynamically-instantiated at runtime, this
- * object must be created and awaited from `instantiateSecp256k1Wasm` or
- * `instantiateSecp256k1WasmBytes`.
+ * An object that wraps the WebAssembly implementation of `libsecp256k1`.
  *
  * **It's very unlikely that consumers will need to use this interface directly.
  * See [[Secp256k1]] for a more purely-functional API.**
@@ -86,14 +82,14 @@ export interface Secp256k1Wasm {
    * Returns 1 if the randomization was successfully updated, or 0 if not.
    *
    * While secp256k1 code is written to be constant-time no matter what secret
-   * values are, it's possible that a future compiler may output code which isn't,
-   * and also that the CPU may not emit the same radio frequencies or draw the same
-   * amount power for all values.
+   * values are, it's possible that a future compiler may output code that
+   * isn't, and also that the CPU may not emit the same radio frequencies or
+   * draw the same amount power for all values.
    *
-   * This function provides a seed which is combined into the blinding value: that
-   * blinding value is added before each multiplication (and removed afterwards) so
-   * that it does not affect function results, but shields against attacks which
-   * rely on any input-dependent behavior.
+   * This function provides a seed that is combined into the blinding value:
+   * that blinding value is added before each multiplication (and removed
+   * afterwards) so that it does not affect function results, but shields
+   * against attacks that rely on any input-dependent behavior.
    *
    * You should call this after `contextCreate` or
    * secp256k1_context_clone, and may call this repeatedly afterwards.
@@ -186,9 +182,9 @@ export interface Secp256k1Wasm {
    * Returns 1 if the public key was fully valid, or 0 if the public key could
    * not be parsed or is invalid.
    *
-   *  This function supports parsing compressed (33 bytes, header byte 0x02 or
-   *  0x03), uncompressed (65 bytes, header byte 0x04), or hybrid (65 bytes, header
-   *  byte 0x06 or 0x07) format public keys.
+   * This function supports parsing compressed (33 bytes, header byte 0x02 or
+   * 0x03), uncompressed (65 bytes, header byte 0x04), or hybrid (65 bytes, header
+   * byte 0x06 or 0x07) format public keys.
    *
    * @param contextPtr - pointer to a context object
    * @param publicKeyOutPtr - a pointer to a 64 byte space where the parsed public
@@ -214,10 +210,11 @@ export interface Secp256k1Wasm {
    * @param contextPtr - pointer to a context object
    * @param outputPtr - pointer to a 65-byte (if uncompressed) or 33-byte (if
    * compressed) byte array in which to place the serialized key
-   * @param outputLengthPtr - pointer to an integer which is initially set to the
+   * @param outputLengthPtr - pointer to an integer that is initially set to the
    * size of output, and is overwritten with the written size
    * @param publicKeyPtr - pointer to a public key (parsed, internal format)
-   * @param compression - a CompressionFlag indicating compressed or uncompressed
+   * @param compression - a CompressionFlag indicating compressed
+   * or uncompressed
    */
   readonly pubkeySerialize: (
     contextPtr: number,
@@ -328,7 +325,7 @@ export interface Secp256k1Wasm {
    * @param contextPtr - pointer to a context object
    * @param sigOutPtr - pointer to a 64-byte space to store the compact
    * serialization
-   * @param recIDOutPtr - pointer to an int which will store the recovery number
+   * @param recIDOutPtr - pointer to an int that will store the recovery number
    * @param rSigPtr - pointer to the 65-byte signature to be serialized
    * (internal format)
    */
@@ -426,7 +423,7 @@ export interface Secp256k1Wasm {
    * Malleate an ECDSA signature.
    *
    * This is done by negating the S value modulo the order of the curve,
-   * "flipping" the sign of the random point R which is not included in the
+   * "flipping" the sign of the random point R that is not included in the
    * signature.
    *
    * This method is added by Libauth to make testing of `signatureNormalize`
@@ -545,7 +542,7 @@ export interface Secp256k1Wasm {
   /**
    * Serialize an ECDSA signature in compact (64 byte) format. Always returns 1.
    *
-   * See `signatureParseCompact` for details about the encoding.
+   * See {@link signatureParseCompact} for details about the encoding.
    *
    * @param contextPtr - pointer to a context object
    * @param outputCompactSigPtr - pointer to a 64-byte space to store the compact

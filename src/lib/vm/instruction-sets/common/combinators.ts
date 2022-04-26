@@ -9,8 +9,8 @@ import type {
 import {
   applyError,
   AuthenticationErrorCommon,
-  isScriptNumberError,
-  parseBytesAsScriptNumber,
+  decodeVmNumber,
+  isVmNumberError,
 } from './common.js';
 
 export const incrementOperationCount =
@@ -32,9 +32,9 @@ export const conditionallyEvaluate =
     state.controlStack.every((item) => item) ? operation(state) : state;
 
 /**
- * Map a function over each operation in an `InstructionSet.operations` object,
- * assigning the result to the same `opcode` in the resulting object.
- * @param operations - an operations map from an `InstructionSet`
+ * Map a function over each operation in an {@link InstructionSet.operations}
+ * object, assigning the result to the same `opcode` in the resulting object.
+ * @param operations - an operations map from an {@link InstructionSet}
  * @param combinator - a function to apply to each operation
  */
 export const mapOverOperations = <State>(
@@ -155,37 +155,37 @@ export const useSixStackItems = <
       )
   );
 
-const typicalMaximumScriptNumberByteLength = 8;
+const typicalMaximumVmNumberByteLength = 8;
 
-export const useOneScriptNumber = <
+export const useOneVmNumber = <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
   state: State,
   operation: (nextState: State, [value]: [bigint]) => State,
   {
-    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength = typicalMaximumVmNumberByteLength,
     requireMinimalEncoding = true,
   }: {
-    maximumScriptNumberByteLength?: number;
+    maximumVmNumberByteLength?: number;
     requireMinimalEncoding?: boolean;
   } = {
-    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength: typicalMaximumVmNumberByteLength,
     requireMinimalEncoding: true,
   }
 ) =>
   useOneStackItem(state, (nextState, [item]) => {
-    const value = parseBytesAsScriptNumber(item, {
-      maximumScriptNumberByteLength,
+    const value = decodeVmNumber(item, {
+      maximumVmNumberByteLength,
       requireMinimalEncoding,
     });
-    if (isScriptNumberError(value)) {
-      return applyError(AuthenticationErrorCommon.invalidScriptNumber, state);
+    if (isVmNumberError(value)) {
+      return applyError(AuthenticationErrorCommon.invalidVmNumber, state);
     }
     return operation(nextState, [value]);
   });
 
-export const useTwoScriptNumbers = <
+export const useTwoVmNumbers = <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
@@ -195,29 +195,35 @@ export const useTwoScriptNumbers = <
     [firstValue, secondValue]: [bigint, bigint]
   ) => State,
   {
-    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength = typicalMaximumVmNumberByteLength,
     requireMinimalEncoding = true,
   }: {
-    maximumScriptNumberByteLength?: number;
+    maximumVmNumberByteLength?: number;
     requireMinimalEncoding?: boolean;
   } = {
-    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength: typicalMaximumVmNumberByteLength,
     requireMinimalEncoding: true,
   }
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [secondValue]) =>
-      useOneScriptNumber(
+      useOneVmNumber(
         nextState,
         (lastState, [firstValue]) =>
           operation(lastState, [firstValue, secondValue]),
-        { maximumScriptNumberByteLength, requireMinimalEncoding }
+        {
+          maximumVmNumberByteLength,
+          requireMinimalEncoding,
+        }
       ),
-    { maximumScriptNumberByteLength, requireMinimalEncoding }
+    {
+      maximumVmNumberByteLength,
+      requireMinimalEncoding,
+    }
   );
 
-export const useThreeScriptNumbers = <
+export const useThreeVmNumbers = <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
@@ -227,26 +233,32 @@ export const useThreeScriptNumbers = <
     [firstValue, secondValue, thirdValue]: [bigint, bigint, bigint]
   ) => State,
   {
-    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength = typicalMaximumVmNumberByteLength,
     requireMinimalEncoding = true,
   }: {
-    maximumScriptNumberByteLength?: number;
+    maximumVmNumberByteLength?: number;
     requireMinimalEncoding?: boolean;
   } = {
-    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength: typicalMaximumVmNumberByteLength,
     requireMinimalEncoding: true,
   }
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [secondValue, thirdValue]) =>
-      useOneScriptNumber(
+      useOneVmNumber(
         nextState,
         (lastState, [firstValue]) =>
           operation(lastState, [firstValue, secondValue, thirdValue]),
-        { maximumScriptNumberByteLength, requireMinimalEncoding }
+        {
+          maximumVmNumberByteLength,
+          requireMinimalEncoding,
+        }
       ),
-    { maximumScriptNumberByteLength, requireMinimalEncoding }
+    {
+      maximumVmNumberByteLength,
+      requireMinimalEncoding,
+    }
   );
 
 /**

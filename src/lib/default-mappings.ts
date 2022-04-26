@@ -6,24 +6,23 @@
  * with an uppercase currency symbol suffix.
  *
  * For example, a "transaction" may include different properties depending on
- * the chain for which it is created. The type `TransactionBCH` specifies a
- * transaction intended for the BCH network, while the type `TransactionBTC`
- * specifies a transaction intended for BTC.
+ * the chain for which it is created. The type {@link TransactionBCH} specifies
+ * a transaction intended for the BCH network, while the type
+ * {@link TransactionBTC} specifies a transaction intended for BTC.
  *
  * For convenience, unless another chain is specified, Libauth types refer to
- * their BCH implementation, e.g. `Transaction` is an alias for
- * `TransactionBCH`. This file specifies these default mappings.
+ * their BCH implementation, e.g. {@link Transaction} is an alias for
+ * {@link TransactionBCH}. This file specifies these default mappings.
  */
 
 export type { AuthenticationProgramStateBCH as AuthenticationProgramState } from '../index.js';
+
 export {
-  encodeTransactionCommon as encodeTransaction,
-  decodeTransactionCommon as decodeTransaction,
-  decodeTransactionUnsafeCommon as decodeTransactionUnsafe,
+  encodeTransactionBCH as encodeTransaction,
+  decodeTransactionBCH as decodeTransaction,
+  decodeTransactionUnsafeBCH as decodeTransactionUnsafe,
   OpcodesBCH as Opcodes,
   OpcodeDescriptionsBCH as OpcodeDescriptions,
-  disassembleBytecodeBTC2017 as disassembleBytecodeBTC,
-  disassembleBytecodeBCH2022 as disassembleBytecodeBCH,
   compilerConfigurationToCompilerBCH as compilerConfigurationToCompiler,
   createCompilerBCH as createCompiler,
 } from '../index.js';

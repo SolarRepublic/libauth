@@ -1,6 +1,6 @@
 import {
   binToHex,
-  createCompilerCommonSynchronous,
+  createCompilerCommon,
   flattenBinArray,
   numberToBinUint16LE,
   numberToBinUint32LE,
@@ -9,45 +9,45 @@ import type { AuthenticationProgramStateCommon } from '../vm';
 
 import type {
   AuthenticationInstruction,
+  AuthenticationInstructionMalformed,
+  AuthenticationInstructionMaybeMalformed,
   AuthenticationInstructionPush,
-  ParsedAuthenticationInstruction,
-  ParsedAuthenticationInstructionMalformed,
-  ParsedAuthenticationInstructionPushMalformedLength,
-  ParsedAuthenticationInstructions,
+  AuthenticationInstructionPushMalformedLength,
+  AuthenticationInstructionsMaybeMalformed,
 } from './instruction-sets';
-import { OpcodesBCH2022, OpcodesBTC } from './instruction-sets.js';
+import { OpcodesBCH, OpcodesBTC } from './instruction-sets.js';
 
 /**
- * A type-guard which checks if the provided instruction is malformed.
+ * A type-guard that checks if the provided instruction is malformed.
  * @param instruction - the instruction to check
  */
 export const authenticationInstructionIsMalformed = (
-  instruction: ParsedAuthenticationInstruction
-): instruction is ParsedAuthenticationInstructionMalformed =>
+  instruction: AuthenticationInstructionMaybeMalformed
+): instruction is AuthenticationInstructionMalformed =>
   'malformed' in instruction;
 
 /**
- * A type-guard which checks if the final instruction in the provided array of
+ * A type-guard that checks if the final instruction in the provided array of
  * instructions is malformed. (Only the final instruction can be malformed.)
- * @param instruction - the array of instructions to check
+ * @param instructions - the array of instructions to check
  */
 export const authenticationInstructionsAreMalformed = (
-  instructions: ParsedAuthenticationInstructions
+  instructions: AuthenticationInstructionsMaybeMalformed
 ): instructions is [
   ...AuthenticationInstruction[],
-  ParsedAuthenticationInstructionMalformed
+  AuthenticationInstructionMalformed
 ] =>
   instructions.length > 0 &&
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   authenticationInstructionIsMalformed(instructions[instructions.length - 1]!);
 
 /**
- * A type-guard which confirms that the final instruction in the provided array
+ * A type-guard that confirms that the final instruction in the provided array
  * is not malformed. (Only the final instruction can be malformed.)
- * @param instruction - the array of instructions to check
+ * @param instructions - the array of instructions to check
  */
 export const authenticationInstructionsAreNotMalformed = (
-  instructions: ParsedAuthenticationInstructions
+  instructions: AuthenticationInstructionsMaybeMalformed
 ): instructions is [
   ...AuthenticationInstruction[],
   AuthenticationInstruction
@@ -64,12 +64,16 @@ const uint8Bytes = 1;
 const uint16Bytes = 2;
 const uint32Bytes = 4;
 
-const readLittleEndianNumber = (
-  script: Uint8Array,
+/**
+ * Decode a little endian number of `length` from virtual machine `bytecode`
+ * beginning at `index`.
+ */
+export const decodeLittleEndianNumber = (
+  bytecode: Uint8Array,
   index: number,
   length: typeof uint8Bytes | typeof uint16Bytes | typeof uint32Bytes
 ) => {
-  const view = new DataView(script.buffer, index, length);
+  const view = new DataView(bytecode.buffer, index, length);
   const readAsLittleEndian = true;
   return length === uint8Bytes
     ? view.getUint8(0)
@@ -81,42 +85,43 @@ const readLittleEndianNumber = (
 /**
  * Returns the number of bytes used to indicate the length of the push in this
  * operation.
- * @param opcode - an opcode between 0x00 and 0x4e
+ * @param opcode - an opcode between 0x00 and 0xff
  */
-export const lengthBytesForPushOpcode = (opcode: number) =>
-  opcode < CommonPushOpcodes.OP_PUSHDATA_1
-    ? 0
-    : opcode === CommonPushOpcodes.OP_PUSHDATA_1
-    ? uint8Bytes
-    : opcode === CommonPushOpcodes.OP_PUSHDATA_2
-    ? uint16Bytes
-    : uint32Bytes;
+export const opcodeToPushLength = (
+  opcode: number
+): typeof uint8Bytes | typeof uint16Bytes | typeof uint32Bytes | 0 =>
+  ({
+    [CommonPushOpcodes.OP_PUSHDATA_1]: uint8Bytes as typeof uint8Bytes,
+    [CommonPushOpcodes.OP_PUSHDATA_2]: uint16Bytes as typeof uint16Bytes,
+    [CommonPushOpcodes.OP_PUSHDATA_4]: uint32Bytes as typeof uint32Bytes,
+  }[opcode] ?? 0);
 
 /**
- * Parse one instruction from the provided script.
+ * Decode one instruction from the provided virtual machine bytecode.
  *
  * Returns an object with an `instruction` referencing a
- * `ParsedAuthenticationInstruction`, and a `nextIndex` indicating the next
- * index from which to read. If the next index is greater than or equal to the
- * length of the script, the script has been fully parsed.
+ * {@link AuthenticationInstructionMaybeMalformed}, and a `nextIndex` indicating
+ * the next index from which to read. If the next index is greater than or equal
+ * to the length of the bytecode, the bytecode has been fully decoded.
  *
- * The final `ParsedAuthenticationInstruction` from an encoded script may be
- * malformed if 1) the final operation is a push and 2) too few bytes remain for
- * the push operation to complete.
+ * The final {@link AuthenticationInstructionMaybeMalformed} in the bytecode may
+ * be malformed if 1) the final operation is a push and 2) too few bytes remain
+ * for the push operation to complete.
  *
- * @param script - the script from which to read the next instruction
- * @param index - the offset from which to begin reading
+ * @param bytecode - the virtual machine bytecode from which to read the next
+ * instruction
+ * @param index - the index from which to begin reading
  */
 // eslint-disable-next-line complexity
-export const readAuthenticationInstruction = (
-  script: Uint8Array,
+export const decodeAuthenticationInstruction = (
+  bytecode: Uint8Array,
   index: number
 ): {
-  instruction: ParsedAuthenticationInstruction;
+  instruction: AuthenticationInstructionMaybeMalformed;
   nextIndex: number;
 } => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const opcode = script[index]!;
+  const opcode = bytecode[index]!;
   if (opcode > CommonPushOpcodes.OP_PUSHDATA_4) {
     return {
       instruction: {
@@ -125,15 +130,15 @@ export const readAuthenticationInstruction = (
       nextIndex: index + 1,
     };
   }
-  const lengthBytes = lengthBytesForPushOpcode(opcode);
+  const lengthBytes = opcodeToPushLength(opcode);
 
-  if (lengthBytes !== 0 && index + lengthBytes >= script.length) {
+  if (lengthBytes !== 0 && index + lengthBytes >= bytecode.length) {
     const sliceStart = index + 1;
     const sliceEnd = sliceStart + lengthBytes;
     return {
       instruction: {
         expectedLengthBytes: lengthBytes,
-        length: script.slice(sliceStart, sliceEnd),
+        length: bytecode.slice(sliceStart, sliceEnd),
         malformed: true,
         opcode,
       },
@@ -144,13 +149,13 @@ export const readAuthenticationInstruction = (
   const dataBytes =
     lengthBytes === 0
       ? opcode
-      : readLittleEndianNumber(script, index + 1, lengthBytes);
+      : decodeLittleEndianNumber(bytecode, index + 1, lengthBytes);
   const dataStart = index + 1 + lengthBytes;
   const dataEnd = dataStart + dataBytes;
   return {
     instruction: {
-      data: script.slice(dataStart, dataEnd),
-      ...(dataEnd > script.length
+      data: bytecode.slice(dataStart, dataEnd),
+      ...(dataEnd > bytecode.length
         ? {
             expectedDataBytes: dataEnd - dataStart,
             malformed: true,
@@ -163,8 +168,8 @@ export const readAuthenticationInstruction = (
 };
 
 /**
- * @param instruction - the AuthenticationInstruction to clone.
- * @returns A copy of the provided AuthenticationInstruction.
+ * @param instruction - the {@link AuthenticationInstruction} to clone.
+ * @returns A copy of the provided {@link AuthenticationInstruction}.
  */
 export const cloneAuthenticationInstruction = (
   instruction: Readonly<AuthenticationInstruction>
@@ -174,27 +179,32 @@ export const cloneAuthenticationInstruction = (
 });
 
 /**
- * Parse authentication bytecode (`lockingBytecode` or `unlockingBytecode`)
- * into `ParsedAuthenticationInstructions`. The method
- * `authenticationInstructionsAreMalformed` can be used to check if these
- * instructions include a malformed instruction. If not, they are valid
- * `AuthenticationInstructions`.
+ * Decode authentication virtual machine bytecode (`lockingBytecode` or
+ * `unlockingBytecode`) into {@link AuthenticationInstructionsMaybeMalformed}.
+ * The method {@link authenticationInstructionsAreMalformed} can be used to
+ * check if these instructions include a malformed instruction. If not, they are
+ * valid {@link AuthenticationInstructions}.
  *
- * @param script - the encoded script to parse
+ * @param bytecode - the authentication virtual machine bytecode to decode
  */
-export const parseBytecode = (script: Uint8Array) => {
-  const instructions: ParsedAuthenticationInstructions = [];
+export const decodeAuthenticationInstructions = (bytecode: Uint8Array) => {
+  const instructions = [] as AuthenticationInstructionsMaybeMalformed;
   // eslint-disable-next-line functional/no-let
   let i = 0;
   // eslint-disable-next-line functional/no-loop-statement
-  while (i < script.length) {
-    const { instruction, nextIndex } = readAuthenticationInstruction(script, i);
+  while (i < bytecode.length) {
+    const { instruction, nextIndex } = decodeAuthenticationInstruction(
+      bytecode,
+      i
+    );
     // eslint-disable-next-line functional/no-expression-statement
     i = nextIndex;
     // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    (instructions as AuthenticationInstruction[]).push(instruction);
+    (instructions as AuthenticationInstruction[]).push(
+      instruction as AuthenticationInstruction
+    );
   }
-  return instructions as ParsedAuthenticationInstructions;
+  return instructions;
 };
 
 /**
@@ -208,8 +218,8 @@ const formatAsmPushHex = (data: Uint8Array) =>
 const formatMissingBytesAsm = (missing: number) =>
   `[missing ${missing} byte${missing === 1 ? '' : 's'}]`;
 const hasMalformedLength = (
-  instruction: ParsedAuthenticationInstructionMalformed
-): instruction is ParsedAuthenticationInstructionPushMalformedLength =>
+  instruction: AuthenticationInstructionMalformed
+): instruction is AuthenticationInstructionPushMalformedLength =>
   'length' in instruction;
 const isPushData = (pushOpcode: number) =>
   pushOpcode >= CommonPushOpcodes.OP_PUSHDATA_1;
@@ -217,11 +227,12 @@ const isPushData = (pushOpcode: number) =>
 /**
  * Disassemble a malformed authentication instruction into a string description.
  * @param opcodes - a mapping of possible opcodes to their string representation
- * @param instruction - the malformed instruction to disassemble
+ * @param instruction - the {@link AuthenticationInstructionMalformed} to
+ * disassemble
  */
-export const disassembleParsedAuthenticationInstructionMalformed = (
+export const disassembleAuthenticationInstructionMalformed = (
   opcodes: Readonly<{ [opcode: number]: string }>,
-  instruction: ParsedAuthenticationInstructionMalformed
+  instruction: AuthenticationInstructionMalformed
 ): string =>
   `${opcodes[instruction.opcode]} ${
     hasMalformedLength(instruction)
@@ -256,32 +267,39 @@ export const disassembleAuthenticationInstruction = (
   }`;
 
 /**
- * Disassemble a single `ParsedAuthenticationInstruction` (includes potentially
- * malformed instructions) into its ASM representation.
+ * Disassemble a single {@link AuthenticationInstructionMaybeMalformed} into its
+ * ASM representation.
  *
- * @param script - the instruction to disassemble
+ * @param opcodes - a mapping of possible opcodes to their string representation
+ * @param instruction - the instruction to disassemble
  */
-export const disassembleParsedAuthenticationInstruction = (
+export const disassembleAuthenticationInstructionMaybeMalformed = (
   opcodes: Readonly<{ [opcode: number]: string }>,
-  instruction: ParsedAuthenticationInstruction
+  instruction: AuthenticationInstructionMaybeMalformed
 ): string =>
   authenticationInstructionIsMalformed(instruction)
-    ? disassembleParsedAuthenticationInstructionMalformed(opcodes, instruction)
+    ? disassembleAuthenticationInstructionMalformed(opcodes, instruction)
     : disassembleAuthenticationInstruction(opcodes, instruction);
 
 /**
- * Disassemble an array of `ParsedAuthenticationInstructions` (including
- * potentially malformed instructions) into its ASM representation.
+ * Disassemble an array of {@link AuthenticationInstructionMaybeMalformed}
+ * (including potentially malformed instructions) into its ASM representation.
  *
- * @param script - the array of instructions to disassemble
+ * This method supports disassembling an array including multiple
+ * {@link AuthenticationInstructionMaybeMalformed}s, rather than the more
+ * constrained {@link AuthenticationInstructionsMaybeMalformed} (may only
+ * include one malformed instruction as the last item in the array).
+ *
+ * @param opcodes - a mapping of possible opcodes to their string representation
+ * @param instructions - the array of instructions to disassemble
  */
-export const disassembleParsedAuthenticationInstructions = (
+export const disassembleAuthenticationInstructionsMaybeMalformed = (
   opcodes: Readonly<{ [opcode: number]: string }>,
-  instructions: readonly ParsedAuthenticationInstruction[]
+  instructions: readonly AuthenticationInstructionMaybeMalformed[]
 ): string =>
   instructions
     .map((instruction) =>
-      disassembleParsedAuthenticationInstruction(opcodes, instruction)
+      disassembleAuthenticationInstructionMaybeMalformed(opcodes, instruction)
     )
     .join(' ');
 
@@ -290,39 +308,50 @@ export const disassembleParsedAuthenticationInstructions = (
  * push operations are represented with the same opcodes used in the bytecode,
  * even when non-minimally encoded.)
  *
- * @param opcodes - the set to use when determining the name of opcodes, e.g. `OpcodesBCH`
+ * @param opcodes - a mapping of possible opcodes to their string representation
  * @param bytecode - the authentication bytecode to disassemble
  */
 export const disassembleBytecode = (
   opcodes: Readonly<{ [opcode: number]: string }>,
   bytecode: Uint8Array
 ) =>
-  disassembleParsedAuthenticationInstructions(opcodes, parseBytecode(bytecode));
+  disassembleAuthenticationInstructionsMaybeMalformed(
+    opcodes,
+    decodeAuthenticationInstructions(bytecode)
+  );
 
 /**
- * Disassemble BCH2022 authentication bytecode into its ASM representation.
- * @param bytecode - the authentication bytecode to disassemble
+ * Disassemble BCH authentication bytecode into its ASM representation.
+ *
+ * Note, this method automatically uses the latest BCH instruction set. To
+ * manually select an instruction set, use {@link disassembleBytecode}.
+ *
+ * @param bytecode - the virtual machine bytecode to disassemble
  */
-export const disassembleBytecodeBCH2022 = (bytecode: Uint8Array) =>
-  disassembleParsedAuthenticationInstructions(
-    OpcodesBCH2022,
-    parseBytecode(bytecode)
+export const disassembleBytecodeBCH = (bytecode: Uint8Array) =>
+  disassembleAuthenticationInstructionsMaybeMalformed(
+    OpcodesBCH,
+    decodeAuthenticationInstructions(bytecode)
   );
 
 /**
  * Disassemble BTC authentication bytecode into its ASM representation.
- * @param bytecode - the authentication bytecode to disassemble
+ *
+ * Note, this method automatically uses the latest BTC instruction set. To
+ * manually select an instruction set, use {@link disassembleBytecode}.
+ *
+ * @param bytecode - the virtual machine bytecode to disassemble
  */
-export const disassembleBytecodeBTC2017 = (bytecode: Uint8Array) =>
-  disassembleParsedAuthenticationInstructions(
+export const disassembleBytecodeBTC = (bytecode: Uint8Array) =>
+  disassembleAuthenticationInstructionsMaybeMalformed(
     OpcodesBTC,
-    parseBytecode(bytecode)
+    decodeAuthenticationInstructions(bytecode)
   );
 
 /**
  * Create an object where each key is an opcode identifier and each value is
  * the bytecode value (`Uint8Array`) it represents.
- * @param opcodes - An opcode enum, e.g. `OpcodesBCH`
+ * @param opcodes - An opcode enum, e.g. {@link OpcodesBCH}
  */
 export const generateBytecodeMap = (opcodes: { [opcode: string]: unknown }) =>
   Object.entries(opcodes)
@@ -338,7 +367,8 @@ export const generateBytecodeMap = (opcodes: { [opcode: string]: unknown }) =>
     );
 
 /**
- * Re-assemble a string of disassembled bytecode (see `disassembleBytecode`).
+ * Re-assemble a string of disassembled bytecode
+ * (see {@link disassembleBytecode}).
  *
  * @param opcodes - a mapping of opcodes to their respective Uint8Array
  * representation
@@ -352,26 +382,26 @@ export const assembleBytecode = (
     opcodes,
     scripts: { asm: disassembledBytecode },
   };
-  return createCompilerCommonSynchronous<
+  return createCompilerCommon<
     typeof configuration,
     AuthenticationProgramStateCommon
   >(configuration).generateBytecode({ data: {}, scriptId: 'asm' });
 };
 
 /**
- * Re-assemble a string of disassembled BCH bytecode (see
- * `disassembleBytecodeBCH`).
+ * Re-assemble a string of disassembled BCH bytecode; see
+ * {@link disassembleBytecodeBCH}.
  *
  * Note, this method performs automatic minimization of push instructions.
  *
  * @param disassembledBytecode - the disassembled BCH bytecode to re-assemble
  */
 export const assembleBytecodeBCH = (disassembledBytecode: string) =>
-  assembleBytecode(generateBytecodeMap(OpcodesBCH2022), disassembledBytecode);
+  assembleBytecode(generateBytecodeMap(OpcodesBCH), disassembledBytecode);
 
 /**
- * Re-assemble a string of disassembled BCH bytecode (see
- * `disassembleBytecodeBTC`).
+ * Re-assemble a string of disassembled BCH bytecode; see
+ * {@link disassembleBytecodeBTC}.
  *
  * Note, this method performs automatic minimization of push instructions.
  *
@@ -384,7 +414,7 @@ const getInstructionLengthBytes = (
   instruction: AuthenticationInstructionPush
 ) => {
   const { opcode } = instruction;
-  const expectedLength = lengthBytesForPushOpcode(opcode);
+  const expectedLength = opcodeToPushLength(opcode);
   return expectedLength === uint8Bytes
     ? Uint8Array.of(instruction.data.length)
     : expectedLength === uint16Bytes
@@ -413,10 +443,10 @@ export const encodeAuthenticationInstruction = (
 
 /**
  * Re-encode a malformed authentication instruction.
- * @param instruction - the malformed instruction to encode
+ * @param instruction - the {@link AuthenticationInstructionMalformed} to encode
  */
-export const encodeParsedAuthenticationInstructionMalformed = (
-  instruction: ParsedAuthenticationInstructionMalformed
+export const encodeAuthenticationInstructionMalformed = (
+  instruction: AuthenticationInstructionMalformed
 ) => {
   const { opcode } = instruction;
 
@@ -441,13 +471,14 @@ export const encodeParsedAuthenticationInstructionMalformed = (
 
 /**
  * Re-encode a potentially-malformed authentication instruction.
- * @param instruction - the potentially-malformed instruction to encode
+ * @param instruction - the {@link AuthenticationInstructionMaybeMalformed}
+ * to encode
  */
-export const encodeParsedAuthenticationInstruction = (
-  instruction: ParsedAuthenticationInstruction
+export const encodeAuthenticationInstructionMaybeMalformed = (
+  instruction: AuthenticationInstructionMaybeMalformed
 ): Uint8Array =>
   authenticationInstructionIsMalformed(instruction)
-    ? encodeParsedAuthenticationInstructionMalformed(instruction)
+    ? encodeAuthenticationInstructionMalformed(instruction)
     : encodeAuthenticationInstruction(instruction);
 
 /**
@@ -460,8 +491,12 @@ export const encodeAuthenticationInstructions = (
 
 /**
  * Re-encode an array of potentially-malformed authentication instructions.
- * @param instructions - the array of instructions to encode
+ * @param instructions - the array of
+ * {@link AuthenticationInstructionMaybeMalformed}s to encode
  */
-export const encodeParsedAuthenticationInstructions = (
-  instructions: readonly ParsedAuthenticationInstruction[]
-) => flattenBinArray(instructions.map(encodeParsedAuthenticationInstruction));
+export const encodeAuthenticationInstructionsMaybeMalformed = (
+  instructions: readonly AuthenticationInstructionMaybeMalformed[]
+) =>
+  flattenBinArray(
+    instructions.map(encodeAuthenticationInstructionMaybeMalformed)
+  );

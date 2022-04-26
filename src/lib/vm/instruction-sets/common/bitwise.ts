@@ -7,7 +7,7 @@ import type {
 import {
   applyError,
   AuthenticationErrorCommon,
-  booleanToScriptNumber,
+  booleanToVmNumber,
   combineOperations,
   opVerify,
   pushToStack,
@@ -34,7 +34,7 @@ export const opEqual = <
   state: State
 ) =>
   useTwoStackItems(state, (nextState, [element1, element2]) =>
-    pushToStack(nextState, booleanToScriptNumber(areEqual(element1, element2)))
+    pushToStack(nextState, booleanToVmNumber(areEqual(element1, element2)))
   );
 
 export const opEqualVerify = combineOperations(opEqual, opVerify);

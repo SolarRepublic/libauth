@@ -20,6 +20,7 @@ import {
   conditionallyEvaluate,
   ConsensusBCH2022,
   createAuthenticationProgramStateCommon,
+  decodeAuthenticationInstructions,
   disabledOperation,
   incrementOperationCount,
   isPayToScriptHash,
@@ -101,7 +102,6 @@ import {
   opVerify,
   opWithin,
   opXor,
-  parseBytecode,
   pushNumberOperation,
   pushOperation,
   reservedOperation,
@@ -113,7 +113,7 @@ import {
  * create an instance of the BCH 2022 virtual machine instruction set.
  *
  * @param standard - If `true`, the additional `isStandard` validations will be
- * enabled. Transactions which fail these rules are often called "non-standard"
+ * enabled. Transactions that fail these rules are often called "non-standard"
  * and can technically be included by miners in valid blocks, but most network
  * nodes will refuse to relay them. (Default: `true`)
  */
@@ -165,8 +165,10 @@ export const createInstructionSetBCH2022 = (
       const { unlockingBytecode } =
         program.transaction.inputs[program.inputIndex];
       const { lockingBytecode } = program.sourceOutputs[program.inputIndex];
-      const unlockingInstructions = parseBytecode(unlockingBytecode);
-      const lockingInstructions = parseBytecode(lockingBytecode);
+      const unlockingInstructions =
+        decodeAuthenticationInstructions(unlockingBytecode);
+      const lockingInstructions =
+        decodeAuthenticationInstructions(lockingBytecode);
       const initialState = createAuthenticationProgramStateCommon({
         instructions: unlockingInstructions,
         program,
@@ -231,7 +233,7 @@ export const createInstructionSetBCH2022 = (
         return lockingResult;
       }
 
-      const p2shInstructions = parseBytecode(p2shScript);
+      const p2shInstructions = decodeAuthenticationInstructions(p2shScript);
       return authenticationInstructionsAreMalformed(p2shInstructions)
         ? {
             ...lockingResult,

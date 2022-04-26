@@ -1,5 +1,5 @@
 import {
-  bigIntToScriptNumber,
+  bigIntToVmNumber,
   encodeDataPush,
   flattenBinArray,
   hexToBin,
@@ -47,7 +47,7 @@ export const assembleBitcoinSatoshiScript = (satoshiScript: string) =>
           ? encodeDataPush(utf8ToBin(token.slice(1, token.length - 1)))
           : (bitcoinSatoshiOpcodes[token] as Uint8Array | undefined) ===
             undefined
-          ? encodeDataPush(bigIntToScriptNumber(BigInt(token)))
+          ? encodeDataPush(bigIntToVmNumber(BigInt(token)))
           : bitcoinSatoshiOpcodes[token]
       )
   );

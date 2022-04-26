@@ -16,9 +16,10 @@ import { resolveScriptIdentifier } from './template.js';
 
 /**
  * Attempt a series of compiler operations, skipping to the next operation if
- * the current operation returns a `CompilerOperationSkip` (indicating it failed
- * and can be skipped). The `finalOperation` may not be skipped, and must either
- * return `CompilerOperationSuccess` or `CompilerOperationError`.
+ * the current operation returns a {@link CompilerOperationSkip} (indicating it
+ * failed and can be skipped). The `finalOperation` may not be skipped, and must
+ * either return {@link CompilerOperationSuccess} or
+ * {@link CompilerOperationError}.
  *
  * @param operations - an array of skippable operations to try
  * @param finalOperation - a final, un-skippable operation
@@ -39,19 +40,11 @@ export const attemptCompilerOperations =
 
 /**
  * Modify a compiler operation to verify that certain properties exist in the
- * `CompilationData` and `CompilerConfiguration` before executing the provided
- * operation. If the properties don't exist, an error message is returned.
+ * {@link CompilationData} and {@link CompilerConfiguration} before executing
+ * the provided operation. If the properties don't exist, an error message
+ * is returned.
  *
  * This is useful for eliminating repetitive existence checks.
- *
- * @param canBeSkipped - if `true`, the accepted operation may return `false`,
- * and any missing properties will cause the returned operation to return
- * `false` (meaning the operation should be skipped)
- * @param dataProperties - an array of the top-level properties required in the
- * `CompilationData`
- * @param configurationProperties - an array of the top-level properties
- * required in the `CompilerConfiguration`
- * @param operation - the operation to run if all required properties exist
  */
 export const compilerOperationRequires =
   <
@@ -60,9 +53,25 @@ export const compilerOperationRequires =
     RequiredConfigurationProperties extends keyof CompilerConfiguration,
     CompilationContext = CompilationContextBCH
   >({
+    /**
+     * If `true`, the accepted operation may return `false`, and any missing
+     * properties will cause the returned operation to return `false` (meaning
+     * the operation should be skipped)
+     */
     canBeSkipped,
+    /**
+     * An array of the top-level properties required in the
+     * {@link CompilationData}.
+     */
     dataProperties,
+    /**
+     * An array of the top-level properties required in the
+     * {@link CompilerConfiguration}
+     */
     configurationProperties,
+    /**
+     * The operation to run if all required properties exist
+     */
     operation,
   }: {
     canBeSkipped: CanBeSkipped;
@@ -285,7 +294,8 @@ export const compilerOperationHelperDeriveHdKeyPrivate = ({
  * Returns `false` if the target script ID doesn't exist in the compiler
  * configuration (allows for the caller to generate the error message).
  *
- * If the compilation produced errors, returns a `CompilerOperationErrorFatal`.
+ * If the compilation produced errors, returns a
+ * {@link CompilerOperationErrorFatal}.
  *
  * If the compilation was successful, returns the compiled bytecode as a
  * `Uint8Array`.
@@ -322,7 +332,7 @@ export const compilerOperationHelperCompileScript = <CompilationContext>({
 
 /**
  * Returns either the properly generated `coveredBytecode` or a
- * `CompilerOperationErrorFatal`.
+ * {@link CompilerOperationErrorFatal}.
  */
 export const compilerOperationHelperGenerateCoveredBytecode = <
   CompilationContext
@@ -367,7 +377,7 @@ export const compilerOperationHelperGenerateCoveredBytecode = <
 
   if (result === false) {
     return {
-      error: `Identifier "${identifier}" requires a signing serialization which covers an unknown locking script, "${targetLockingScriptId}".`,
+      error: `Identifier "${identifier}" requires a signing serialization that covers an unknown locking script, "${targetLockingScriptId}".`,
       status: 'error',
     };
   }

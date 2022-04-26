@@ -66,7 +66,7 @@ test('generateDefaultScenarioDefinition: missing sha256', (t) => {
     sha512,
     variables: {
       key: {
-        description: 'The private key which controls this wallet.',
+        description: 'The private key that controls this wallet.',
         name: 'Key',
         type: 'HdKey',
       },
@@ -85,7 +85,7 @@ test('generateDefaultScenarioDefinition: missing sha512', (t) => {
     sha256,
     variables: {
       key: {
-        description: 'The private key which controls this wallet.',
+        description: 'The private key that controls this wallet.',
         name: 'Key',
         type: 'HdKey',
       },
@@ -730,7 +730,7 @@ test.failing(
       a: { transaction: { inputs: [{}, {}] } },
     },
   },
-  'Cannot generate scenario "a": the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input which has "unlockingBytecode" set to "null".'
+  'Cannot generate scenario "a": the specific input under test in this scenario is ambiguous – "transaction.inputs" must include exactly one input that has "unlockingBytecode" set to "null".'
 );
 
 test.failing(

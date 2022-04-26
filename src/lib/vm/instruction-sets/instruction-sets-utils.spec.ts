@@ -4,25 +4,25 @@ import { fc, testProp } from 'ava-fast-check';
 import type {
   AuthenticationInstruction,
   AuthenticationInstructionPush,
-  ParsedAuthenticationInstructions,
+  AuthenticationInstructionsMaybeMalformed,
 } from '../../lib';
 import {
   assembleBytecode,
   assembleBytecodeBCH,
   assembleBytecodeBTC,
   authenticationInstructionsAreMalformed,
+  decodeAuthenticationInstructions,
+  disassembleAuthenticationInstructionsMaybeMalformed,
   disassembleBytecode,
   disassembleBytecodeBCH,
   disassembleBytecodeBTC,
-  disassembleParsedAuthenticationInstructions,
   encodeAuthenticationInstruction,
   encodeAuthenticationInstructions,
-  encodeParsedAuthenticationInstructions,
+  encodeAuthenticationInstructionsMaybeMalformed,
   generateBytecodeMap,
   hexToBin,
   OpcodesBCH2022,
   OpcodesBTC,
-  parseBytecode,
   range,
 } from '../../lib.js';
 
@@ -79,7 +79,7 @@ const defToFixtures = (tests: CommonScriptParseAndAsmTests) =>
       ...(set[2] === undefined ? undefined : { expectedDataBytes: set[2] }),
       ...(set[3] === undefined ? undefined : { length: hexToBin(set[3]) }),
       ...(set[4] === undefined ? undefined : { expectedLengthBytes: set[4] }),
-    })) as ParsedAuthenticationInstructions;
+    })) as AuthenticationInstructionsMaybeMalformed;
     return { asm, hex, object, script };
   });
 
@@ -174,17 +174,24 @@ const malFormedPushes: CommonScriptParseAndAsmTests = {
   },
 };
 
-const parse = test.macro<[Uint8Array, ParsedAuthenticationInstructions]>({
+const parse = test.macro<
+  [Uint8Array, AuthenticationInstructionsMaybeMalformed]
+>({
   exec: (t, input, expected) => {
-    t.deepEqual(parseBytecode(input), expected);
+    t.deepEqual(decodeAuthenticationInstructions(input), expected);
   },
   title: (title) => `parse script: ${title ?? ''}`.trim(),
 });
 
-const disassemble = test.macro<[ParsedAuthenticationInstructions, string]>({
+const disassemble = test.macro<
+  [AuthenticationInstructionsMaybeMalformed, string]
+>({
   exec: (t, input, expected) => {
     t.deepEqual(
-      disassembleParsedAuthenticationInstructions(OpcodesBCH2022, input),
+      disassembleAuthenticationInstructionsMaybeMalformed(
+        OpcodesBCH2022,
+        input
+      ),
       expected
     );
   },
@@ -198,9 +205,14 @@ const encode = test.macro<[readonly AuthenticationInstruction[], Uint8Array]>({
   title: (title) => `encode script: ${title ?? ''}`.trim(),
 });
 
-const reEncode = test.macro<[ParsedAuthenticationInstructions, Uint8Array]>({
+const reEncode = test.macro<
+  [AuthenticationInstructionsMaybeMalformed, Uint8Array]
+>({
   exec: (t, input, expected) => {
-    t.deepEqual(encodeParsedAuthenticationInstructions(input), expected);
+    t.deepEqual(
+      encodeAuthenticationInstructionsMaybeMalformed(input),
+      expected
+    );
   },
   title: (title) => `re-encode parsed script: ${title ?? ''}`.trim(),
 });
@@ -322,7 +334,7 @@ testProp(
   '[fast-check] disassembleBytecodeBCH <-> assembleBytecodeBCH',
   [fcUint8Array(0, maxBinLength)],
   (t, randomBytecode: Uint8Array) => {
-    const parsed = parseBytecode(randomBytecode);
+    const parsed = decodeAuthenticationInstructions(randomBytecode);
     const instructions = (
       authenticationInstructionsAreMalformed(parsed)
         ? parsed.slice(0, -1)
@@ -357,7 +369,7 @@ testProp(
   '[fast-check] disassembleBytecodeBTC <-> assembleBytecodeBTC',
   [fcUint8Array(0, maxBinLength)],
   (t, randomBytecode: Uint8Array) => {
-    const parsed = parseBytecode(randomBytecode);
+    const parsed = decodeAuthenticationInstructions(randomBytecode);
     const instructions = (
       authenticationInstructionsAreMalformed(parsed)
         ? parsed.slice(0, -1)

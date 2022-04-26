@@ -1,78 +1,62 @@
 import type { AuthenticationInstruction } from '../../../lib';
 import { Opcodes } from '../../../lib.js';
 
-export enum ScriptNumberError {
-  outOfRange = 'Failed to parse Script Number: overflows Script Number range.',
-  requiresMinimal = 'Failed to parse Script Number: the number is not minimally-encoded.',
+export enum VmNumberError {
+  outOfRange = 'Failed to decode VM Number: overflows VM Number range.',
+  requiresMinimal = 'Failed to decode VM Number: the number is not minimally-encoded.',
 }
 
-export const isScriptNumberError = (
-  value: BigInt | ScriptNumberError
-): value is ScriptNumberError =>
-  value === ScriptNumberError.outOfRange ||
-  value === ScriptNumberError.requiresMinimal;
+export const isVmNumberError = (
+  value: BigInt | VmNumberError
+): value is VmNumberError =>
+  value === VmNumberError.outOfRange || value === VmNumberError.requiresMinimal;
 
-const typicalMaximumScriptNumberByteLength = 8;
+const typicalMaximumVmNumberByteLength = 8;
 
 /**
- * This method attempts to parse a "Script Number", a format with which numeric
- * values are represented on the stack. (The Satoshi implementation calls this
+ * This method attempts to decode a VM Number, a format in which numeric values
+ * are represented on the stack. (The Satoshi implementation calls this
  * `CScriptNum`.)
  *
- * If `bytes` is a valid Script Number, this method returns the represented
- * number in BigInt format. If `bytes` is not valid, a `ScriptNumberError` is
- * returned.
+ * If `bytes` is a valid VM Number, this method returns the represented number
+ * in BigInt format. If `bytes` is not valid, a {@link VmNumberError}
+ * is returned.
  *
  * All common operations accepting numeric parameters or pushing numeric values
- * to the stack currently use the Script Number format. The binary format of
- * numbers wouldn't be important if they could only be operated on by arithmetic
+ * to the stack currently use the VM Number format. The binary format of numbers
+ * wouldn't be important if they could only be operated on by arithmetic
  * operators, but since the results of these operations may become input to
  * other operations (e.g. hashing), the specific representation is consensus-
  * critical.
  *
- * Parsing of Script Numbers is limited to 4 bytes (with the exception of
- * OP_CHECKLOCKTIMEVERIFY and OP_CHECKSEQUENCEVERIFY, which read up to 5-bytes).
- * The bytes are read as a signed integer (for 32-bits: inclusive range from
- * -2^31 + 1 to 2^31 - 1) in little-endian byte order. Script Numbers must
- * further be encoded as minimally as possible (no zero-padding). See code/tests
- * for details.
- *
- * @remarks
- * Operators may push numeric results to the stack which exceed the current
- * 4-byte length limit of Script Numbers. While these stack elements would
- * otherwise be valid Script Numbers, because of the 4-byte length limit, they
- * can only be used as non-numeric values in later operations.
- *
- * Most other implementations currently parse Script Numbers into 64-bit
- * integers to operate on them (rather than integers of arbitrary size like
- * BigInt). Currently, no operators are at risk of overflowing 64-bit integers
- * given 32-bit integer inputs, but future operators may require additional
- * refactoring in those implementations.
- *
  * @param bytes - a Uint8Array from the stack
- * @param requireMinimalEncoding - if true, this method returns an error when
- * parsing non-minimally encoded Script Numbers
- * @param maximumScriptNumberByteLength - the maximum valid number of bytes
  */
 // eslint-disable-next-line complexity
-export const parseBytesAsScriptNumber = (
+export const decodeVmNumber = (
   bytes: Uint8Array,
   {
-    maximumScriptNumberByteLength = typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength = typicalMaximumVmNumberByteLength,
     requireMinimalEncoding = true,
   }: {
-    maximumScriptNumberByteLength?: number;
+    /**
+     * The maximum valid number of bytes in a VM Number.
+     */
+    maximumVmNumberByteLength?: number;
+    /**
+     * If `true`, this method returns an error when parsing non-minimally
+     * encoded VM Numbers.
+     */
     requireMinimalEncoding?: boolean;
   } = {
-    maximumScriptNumberByteLength: typicalMaximumScriptNumberByteLength,
+    maximumVmNumberByteLength: typicalMaximumVmNumberByteLength,
     requireMinimalEncoding: true,
   }
-): ScriptNumberError | bigint => {
+): VmNumberError | bigint => {
   if (bytes.length === 0) {
     return BigInt(0);
   }
-  if (bytes.length > maximumScriptNumberByteLength) {
-    return ScriptNumberError.outOfRange;
+  if (bytes.length > maximumVmNumberByteLength) {
+    return VmNumberError.outOfRange;
   }
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const mostSignificantByte = bytes[bytes.length - 1]!;
@@ -87,7 +71,7 @@ export const parseBytesAsScriptNumber = (
     // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unnecessary-type-assertion
     (bytes.length <= 1 || (secondMostSignificantByte! & justTheSignBit) === 0)
   ) {
-    return ScriptNumberError.requiresMinimal;
+    return VmNumberError.requiresMinimal;
   }
 
   const bitsPerByte = 8;
@@ -113,13 +97,13 @@ export const parseBytesAsScriptNumber = (
 };
 
 /**
- * Convert a BigInt into the "Script Number" format. See
- * `parseBytesAsScriptNumber` for more information.
+ * Convert a BigInt into the VM Number format. See {@link decodeVmNumber} for
+ * more information.
  *
- * @param integer - the BigInt to encode as a Script Number
+ * @param integer - the BigInt to encode as a VM Number
  */
 // eslint-disable-next-line complexity
-export const bigIntToScriptNumber = (integer: bigint): Uint8Array => {
+export const bigIntToVmNumber = (integer: bigint): Uint8Array => {
   if (integer === BigInt(0)) {
     return new Uint8Array();
   }
@@ -174,13 +158,13 @@ export const stackItemIsTruthy = (item: Uint8Array) => {
 };
 
 /**
- * Convert a boolean into Script Number format (the type used to express
+ * Convert a boolean into VM Number format (the type used to express
  * boolean values emitted by several operations).
  *
  * @param value - the boolean value to convert
  */
-export const booleanToScriptNumber = (value: boolean) =>
-  value ? bigIntToScriptNumber(BigInt(1)) : bigIntToScriptNumber(BigInt(0));
+export const booleanToVmNumber = (value: boolean) =>
+  value ? bigIntToVmNumber(BigInt(1)) : bigIntToVmNumber(BigInt(0));
 
 const enum PayToScriptHash {
   length = 3,
@@ -230,4 +214,4 @@ export const isWitnessProgram = (bytecode: Uint8Array) => {
  * P2SH/BIP62 as the scriptSig would fail prior to the P2SH special
  * validation code being executed.
  */
-export const isPushOperation = (opcode: number) => opcode < Opcodes.OP_16;
+export const isPushOperation = (opcode: number) => opcode <= Opcodes.OP_16;

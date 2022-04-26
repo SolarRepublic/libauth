@@ -62,8 +62,7 @@ export const validateSecp256k1PrivateKey = (privateKey: Uint8Array) => {
  * );
  * ```
  *
- * @param secp256k1 - an implementation of Secp256k1
- * @param secureRandom - a method which returns a securely-random 32-byte
+ * @param secureRandom - a method that returns a securely-random 32-byte
  * Uint8Array
  */
 export const generatePrivateKey = (secureRandom: () => Uint8Array) => {

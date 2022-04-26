@@ -10,8 +10,8 @@ import type { Sha256, Sha512 } from './crypto';
  * Instantiate a hash-based message authentication code (HMAC) function as
  * specified by RFC 2104.
  *
- * @param hashFunction - a cryptographic hash function which iterates a basic
- * compression function on blocks of data
+ * @param hashFunction - a cryptographic hash function that iterates a basic
+ * compression function over blocks of data
  * @param blockByteLength - the byte-length of blocks used in `hashFunction`
  */
 export const instantiateHmacFunction =

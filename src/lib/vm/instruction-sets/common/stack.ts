@@ -7,12 +7,12 @@ import type {
 import {
   applyError,
   AuthenticationErrorCommon,
-  bigIntToScriptNumber,
+  bigIntToVmNumber,
   pushToStack,
   stackItemIsTruthy,
   useFourStackItems,
-  useOneScriptNumber,
   useOneStackItem,
+  useOneVmNumber,
   useSixStackItems,
   useThreeStackItems,
   useTwoStackItems,
@@ -96,7 +96,7 @@ export const opIfDup = <State extends AuthenticationProgramStateStack>(
 
 export const opDepth = <State extends AuthenticationProgramStateStack>(
   state: State
-) => pushToStack(state, bigIntToScriptNumber(BigInt(state.stack.length)));
+) => pushToStack(state, bigIntToVmNumber(BigInt(state.stack.length)));
 
 export const opDrop = <State extends AuthenticationProgramStateStack>(
   state: State
@@ -126,7 +126,7 @@ export const opPick = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, depth) => {
+  useOneVmNumber(state, (nextState, depth) => {
     const item = nextState.stack[nextState.stack.length - 1 - Number(depth)] as
       | Uint8Array
       | undefined;
@@ -142,11 +142,12 @@ export const opRoll = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, depth) => {
+  useOneVmNumber(state, (nextState, depth) => {
     const index = nextState.stack.length - 1 - Number(depth);
     if (index < 0 || index > nextState.stack.length - 1) {
       return applyError(AuthenticationErrorCommon.invalidStackIndex, state);
     }
+
     // eslint-disable-next-line functional/immutable-data
     return pushToStack(nextState, nextState.stack.splice(index, 1)[0]);
   });
@@ -174,5 +175,5 @@ export const opSize = <State extends AuthenticationProgramStateStack>(
   state: State
 ) =>
   useOneStackItem(state, (nextState, [item]) =>
-    pushToStack(nextState, item, bigIntToScriptNumber(BigInt(item.length)))
+    pushToStack(nextState, item, bigIntToVmNumber(BigInt(item.length)))
   );

@@ -8,7 +8,7 @@ export interface AuthenticationProgramStateMinimum {
    */
   readonly instructions: readonly AuthenticationInstruction[];
   /**
-   * Instruction Pointer – the array index of `instructions` which will be read
+   * Instruction Pointer – the array index of `instructions` that will be read
    * to identify the next instruction. Once `ip` exceeds the last index of
    * `instructions` (`ip === instructions.length`), evaluation is complete.
    */
@@ -81,10 +81,10 @@ export interface AuthenticationProgramStateSignatureAnalysis {
    * course of this program. Each raw signing serialization and data signature
    * message should be pushed to this array in the order it was computed.
    *
-   * This property is not used within any `AuthenticationVirtualMachine`, but it
-   * is provided in the program state to assist with analysis. Because these
-   * messages must always be computed and hashed during evaluation, recording
-   * them in the state does not meaningfully affect performance.
+   * This property is not used within any {@link AuthenticationVirtualMachine},
+   * but it is provided in the program state to assist with analysis. Because
+   * these messages must always be computed and hashed during evaluation,
+   * recording them in the state does not meaningfully affect performance.
    */
   signedMessages: Uint8Array[];
 }

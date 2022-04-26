@@ -6,21 +6,20 @@ import { combineOperations } from '../../common/common.js';
 import {
   applyError,
   AuthenticationErrorCommon,
-  bigIntToScriptNumber,
-  booleanToScriptNumber,
+  bigIntToVmNumber,
+  booleanToVmNumber,
   opVerify,
-  padMinimallyEncodedScriptNumber,
+  padMinimallyEncodedVmNumber,
   pushToStack,
-  useOneScriptNumber,
   useOneStackItem,
-  useThreeScriptNumbers,
-  useTwoScriptNumbers,
+  useOneVmNumber,
+  useThreeVmNumbers,
+  useTwoVmNumbers,
 } from '../../instruction-sets.js';
 
 import { ConsensusBCH2021 } from './bch-2021-types.js';
 
-const maximumScriptNumberByteLength =
-  ConsensusBCH2021.maximumScriptNumberLength;
+const maximumVmNumberByteLength = ConsensusBCH2021.maximumVmNumberLength;
 
 export const opPick4Byte = <
   State extends AuthenticationProgramStateError &
@@ -28,7 +27,7 @@ export const opPick4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, depth) => {
+  useOneVmNumber(state, (nextState, depth) => {
     const item = nextState.stack[nextState.stack.length - 1 - Number(depth)] as
       | Uint8Array
       | undefined;
@@ -44,7 +43,7 @@ export const opRoll4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, depth) => {
+  useOneVmNumber(state, (nextState, depth) => {
     const index = nextState.stack.length - 1 - Number(depth);
     if (index < 0 || index > nextState.stack.length - 1) {
       return applyError(AuthenticationErrorCommon.invalidStackIndex, state);
@@ -59,7 +58,7 @@ export const opSplit4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, value) => {
       const index = Number(value);
@@ -69,7 +68,7 @@ export const opSplit4Byte = <
           : pushToStack(finalState, item.slice(0, index), item.slice(index))
       );
     },
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opNum2Bin4Byte = <
@@ -78,17 +77,17 @@ export const opNum2Bin4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(state, (nextState, value) => {
+  useOneVmNumber(state, (nextState, value) => {
     const targetLength = Number(value);
     return targetLength > ConsensusBCH2021.maximumStackItemLength
       ? applyError(
           AuthenticationErrorCommon.exceededMaximumStackItemLength,
           nextState
         )
-      : useOneScriptNumber(
+      : useOneVmNumber(
           nextState,
           (finalState, [target]) => {
-            const minimallyEncoded = bigIntToScriptNumber(target);
+            const minimallyEncoded = bigIntToVmNumber(target);
             return minimallyEncoded.length > targetLength
               ? applyError(
                   AuthenticationErrorCommon.insufficientLength,
@@ -98,15 +97,11 @@ export const opNum2Bin4Byte = <
               ? pushToStack(finalState, minimallyEncoded)
               : pushToStack(
                   finalState,
-                  padMinimallyEncodedScriptNumber(
-                    minimallyEncoded,
-                    targetLength
-                  )
+                  padMinimallyEncodedVmNumber(minimallyEncoded, targetLength)
                 );
           },
           {
-            maximumScriptNumberByteLength:
-              ConsensusBCH2021.maximumStackItemLength,
+            maximumVmNumberByteLength: ConsensusBCH2021.maximumStackItemLength,
             requireMinimalEncoding: false,
           }
         );
@@ -118,20 +113,19 @@ export const opBin2Num4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [target]) => {
-      const minimallyEncoded = bigIntToScriptNumber(target);
-      return minimallyEncoded.length >
-        ConsensusBCH2021.maximumScriptNumberLength
+      const minimallyEncoded = bigIntToVmNumber(target);
+      return minimallyEncoded.length > ConsensusBCH2021.maximumVmNumberLength
         ? applyError(
-            AuthenticationErrorCommon.exceededMaximumScriptNumberLength,
+            AuthenticationErrorCommon.exceededMaximumVmNumberLength,
             nextState
           )
         : pushToStack(nextState, minimallyEncoded);
     },
     {
-      maximumScriptNumberByteLength: ConsensusBCH2021.maximumStackItemLength,
+      maximumVmNumberByteLength: ConsensusBCH2021.maximumStackItemLength,
       requireMinimalEncoding: false,
     }
   );
@@ -142,11 +136,11 @@ export const op1Add4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value + BigInt(1))),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, bigIntToVmNumber(value + BigInt(1))),
+    { maximumVmNumberByteLength }
   );
 
 export const op1Sub4Byte = <
@@ -155,11 +149,11 @@ export const op1Sub4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value - BigInt(1))),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, bigIntToVmNumber(value - BigInt(1))),
+    { maximumVmNumberByteLength }
   );
 
 export const opNegate4Byte = <
@@ -168,11 +162,10 @@ export const opNegate4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
-    (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(-value)),
-    { maximumScriptNumberByteLength }
+    (nextState, [value]) => pushToStack(nextState, bigIntToVmNumber(-value)),
+    { maximumVmNumberByteLength }
   );
 
 export const opAbs4Byte = <
@@ -181,11 +174,11 @@ export const opAbs4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [value]) =>
-      pushToStack(nextState, bigIntToScriptNumber(value < 0 ? -value : value)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, bigIntToVmNumber(value < 0 ? -value : value)),
+    { maximumVmNumberByteLength }
   );
 
 export const opNot4Byte = <
@@ -194,16 +187,16 @@ export const opNot4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [value]) =>
       pushToStack(
         nextState,
         value === BigInt(0)
-          ? bigIntToScriptNumber(BigInt(1))
-          : bigIntToScriptNumber(BigInt(0))
+          ? bigIntToVmNumber(BigInt(1))
+          : bigIntToVmNumber(BigInt(0))
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const op0NotEqual4Byte = <
@@ -212,16 +205,16 @@ export const op0NotEqual4Byte = <
 >(
   state: State
 ) =>
-  useOneScriptNumber(
+  useOneVmNumber(
     state,
     (nextState, [value]) =>
       pushToStack(
         nextState,
         value === BigInt(0)
-          ? bigIntToScriptNumber(BigInt(0))
-          : bigIntToScriptNumber(BigInt(1))
+          ? bigIntToVmNumber(BigInt(0))
+          : bigIntToVmNumber(BigInt(1))
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opAdd4Byte = <
@@ -230,11 +223,11 @@ export const opAdd4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, bigIntToScriptNumber(firstValue + secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, bigIntToVmNumber(firstValue + secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opSub4Byte = <
@@ -243,11 +236,11 @@ export const opSub4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, bigIntToScriptNumber(firstValue - secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, bigIntToVmNumber(firstValue - secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opDiv4Byte = <
@@ -256,13 +249,13 @@ export const opDiv4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [a, b]) =>
       b === BigInt(0)
         ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
-        : pushToStack(nextState, bigIntToScriptNumber(a / b)),
-    { maximumScriptNumberByteLength }
+        : pushToStack(nextState, bigIntToVmNumber(a / b)),
+    { maximumVmNumberByteLength }
   );
 
 export const opMod4Byte = <
@@ -271,13 +264,13 @@ export const opMod4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [a, b]) =>
       b === BigInt(0)
         ? applyError(AuthenticationErrorCommon.divisionByZero, nextState)
-        : pushToStack(nextState, bigIntToScriptNumber(a % b)),
-    { maximumScriptNumberByteLength }
+        : pushToStack(nextState, bigIntToVmNumber(a % b)),
+    { maximumVmNumberByteLength }
   );
 
 export const opBoolAnd4Byte = <
@@ -286,16 +279,14 @@ export const opBoolAnd4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
       pushToStack(
         nextState,
-        booleanToScriptNumber(
-          firstValue !== BigInt(0) && secondValue !== BigInt(0)
-        )
+        booleanToVmNumber(firstValue !== BigInt(0) && secondValue !== BigInt(0))
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opBoolOr4Byte = <
@@ -304,16 +295,14 @@ export const opBoolOr4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
       pushToStack(
         nextState,
-        booleanToScriptNumber(
-          firstValue !== BigInt(0) || secondValue !== BigInt(0)
-        )
+        booleanToVmNumber(firstValue !== BigInt(0) || secondValue !== BigInt(0))
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opNumEqual4Byte = <
@@ -322,11 +311,11 @@ export const opNumEqual4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue === secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue === secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opNumEqualVerify4Byte = combineOperations(
@@ -340,11 +329,11 @@ export const opNumNotEqual4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue !== secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue !== secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opLessThan4Byte = <
@@ -353,11 +342,11 @@ export const opLessThan4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue < secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue < secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opLessThanOrEqual4Byte = <
@@ -366,11 +355,11 @@ export const opLessThanOrEqual4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue <= secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue <= secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opGreaterThan4Byte = <
@@ -379,11 +368,11 @@ export const opGreaterThan4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue > secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue > secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opGreaterThanOrEqual4Byte = <
@@ -392,11 +381,11 @@ export const opGreaterThanOrEqual4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
-      pushToStack(nextState, booleanToScriptNumber(firstValue >= secondValue)),
-    { maximumScriptNumberByteLength }
+      pushToStack(nextState, booleanToVmNumber(firstValue >= secondValue)),
+    { maximumVmNumberByteLength }
   );
 
 export const opMin4Byte = <
@@ -405,16 +394,14 @@ export const opMin4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
       pushToStack(
         nextState,
-        bigIntToScriptNumber(
-          firstValue < secondValue ? firstValue : secondValue
-        )
+        bigIntToVmNumber(firstValue < secondValue ? firstValue : secondValue)
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opMax4Byte = <
@@ -423,16 +410,14 @@ export const opMax4Byte = <
 >(
   state: State
 ) =>
-  useTwoScriptNumbers(
+  useTwoVmNumbers(
     state,
     (nextState, [firstValue, secondValue]) =>
       pushToStack(
         nextState,
-        bigIntToScriptNumber(
-          firstValue > secondValue ? firstValue : secondValue
-        )
+        bigIntToVmNumber(firstValue > secondValue ? firstValue : secondValue)
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
 
 export const opWithin4Byte = <
@@ -441,14 +426,12 @@ export const opWithin4Byte = <
 >(
   state: State
 ) =>
-  useThreeScriptNumbers(
+  useThreeVmNumbers(
     state,
     (nextState, [firstValue, secondValue, thirdValue]) =>
       pushToStack(
         nextState,
-        booleanToScriptNumber(
-          secondValue <= firstValue && firstValue < thirdValue
-        )
+        booleanToVmNumber(secondValue <= firstValue && firstValue < thirdValue)
       ),
-    { maximumScriptNumberByteLength }
+    { maximumVmNumberByteLength }
   );
