@@ -5,7 +5,7 @@ export interface HashFunction {
   readonly update: (rawState: Uint8Array, input: Uint8Array) => Uint8Array;
 }
 
-/* eslint-disable functional/no-conditional-statement, functional/no-let, functional/no-expression-statement, no-underscore-dangle, functional/no-try-statement, @typescript-eslint/no-magic-numbers, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable functional/no-conditional-statement, functional/no-let, functional/no-expression-statement, no-underscore-dangle, functional/no-try-statement, @typescript-eslint/no-magic-numbers, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-non-null-assertion */
 /**
  * Note, most of this method is translated and boiled-down from the wasm-pack
  * workflow. Significant changes to wasm-bindgen or wasm-pack build will likely
@@ -52,7 +52,7 @@ export const instantiateRustWasm = async (
     if (cachedGlobalArgumentPtr === undefined) {
       cachedGlobalArgumentPtr = wasm.__wbindgen_global_argument_ptr();
     }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     return cachedGlobalArgumentPtr!;
   };
   /**
@@ -95,8 +95,8 @@ export const instantiateRustWasm = async (
     try {
       wasm[hashExportName](retPtr, ptr0, len0);
       const mem = getUint32Memory();
-      const ptr = mem[retPtr / 4];
-      const len = mem[retPtr / 4 + 1];
+      const ptr = mem[retPtr / 4]!;
+      const len = mem[retPtr / 4 + 1]!;
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;
@@ -109,22 +109,22 @@ export const instantiateRustWasm = async (
     const retPtr = globalArgumentPtr();
     wasm[initExportName](retPtr);
     const mem = getUint32Memory();
-    const ptr = mem[retPtr / 4];
-    const len = mem[retPtr / 4 + 1];
+    const ptr = mem[retPtr / 4]!;
+    const len = mem[retPtr / 4 + 1]!;
     const realRet = getArrayU8FromWasm(ptr, len).slice();
     wasm.__wbindgen_free(ptr, len);
     return realRet;
   };
 
   const update = (rawState: Uint8Array, input: Uint8Array) => {
-    const [ptr0, len0] = passArray8ToWasm(rawState);
+    const [ptr0, len0] = passArray8ToWasm(rawState) as [number, number];
     const [ptr1, len1] = passArray8ToWasm(input);
     const retPtr = globalArgumentPtr();
     try {
       wasm[updateExportName](retPtr, ptr0, len0, ptr1, len1);
       const mem = getUint32Memory();
-      const ptr = mem[retPtr / 4];
-      const len = mem[retPtr / 4 + 1];
+      const ptr = mem[retPtr / 4]!;
+      const len = mem[retPtr / 4 + 1]!;
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;
@@ -136,13 +136,13 @@ export const instantiateRustWasm = async (
   };
 
   const final = (rawState: Uint8Array) => {
-    const [ptr0, len0] = passArray8ToWasm(rawState);
+    const [ptr0, len0] = passArray8ToWasm(rawState) as [number, number];
     const retPtr = globalArgumentPtr();
     try {
       wasm[finalExportName](retPtr, ptr0, len0);
       const mem = getUint32Memory();
-      const ptr = mem[retPtr / 4];
-      const len = mem[retPtr / 4 + 1];
+      const ptr = mem[retPtr / 4]!;
+      const len = mem[retPtr / 4 + 1]!;
       const realRet = getArrayU8FromWasm(ptr, len).slice();
       wasm.__wbindgen_free(ptr, len);
       return realRet;
@@ -158,4 +158,4 @@ export const instantiateRustWasm = async (
     update,
   };
 };
-/* eslint-enable functional/no-conditional-statement, functional/no-let, functional/no-expression-statement, no-underscore-dangle, functional/no-try-statement, @typescript-eslint/no-magic-numbers, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-enable functional/no-conditional-statement, functional/no-let, functional/no-expression-statement, no-underscore-dangle, functional/no-try-statement, @typescript-eslint/no-magic-numbers, max-params, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-non-null-assertion */

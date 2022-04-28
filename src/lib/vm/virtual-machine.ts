@@ -154,7 +154,7 @@ export interface InstructionSet<
     resolvedTransaction: ResolvedTransaction,
     evaluate: (program: Readonly<AuthenticationProgram>) => ProgramState,
     success: (state: ProgramState) => string | true
-  ) => string[] | true;
+  ) => string | true;
 }
 
 /**
@@ -274,8 +274,7 @@ export interface AuthenticationVirtualMachine<
    * Statelessly verify a fully-resolved transaction (e.g. the decoded
    * transaction and an array of source outputs that are spent by its inputs).
    *
-   * Returns `true` if the transaction is valid or an array of error messages on
-   * failure.
+   * Returns `true` if the transaction is valid or an error message on failure.
    *
    * @remarks
    * While the virtual machine can perform all stateless components of
@@ -295,7 +294,7 @@ export interface AuthenticationVirtualMachine<
    * consistent with reality before accepting the transaction. See BIP65, BIP68,
    * and BIP112 for details.)
    */
-  verify: (resolvedTransaction: ResolvedTransaction) => string[] | true;
+  verify: (resolvedTransaction: ResolvedTransaction) => string | true;
 }
 
 /**
@@ -320,9 +319,7 @@ export const createAuthenticationVirtualMachine = <
 > => {
   const availableOpcodes = 256;
   const operators = range(availableOpcodes).map((codepoint) =>
-    (instructionSet.operations[codepoint] as
-      | Operation<ProgramState>
-      | undefined) === undefined
+    instructionSet.operations[codepoint] === undefined
       ? instructionSet.undefined
       : instructionSet.operations[codepoint]
   );
@@ -402,10 +399,7 @@ export const createAuthenticationVirtualMachine = <
       const debugResult = stateDebug(state);
       // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
       results.push(...debugResult);
-      return (
-        (debugResult[debugResult.length - 1] as ProgramState | undefined) ??
-        state
-      );
+      return debugResult[debugResult.length - 1] ?? state;
     };
     const finalResult = instructionSet.evaluate(program, proxyDebug);
     return [...results, finalResult];

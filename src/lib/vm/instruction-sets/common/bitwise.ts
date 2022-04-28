@@ -56,24 +56,24 @@ export const bitwiseOperation =
           )
     );
 
-// eslint-disable-next-line no-bitwise
-export const opAnd = bitwiseOperation((a, b) => a.map((v, i) => v & b[i])) as <
+// eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+export const opAnd = bitwiseOperation((a, b) => a.map((v, i) => v & b[i]!)) as <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
   state: State
 ) => State;
 
-// eslint-disable-next-line no-bitwise
-export const opOr = bitwiseOperation((a, b) => a.map((v, i) => v | b[i])) as <
+// eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+export const opOr = bitwiseOperation((a, b) => a.map((v, i) => v | b[i]!)) as <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(
   state: State
 ) => State;
 
-// eslint-disable-next-line no-bitwise
-export const opXor = bitwiseOperation((a, b) => a.map((v, i) => v ^ b[i])) as <
+// eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+export const opXor = bitwiseOperation((a, b) => a.map((v, i) => v ^ b[i]!)) as <
   State extends AuthenticationProgramStateError &
     AuthenticationProgramStateStack
 >(

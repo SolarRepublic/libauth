@@ -15,6 +15,10 @@ import type { TestSet, VmbTest } from './bch-vmb-test-utils.js';
  * be saved.
  */
 const [, , outputDir] = process.argv;
+if (outputDir === undefined) {
+  // eslint-disable-next-line functional/no-throw-statement
+  throw new Error('Script requires an output directory.');
+}
 const outputAbsolutePath = resolve(outputDir);
 
 const testGroupsAndTypes = 2;

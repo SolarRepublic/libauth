@@ -45,7 +45,7 @@ export const opSplit = <
     );
   });
 
-enum Constants {
+const enum Constants {
   positiveSign = 0x00,
   negativeSign = 0x80,
 }
@@ -61,8 +61,8 @@ export const padMinimallyEncodedVmNumber = (
   let signBit = Constants.positiveSign;
   // eslint-disable-next-line functional/no-conditional-statement
   if (vmNumber.length > 0) {
-    // eslint-disable-next-line functional/no-expression-statement, no-bitwise
-    signBit = vmNumber[vmNumber.length - 1] & Constants.negativeSign;
+    // eslint-disable-next-line functional/no-expression-statement, no-bitwise, @typescript-eslint/no-non-null-assertion
+    signBit = vmNumber[vmNumber.length - 1]! & Constants.negativeSign;
     // eslint-disable-next-line functional/no-expression-statement, no-bitwise, functional/immutable-data
     vmNumber[vmNumber.length - 1] &= Constants.negativeSign - 1;
   }

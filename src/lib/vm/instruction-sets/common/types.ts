@@ -1,5 +1,10 @@
-import type { AuthenticationInstruction } from '../../../lib';
-import { Opcodes } from '../../../lib.js';
+import {
+  authenticationInstructionsAreMalformed,
+  authenticationInstructionsArePushInstructions,
+  decodeAuthenticationInstructions,
+} from '../instruction-sets.js';
+
+import { isValidPublicKeyEncoding } from './encoding.js';
 
 export enum VmNumberError {
   outOfRange = 'Failed to decode VM Number: overflows VM Number range.',
@@ -68,7 +73,7 @@ export const decodeVmNumber = (
     requireMinimalEncoding &&
     // eslint-disable-next-line no-bitwise
     (mostSignificantByte & allButTheSignBit) === 0 &&
-    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unnecessary-type-assertion
+    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
     (bytes.length <= 1 || (secondMostSignificantByte! & justTheSignBit) === 0)
   ) {
     return VmNumberError.requiresMinimal;
@@ -166,19 +171,206 @@ export const stackItemIsTruthy = (item: Uint8Array) => {
 export const booleanToVmNumber = (value: boolean) =>
   value ? bigIntToVmNumber(BigInt(1)) : bigIntToVmNumber(BigInt(0));
 
-const enum PayToScriptHash {
-  length = 3,
-  lastElement = 2,
+const enum Opcodes {
+  OP_0 = 0x00,
+  OP_PUSHBYTES_20 = 0x14,
+  OP_PUSHBYTES_33 = 0x21,
+  OP_PUSHBYTES_65 = 0x41,
+  OP_1NEGATE = 0x4f,
+  OP_RESERVED = 0x50,
+  OP_1 = 0x51,
+  OP_16 = 0x60,
+  OP_RETURN = 0x6a,
+  OP_DUP = 0x76,
+  OP_EQUAL = 0x87,
+  OP_EQUALVERIFY = 0x88,
+  OP_SHA256 = 0xa8,
+  OP_HASH160 = 0xa9,
+  OP_CHECKSIG = 0xac,
+  OP_CHECKMULTISIG = 0xae,
 }
 
-export const isPayToScriptHash = (
-  verificationInstructions: readonly AuthenticationInstruction[]
-) =>
-  verificationInstructions.length === PayToScriptHash.length &&
-  verificationInstructions[0]?.opcode === Opcodes.OP_HASH160 &&
-  verificationInstructions[1]?.opcode === Opcodes.OP_PUSHBYTES_20 &&
-  verificationInstructions[PayToScriptHash.lastElement]?.opcode ===
-    Opcodes.OP_EQUAL;
+/**
+ * From C++ implementation:
+ * Note that IsPushOnly() *does* consider OP_RESERVED to be a push-type
+ * opcode, however execution of OP_RESERVED fails, so it's not relevant to
+ * P2SH/BIP62 as the scriptSig would fail prior to the P2SH special
+ * validation code being executed.
+ */
+export const isPushOperation = (opcode: number) => opcode <= Opcodes.OP_16;
+
+export const isPushOnly = (bytecode: Uint8Array) => {
+  const instructions = decodeAuthenticationInstructions(bytecode);
+  return instructions.every((instruction) =>
+    isPushOperation(instruction.opcode)
+  );
+};
+
+export const isPushOnlyAccurate = (bytecode: Uint8Array) => {
+  const instructions = decodeAuthenticationInstructions(bytecode);
+  return (
+    !authenticationInstructionsAreMalformed(instructions) &&
+    authenticationInstructionsArePushInstructions(instructions)
+  );
+};
+
+const enum PayToPublicKeyUncompressed {
+  length = 67,
+  lastElement = 66,
+}
+
+export const isPayToPublicKeyUncompressed = (lockingBytecode: Uint8Array) =>
+  lockingBytecode.length === PayToPublicKeyUncompressed.length &&
+  lockingBytecode[0] === Opcodes.OP_PUSHBYTES_65 &&
+  lockingBytecode[PayToPublicKeyUncompressed.lastElement] ===
+    Opcodes.OP_CHECKSIG;
+
+const enum PayToPublicKeyCompressed {
+  length = 35,
+  lastElement = 34,
+}
+
+export const isPayToPublicKeyCompressed = (lockingBytecode: Uint8Array) =>
+  lockingBytecode.length === PayToPublicKeyCompressed.length &&
+  lockingBytecode[0] === Opcodes.OP_PUSHBYTES_33 &&
+  lockingBytecode[PayToPublicKeyCompressed.lastElement] === Opcodes.OP_CHECKSIG;
+
+export const isPayToPublicKey = (lockingBytecode: Uint8Array) =>
+  isPayToPublicKeyCompressed(lockingBytecode) ||
+  isPayToPublicKeyUncompressed(lockingBytecode);
+
+const enum PayToPublicKeyHash {
+  length = 25,
+  lastElement = 24,
+}
+
+// eslint-disable-next-line complexity
+export const isPayToPublicKeyHash = (lockingBytecode: Uint8Array) =>
+  lockingBytecode.length === PayToPublicKeyHash.length &&
+  lockingBytecode[0] === Opcodes.OP_DUP &&
+  lockingBytecode[1] === Opcodes.OP_HASH160 &&
+  lockingBytecode[2] === Opcodes.OP_PUSHBYTES_20 &&
+  lockingBytecode[23] === Opcodes.OP_EQUALVERIFY &&
+  lockingBytecode[24] === Opcodes.OP_CHECKSIG;
+
+const enum PayToScriptHash20 {
+  length = 23,
+  lastElement = 22,
+}
+
+export const isPayToScriptHash20 = (lockingBytecode: Uint8Array) =>
+  lockingBytecode.length === PayToScriptHash20.length &&
+  lockingBytecode[0] === Opcodes.OP_HASH160 &&
+  lockingBytecode[1] === Opcodes.OP_PUSHBYTES_20 &&
+  lockingBytecode[PayToScriptHash20.lastElement] === Opcodes.OP_EQUAL;
+
+/**
+ * A.K.A. `TX_NULL_DATA`, "data carrier", OP_RETURN output
+ * @param lockingBytecode -
+ */
+export const isArbitraryDataOutput = (lockingBytecode: Uint8Array) =>
+  lockingBytecode.length >= 1 &&
+  lockingBytecode[0] === Opcodes.OP_RETURN &&
+  isPushOnly(lockingBytecode.slice(1));
+
+// eslint-disable-next-line complexity
+export const pushNumberOpcodeToNumber = (opcode: number) => {
+  if (opcode === Opcodes.OP_0) {
+    return 0;
+  }
+  if (opcode === Opcodes.OP_1NEGATE) {
+    return -1;
+  }
+  if (
+    !Number.isInteger(opcode) ||
+    opcode < Opcodes.OP_1 ||
+    opcode > Opcodes.OP_16
+  ) {
+    return false;
+  }
+  return opcode - Opcodes.OP_RESERVED;
+};
+
+const enum Multisig {
+  minimumInstructions = 4,
+  keyStart = 1,
+  keyEnd = -2,
+  maximumStandardN = 3,
+}
+
+// eslint-disable-next-line complexity
+export const isSimpleMultisig = (lockingBytecode: Uint8Array) => {
+  const instructions = decodeAuthenticationInstructions(lockingBytecode);
+  if (authenticationInstructionsAreMalformed(instructions)) {
+    return false;
+  }
+
+  const lastIndex = instructions.length - 1;
+  if (
+    instructions.length < Multisig.minimumInstructions ||
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    instructions[lastIndex]!.opcode === Opcodes.OP_CHECKMULTISIG
+  ) {
+    return false;
+  }
+
+  /**
+   * The required count of signers (the `m` in `m-of-n`).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const m = pushNumberOpcodeToNumber(instructions[0]!.opcode);
+  /**
+   * The total count of signers (the `n` in `m-of-n`).
+   */
+  const n = pushNumberOpcodeToNumber(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    instructions[lastIndex - 1]!.opcode
+  );
+
+  if (n === false || m === false) {
+    return false;
+  }
+
+  const publicKeyInstructions = instructions.slice(
+    Multisig.keyStart,
+    Multisig.keyEnd
+  );
+
+  if (!authenticationInstructionsArePushInstructions(publicKeyInstructions)) {
+    return false;
+  }
+
+  const publicKeys = publicKeyInstructions.map(
+    (instruction) => instruction.data
+  );
+
+  if (publicKeys.some((key) => !isValidPublicKeyEncoding(key))) {
+    return false;
+  }
+
+  return { m, n, publicKeys };
+};
+
+// eslint-disable-next-line complexity
+export const isStandardMultisig = (lockingBytecode: Uint8Array) => {
+  const multisigProperties = isSimpleMultisig(lockingBytecode);
+  if (multisigProperties === false) {
+    return false;
+  }
+
+  const { m, n } = multisigProperties;
+  if (n < 1 || n > Multisig.maximumStandardN || m < 1 || m > n) {
+    return false;
+  }
+  return true;
+};
+
+export const isStandardOutputBytecode = (lockingBytecode: Uint8Array) =>
+  isPayToPublicKeyHash(lockingBytecode) ||
+  isPayToScriptHash20(lockingBytecode) ||
+  isPayToPublicKey(lockingBytecode) ||
+  isArbitraryDataOutput(lockingBytecode) ||
+  isStandardMultisig(lockingBytecode);
 
 const enum SegWit {
   minimumLength = 4,
@@ -201,17 +393,10 @@ export const isWitnessProgram = (bytecode: Uint8Array) => {
     bytecode.length <= SegWit.maximumLength;
   const validVersionPush =
     bytecode[0] === SegWit.OP_0 ||
-    (bytecode[0] >= SegWit.OP_1 && bytecode[0] <= SegWit.OP_16);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    (bytecode[0]! >= SegWit.OP_1 && bytecode[0]! <= SegWit.OP_16);
   const correctLengthByte =
-    bytecode[1] + SegWit.versionAndLengthBytes === bytecode.length;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    bytecode[1]! + SegWit.versionAndLengthBytes === bytecode.length;
   return correctLength && validVersionPush && correctLengthByte;
 };
-
-/**
- * From C++ implementation:
- * Note that IsPushOnly() *does* consider OP_RESERVED to be a push-type
- * opcode, however execution of OP_RESERVED fails, so it's not relevant to
- * P2SH/BIP62 as the scriptSig would fail prior to the P2SH special
- * validation code being executed.
- */
-export const isPushOperation = (opcode: number) => opcode <= Opcodes.OP_16;

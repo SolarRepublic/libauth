@@ -15,7 +15,7 @@ import {
   pushToStack,
 } from './common.js';
 
-export enum PushOperationConstants {
+const enum PushOperationConstants {
   OP_0 = 0,
   /**
    * OP_PUSHBYTES_75
@@ -90,9 +90,11 @@ export const encodeDataPush = (data: Uint8Array) =>
     ? data.length === 0
       ? Uint8Array.of(0)
       : data.length === 1
-      ? data[0] !== 0 && data[0] <= PushOperationConstants.pushNumberOpcodes
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        data[0] !== 0 && data[0]! <= PushOperationConstants.pushNumberOpcodes
         ? Uint8Array.of(
-            data[0] + PushOperationConstants.pushNumberOpcodesOffset
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            data[0]! + PushOperationConstants.pushNumberOpcodesOffset
           )
         : data[0] === PushOperationConstants.negativeOne
         ? Uint8Array.of(PushOperationConstants.OP_1NEGATE)
@@ -128,9 +130,11 @@ export const isMinimalDataPush = (opcode: number, data: Uint8Array) => {
     return opcode === PushOperationConstants.OP_0;
   }
   if (data.length === 1) {
-    if (data[0] >= 1 && data[0] <= PushOperationConstants.pushNumberOpcodes) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    if (data[0]! >= 1 && data[0]! <= PushOperationConstants.pushNumberOpcodes) {
       return (
-        opcode === data[0] + PushOperationConstants.pushNumberOpcodesOffset
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        opcode === data[0]! + PushOperationConstants.pushNumberOpcodesOffset
       );
     }
     if (data[0] === PushOperationConstants.negativeOne) {

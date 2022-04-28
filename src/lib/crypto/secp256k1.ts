@@ -117,7 +117,8 @@ const wrapSecp256k1Wasm = (
     secp256k1Wasm.heapU32.set([value], lengthPtrView32);
   };
 
-  const getLengthPtr = () => secp256k1Wasm.heapU32[lengthPtrView32];
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const getLengthPtr = () => secp256k1Wasm.heapU32[lengthPtrView32]!;
 
   const serializePublicKey = (length: number, flag: number) => {
     setLengthPtr(length);

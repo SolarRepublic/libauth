@@ -38,10 +38,10 @@ const enum Internal {
   sha256HashByteLength = 32,
 }
 
-export const isDefinedSigningSerializationType = (byte: number) => {
+export const isDefinedSigningSerializationType = (byte: number | undefined) => {
   const baseType =
-    // eslint-disable-next-line no-bitwise
-    byte &
+    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+    byte! &
     // eslint-disable-next-line no-bitwise
     ~(SigningSerializationFlag.forkId | SigningSerializationFlag.singleInput);
   return (
@@ -51,14 +51,14 @@ export const isDefinedSigningSerializationType = (byte: number) => {
 };
 
 const match = (type: Uint8Array, flag: SigningSerializationFlag) =>
-  // eslint-disable-next-line no-bitwise
-  (type[0] & flag) !== 0;
+  // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+  (type[0]! & flag) !== 0;
 
 const equals = (
   type: Uint8Array,
   flag: SigningSerializationFlag
-  // eslint-disable-next-line no-bitwise
-) => (type[0] & Internal.mask5Bits) === flag;
+  // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+) => (type[0]! & Internal.mask5Bits) === flag;
 
 const shouldSerializeSingleInput = (type: Uint8Array) =>
   match(type, SigningSerializationFlag.singleInput);
@@ -354,14 +354,22 @@ export const generateSigningSerializationComponentsBCH = (
 ): SigningSerializationComponentsBCH => ({
   correspondingOutput:
     context.inputIndex < context.transaction.outputs.length
-      ? encodeTransactionOutput(context.transaction.outputs[context.inputIndex])
+      ? encodeTransactionOutput(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          context.transaction.outputs[context.inputIndex]!
+        )
       : undefined,
   locktime: context.transaction.locktime,
-  outpointIndex: context.transaction.inputs[context.inputIndex].outpointIndex,
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  outpointIndex: context.transaction.inputs[context.inputIndex]!.outpointIndex,
   outpointTransactionHash:
-    context.transaction.inputs[context.inputIndex].outpointTransactionHash,
-  outputValue: context.sourceOutputs[context.inputIndex].valueSatoshis,
-  sequenceNumber: context.transaction.inputs[context.inputIndex].sequenceNumber,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    context.transaction.inputs[context.inputIndex]!.outpointTransactionHash,
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  outputValue: context.sourceOutputs[context.inputIndex]!.valueSatoshis,
+  sequenceNumber:
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    context.transaction.inputs[context.inputIndex]!.sequenceNumber,
   transactionOutpoints: encodeTransactionOutpoints(context.transaction.inputs),
   transactionOutputs: encodeTransactionOutputsForSigning(
     context.transaction.outputs

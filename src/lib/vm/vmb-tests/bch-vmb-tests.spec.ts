@@ -59,7 +59,6 @@ const testVm = ({
   vm: AuthenticationVirtualMachineBCH;
 }) => {
   const runCase = test.macro({
-    // eslint-disable-next-line complexity
     exec: (t, testCase: VmbTest, expectedToSucceed: boolean) => {
       const [
         ,
@@ -76,7 +75,7 @@ const testVm = ({
         0
       );
       const result = vm.verify({ sourceOutputs, transaction });
-      if (expectedToSucceed && Array.isArray(result)) {
+      const logDebugInfo = () => {
         t.log(`unlockingAsm: ${unlockingAsm}`);
         t.log(`lockingAsm: ${lockingAsm}`);
         const debugResult = vm.debug({
@@ -85,16 +84,16 @@ const testVm = ({
           transaction,
         });
         t.log(stringify(debugResult));
+      };
+      if (expectedToSucceed && typeof result === 'string') {
+        logDebugInfo();
         t.fail(
-          `This VMB test is expected to succeed but failed. Errors: ${result.join(
-            '; '
-          )}`
+          `This VMB test is expected to succeed but failed. Error: ${result}`
         );
         return;
       }
-      if (!expectedToSucceed && !Array.isArray(result)) {
-        t.log(`unlockingAsm: ${unlockingAsm}`);
-        t.log(`lockingAsm: ${lockingAsm}`);
+      if (!expectedToSucceed && typeof result !== 'string') {
+        logDebugInfo();
         t.fail(`This VMB test is expected to fail but succeeded.`);
         return;
       }

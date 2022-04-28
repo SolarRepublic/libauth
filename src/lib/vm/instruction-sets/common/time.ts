@@ -11,12 +11,12 @@ import {
   isVmNumberError,
 } from './common.js';
 
-enum Bits {
+const enum Bits {
   sequenceLocktimeDisableFlag = 31,
   sequenceLocktimeTypeFlag = 22,
 }
 
-enum Constants {
+const enum Constants {
   locktimeVmNumberByteLength = 5,
   locktimeThreshold = 500_000_000,
   locktimeDisablingSequenceNumber = 0xffffffff,
@@ -36,7 +36,7 @@ export const useLocktime = <
   state: State,
   operation: (nextState: State, locktime: number) => State
 ) => {
-  const item = state.stack[state.stack.length - 1] as Uint8Array | undefined;
+  const item = state.stack[state.stack.length - 1];
   if (item === undefined) {
     return applyError(AuthenticationErrorCommon.emptyStack, state);
   }
@@ -87,7 +87,8 @@ export const opCheckLockTimeVerify = <
       );
     }
     const { sequenceNumber } =
-      nextState.program.transaction.inputs[nextState.program.inputIndex];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      nextState.program.transaction.inputs[nextState.program.inputIndex]!;
     if (sequenceNumber === Constants.locktimeDisablingSequenceNumber) {
       return applyError(AuthenticationErrorCommon.locktimeDisabled, nextState);
     }
@@ -107,7 +108,8 @@ export const opCheckSequenceVerify = <
     // eslint-disable-next-line complexity
     (nextState, requiredSequence) => {
       const { sequenceNumber } =
-        nextState.program.transaction.inputs[nextState.program.inputIndex];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        nextState.program.transaction.inputs[nextState.program.inputIndex]!;
       const sequenceLocktimeDisabled = includesFlag(
         requiredSequence,
         Constants.sequenceLocktimeDisableFlag

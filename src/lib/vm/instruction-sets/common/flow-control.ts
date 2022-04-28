@@ -96,9 +96,7 @@ export const opElse = <
 >(
   state: State
 ) => {
-  const top = state.controlStack[state.controlStack.length - 1] as
-    | boolean
-    | undefined;
+  const top = state.controlStack[state.controlStack.length - 1];
   if (top === undefined) {
     return applyError(AuthenticationErrorCommon.unexpectedElse, state);
   }

@@ -28,9 +28,7 @@ export const opPick4Byte = <
   state: State
 ) =>
   useOneVmNumber(state, (nextState, depth) => {
-    const item = nextState.stack[nextState.stack.length - 1 - Number(depth)] as
-      | Uint8Array
-      | undefined;
+    const item = nextState.stack[nextState.stack.length - 1 - Number(depth)];
     if (item === undefined) {
       return applyError(AuthenticationErrorCommon.invalidStackIndex, state);
     }
@@ -48,8 +46,8 @@ export const opRoll4Byte = <
     if (index < 0 || index > nextState.stack.length - 1) {
       return applyError(AuthenticationErrorCommon.invalidStackIndex, state);
     }
-    // eslint-disable-next-line functional/immutable-data
-    return pushToStack(nextState, nextState.stack.splice(index, 1)[0]);
+    // eslint-disable-next-line functional/immutable-data, @typescript-eslint/no-non-null-assertion
+    return pushToStack(nextState, nextState.stack.splice(index, 1)[0]!);
   });
 
 export const opSplit4Byte = <

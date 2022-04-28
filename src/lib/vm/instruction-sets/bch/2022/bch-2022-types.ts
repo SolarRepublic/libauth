@@ -39,6 +39,11 @@ export enum ConsensusBCH2022 {
    */
   maximumStackDepth = 1000,
   schnorrSignatureLength = 64,
+  maximumStandardVersion = 2,
+  maximumStandardTransactionSize = 100_000,
+  maximumTransactionSize = 1_000_000,
+  maximumStandardUnlockingBytecodeLength = 1650,
+  maximumDataCarrierBytes = 223,
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

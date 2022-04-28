@@ -23,8 +23,10 @@ import {
   decodeAuthenticationInstructions,
   disabledOperation,
   incrementOperationCount,
-  isPayToScriptHash,
-  isPushOperation,
+  isArbitraryDataOutput,
+  isPayToScriptHash20,
+  isPushOnly,
+  isStandardOutputBytecode,
   isWitnessProgram,
   mapOverOperations,
   op0NotEqual,
@@ -109,6 +111,8 @@ import {
   undefinedOperation,
 } from '../../instruction-sets.js';
 
+import { encodeTransactionBCH } from './bch-2022-types.js';
+
 /**
  * create an instance of the BCH 2022 virtual machine instruction set.
  *
@@ -163,8 +167,10 @@ export const createInstructionSetBCH2022 = (
     // eslint-disable-next-line complexity
     evaluate: (program, stateEvaluate) => {
       const { unlockingBytecode } =
-        program.transaction.inputs[program.inputIndex];
-      const { lockingBytecode } = program.sourceOutputs[program.inputIndex];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        program.transaction.inputs[program.inputIndex]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const { lockingBytecode } = program.sourceOutputs[program.inputIndex]!;
       const unlockingInstructions =
         decodeAuthenticationInstructions(unlockingBytecode);
       const lockingInstructions =
@@ -177,7 +183,7 @@ export const createInstructionSetBCH2022 = (
 
       if (unlockingBytecode.length > ConsensusBCH2022.maximumBytecodeLength) {
         return applyError(
-          AuthenticationErrorCommon.exceededMaximumBytecodeLengthUnlocking,
+          `The provided unlocking bytecode (${unlockingBytecode.length} bytes) exceeds the maximum bytecode length (${ConsensusBCH2022.maximumBytecodeLength} bytes).`,
           initialState
         );
       }
@@ -199,17 +205,12 @@ export const createInstructionSetBCH2022 = (
           initialState
         );
       }
-      if (
-        !initialState.instructions.every((instruction) =>
-          isPushOperation(instruction.opcode)
-        )
-      ) {
+      if (standard && !isPushOnly(unlockingBytecode)) {
         return applyError(
           AuthenticationErrorCommon.requiresPushOnly,
           initialState
         );
       }
-
       const unlockingResult = stateEvaluate(initialState);
       if (unlockingResult.error !== undefined) {
         return unlockingResult;
@@ -221,7 +222,7 @@ export const createInstructionSetBCH2022 = (
           stack: unlockingResult.stack,
         })
       );
-      if (!isPayToScriptHash(lockingInstructions)) {
+      if (!isPayToScriptHash20(lockingBytecode)) {
         return lockingResult;
       }
 
@@ -501,34 +502,92 @@ export const createInstructionSetBCH2022 = (
       if (state.stack.length !== 1) {
         return AuthenticationErrorCommon.requiresCleanStack;
       }
-      if (!stackItemIsTruthy(state.stack[0])) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      if (!stackItemIsTruthy(state.stack[0]!)) {
         return AuthenticationErrorCommon.unsuccessfulEvaluation;
       }
       return true;
     },
     undefined: undefinedOperation,
+    // eslint-disable-next-line complexity
     verify: ({ sourceOutputs, transaction }, evaluate, stateSuccess) => {
       if (transaction.inputs.length !== sourceOutputs.length) {
-        return [
-          'Unable to verify transaction: a spent output must be provided for each transaction input.',
-        ];
+        return 'Unable to verify transaction: a spent output must be provided for each transaction input.';
       }
-      const errors = transaction.inputs.reduce<string[]>(
-        (all, _, inputIndex) => {
-          const state = evaluate({ inputIndex, sourceOutputs, transaction });
-          const verify = stateSuccess(state);
-          if (verify === true) {
-            return all;
-          }
-          return [
-            ...all,
-            `Error in evaluating input index "${inputIndex}": ${verify}`,
-          ];
-        },
-        []
-      );
 
-      return errors.length === 0 ? true : errors;
+      const transactionSize = encodeTransactionBCH(transaction).length;
+      if (transactionSize > ConsensusBCH2022.maximumTransactionSize) {
+        return `Transaction exceeds maximum size: this transaction is ${transactionSize} bytes, but the maximum transaction size is ${ConsensusBCH2022.maximumTransactionSize} bytes.`;
+      }
+
+      if (standard) {
+        if (
+          transaction.version < 1 ||
+          transaction.version > ConsensusBCH2022.maximumStandardVersion
+        ) {
+          return `Standard transactions must have a version no less than 1 and no greater than ${ConsensusBCH2022.maximumStandardVersion}.`;
+        }
+        if (transactionSize > ConsensusBCH2022.maximumStandardTransactionSize) {
+          return `Transaction exceeds maximum standard size: this transaction is ${transactionSize} bytes, but the maximum standard transaction size is ${ConsensusBCH2022.maximumStandardTransactionSize} bytes.`;
+        }
+
+        // eslint-disable-next-line functional/no-loop-statement
+        for (const output of sourceOutputs) {
+          if (!isStandardOutputBytecode(output.lockingBytecode)) {
+            return `Standard transaction may only spend standard output types.`;
+          }
+        }
+
+        // eslint-disable-next-line functional/no-let
+        let totalArbitraryDataBytes = 0;
+        // eslint-disable-next-line functional/no-loop-statement
+        for (const output of transaction.outputs) {
+          if (!isStandardOutputBytecode(output.lockingBytecode)) {
+            return `Standard transaction may only create standard output types.`;
+          }
+
+          // eslint-disable-next-line functional/no-conditional-statement
+          if (isArbitraryDataOutput(output.lockingBytecode)) {
+            // eslint-disable-next-line functional/no-expression-statement
+            totalArbitraryDataBytes += output.lockingBytecode.length + 1;
+          }
+          /*
+           * TODO: disallow dust outputs
+           * if(IsDustOutput(output)) {
+           *   return ``;
+           * }
+           */
+        }
+        if (
+          totalArbitraryDataBytes > ConsensusBCH2022.maximumDataCarrierBytes
+        ) {
+          return `Standard transactions may carry no more than ${ConsensusBCH2022.maximumDataCarrierBytes} bytes in arbitrary data outputs; this transaction includes ${totalArbitraryDataBytes} bytes of arbitrary data.`;
+        }
+
+        // eslint-disable-next-line functional/no-loop-statement
+        for (const [inputIndex, input] of transaction.inputs.entries()) {
+          if (
+            input.unlockingBytecode.length >
+            ConsensusBCH2022.maximumStandardUnlockingBytecodeLength
+          ) {
+            return `Input index ${inputIndex} is non-standard: the unlocking bytecode (${input.unlockingBytecode.length} bytes) exceeds the maximum standard unlocking bytecode length (${ConsensusBCH2022.maximumStandardUnlockingBytecodeLength} bytes).`;
+          }
+          if (!isPushOnly(input.unlockingBytecode)) {
+            return `Input index ${inputIndex} is non-standard: unlocking bytecode may contain only push operations.`;
+          }
+        }
+      }
+
+      // eslint-disable-next-line functional/no-loop-statement
+      for (const inputIndex of transaction.inputs.keys()) {
+        const state = evaluate({ inputIndex, sourceOutputs, transaction });
+        const result = stateSuccess(state);
+        if (typeof result === 'string') {
+          return `Error in evaluating input index ${inputIndex}: ${result}`;
+        }
+      }
+
+      return true;
     },
   };
 };

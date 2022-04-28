@@ -45,9 +45,8 @@ export const assembleBitcoinSatoshiScript = (satoshiScript: string) =>
           ? hexToBin(token.slice('0x'.length))
           : token.startsWith("'")
           ? encodeDataPush(utf8ToBin(token.slice(1, token.length - 1)))
-          : (bitcoinSatoshiOpcodes[token] as Uint8Array | undefined) ===
-            undefined
+          : bitcoinSatoshiOpcodes[token] === undefined
           ? encodeDataPush(bigIntToVmNumber(BigInt(token)))
           : bitcoinSatoshiOpcodes[token]
-      )
+      ) as Uint8Array[]
   );

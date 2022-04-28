@@ -249,13 +249,16 @@ export const cashAddressPolynomialModulo = (v: readonly number[]) => {
     mostSignificantByte |= lowerBytes >>> 27;
     lowerBytes &= 0x07ffffff;
     lowerBytes <<= 5;
-    lowerBytes ^= v[j];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    lowerBytes ^= v[j]!;
     // eslint-disable-next-line no-plusplus
     for (let i = 0; i < bech32GeneratorMostSignificantByte.length; ++i) {
       // eslint-disable-next-line functional/no-conditional-statement
       if (c & (1 << i)) {
-        mostSignificantByte ^= bech32GeneratorMostSignificantByte[i];
-        lowerBytes ^= bech32GeneratorRemainingBytes[i];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        mostSignificantByte ^= bech32GeneratorMostSignificantByte[i]!;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        lowerBytes ^= bech32GeneratorRemainingBytes[i]!;
       }
     }
   }
@@ -407,7 +410,7 @@ export const decodeCashAddressFormat = (address: string) => {
   if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
     return CashAddressDecodingError.invalidFormat;
   }
-  const [prefix, payload] = parts;
+  const [prefix, payload] = parts as [string, string];
   if (!isBech32CharacterSet(payload)) {
     return CashAddressDecodingError.invalidCharacters;
   }
@@ -434,7 +437,7 @@ export const decodeCashAddressFormat = (address: string) => {
     return CashAddressDecodingError.improperPadding;
   }
 
-  const [version, ...hashContents] = payloadContents;
+  const [version, ...hashContents] = payloadContents as [number, ...number[]];
   const hash = Uint8Array.from(hashContents);
 
   return { hash, prefix, version };
@@ -570,7 +573,7 @@ export const attemptCashAddressFormatErrorCorrection = (address: string) => {
   if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
     return CashAddressDecodingError.invalidFormat;
   }
-  const [prefix, payload] = parts;
+  const [prefix, payload] = parts as [string, string];
   if (!isBech32CharacterSet(payload)) {
     return CashAddressDecodingError.invalidCharacters;
   }
@@ -615,7 +618,7 @@ export const attemptCashAddressFormatErrorCorrection = (address: string) => {
   for (const [s0, pe] of Object.entries(syndromes)) {
     // eslint-disable-next-line no-bitwise
     const s1Location = (BigInt(s0) ^ BigInt(originalChecksum)).toString();
-    const s1 = syndromes[s1Location] as number | undefined;
+    const s1 = syndromes[s1Location];
     if (s1 !== undefined) {
       const correctionIndex1 = Math.trunc(pe / finiteFieldOrder);
       const correctionIndex2 = Math.trunc(s1 / finiteFieldOrder);

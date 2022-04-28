@@ -170,7 +170,9 @@ test('base58 Test Vectors', (t) => {
   t.truthy(base58Vectors);
   // eslint-disable-next-line functional/no-loop-statement
   for (const [binHex, base58] of base58Vectors) {
-    t.deepEqual(base58ToBin(base58) as Uint8Array, hexToBin(binHex));
-    t.deepEqual(binToBase58(hexToBin(binHex)), base58);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    t.deepEqual(base58ToBin(base58!) as Uint8Array, hexToBin(binHex!));
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    t.deepEqual(binToBase58(hexToBin(binHex!)), base58);
   }
 });

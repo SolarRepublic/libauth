@@ -140,9 +140,11 @@ export const reduceScript = <
         /**
          * `vm.debug` should always return at least one state.
          */
-        const lastState = trace[trace.length - 1];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const lastState = trace[trace.length - 1]!;
         const result = verifyCashAssemblyEvaluationState(lastState);
-        const bytecode = lastState.stack[lastState.stack.length - 1];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const bytecode = lastState.stack[lastState.stack.length - 1]!;
 
         return {
           ...(typeof result === 'string'
@@ -210,7 +212,8 @@ export const reduceScript = <
     bytecode: flattenBinArray(reduction.bytecode),
     range: mergeRanges(
       reduction.ranges,
-      resolvedScript.length === 0 ? undefined : resolvedScript[0].range
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      resolvedScript.length === 0 ? undefined : resolvedScript[0]!.range
     ),
     script,
   };

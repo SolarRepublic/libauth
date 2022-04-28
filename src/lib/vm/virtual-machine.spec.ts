@@ -10,14 +10,14 @@ import { createAuthenticationVirtualMachine } from '../lib.js';
 
 import { applyError } from './vm.js';
 
-enum SimpleOps {
+const enum SimpleOps {
   OP_0 = 0,
   OP_INCREMENT = 1,
   OP_DECREMENT = 2,
   OP_ADD = 3,
 }
 
-enum SimpleError {
+const enum SimpleError {
   UNDEFINED = 'The program called an undefined opcode.',
   EMPTY_STACK = 'The program tried to pop from an empty stack.',
   EXCESSIVE = 'Values may be no larger than 2.',
@@ -109,7 +109,7 @@ const simpleInstructionSet: InstructionSet<
         instructions: resolvedTransaction.transaction.instructions,
       })
     );
-    return typeof result === 'string' ? [result] : true;
+    return typeof result === 'string' ? result : true;
   },
 };
 
@@ -194,15 +194,17 @@ test('vm.verify with a simple instruction set (success)', (t) => {
 });
 
 test('vm.verify with a simple instruction set (failure 1)', (t) => {
-  t.deepEqual(vm.verify({ transaction: { instructions: instructionsFail1 } }), [
-    SimpleError.FAIL,
-  ]);
+  t.deepEqual(
+    vm.verify({ transaction: { instructions: instructionsFail1 } }),
+    SimpleError.FAIL
+  );
 });
 
 test('vm.verify with a simple instruction set (failure 2)', (t) => {
-  t.deepEqual(vm.verify({ transaction: { instructions: instructionsFail2 } }), [
-    SimpleError.EXCESSIVE,
-  ]);
+  t.deepEqual(
+    vm.verify({ transaction: { instructions: instructionsFail2 } }),
+    SimpleError.EXCESSIVE
+  );
 });
 
 test('vm.stateDebug with a simple instruction set', (t) => {

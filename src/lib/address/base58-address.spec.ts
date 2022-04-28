@@ -160,7 +160,8 @@ test('decodeBase58Address: errors', (t) => {
 
 test('Base58Address Invalid Vectors', (t) => {
   invalidVectors.forEach(([invalid]) => {
-    const result = decodeBase58Address(invalid);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = decodeBase58Address(invalid!);
     const hasError = typeof result === 'string';
     if (!hasError) {
       /*
@@ -217,7 +218,5 @@ test('Base58Address Valid Vectors (from C++ implementation – includes WIF vect
         base58Address
       );
     }
-
-    // t.deepEqual(typeof decodeBase58Address(sha256, invalid), 'string');
   });
 });

@@ -24,18 +24,18 @@ import { createCompilerBCH } from '../../template/template.js';
 const vmVersions = [
   '2021',
   '2022',
-  'CHIP_CASHTOKENS',
-  'CHIP_LIMITS',
-  'CHIP_LOOPS',
-  'CHIP_MINIMALBOOL',
-  'CHIP_P2SH32',
-  'CHIP_STRICT_CHECKMULTISIG',
-  'CHIP_ZCE',
+  'chip_cashtokens',
+  'chip_limits',
+  'chip_loops',
+  'chip_minimalbool',
+  'chip_p2sh32',
+  'chip_strict_checkmultisig',
+  'chip_zce',
 ] as const;
 /**
  * These are the VM "modes" for which tests can be generated.
  */
-const vmModes = ['nonP2sh', 'p2sh20', 'p2sh32'] as const;
+const vmModes = ['nop2sh', 'p2sh20', 'p2sh32'] as const;
 
 type TestSetType = 'invalid' | 'standard' | 'valid';
 type TestSetOverrideType = TestSetType | 'ignore';
@@ -48,8 +48,8 @@ type TestSetOverride =
   | `${VmVersion}_${VmMode}_${TestSetOverrideType}`;
 
 export const vmbTestDefinitionDefaultBehavior: TestSetOverride[] = [
+  'nop2sh_valid',
   'p2sh20_standard',
-  'nonP2sh_valid',
   'p2sh32_ignore',
 ];
 
@@ -175,7 +175,8 @@ export const vmbTestDefinitionToVmbTests = (
   const overrideScenarioId = 'test';
 
   const testGenerationPlan =
-    supportedTestSetOverrides[(testSetOverrideLabels ?? []).join(',')];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    supportedTestSetOverrides[(testSetOverrideLabels ?? []).join(',')]!;
 
   const configuration = authenticationTemplateToCompilerConfiguration({
     entities: { tester: { variables: { key1: { type: 'HdKey' } } } },

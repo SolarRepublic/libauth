@@ -100,7 +100,8 @@ const wrapSecp256k1Wasm = (
   readSizeT: (pointer) => {
     // eslint-disable-next-line no-bitwise, @typescript-eslint/no-magic-numbers
     const pointerView32 = pointer >> 2;
-    return heapU32[pointerView32];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return heapU32[pointerView32]!;
   },
   recover: (contextPtr, outputPubkeyPointer, rSigPtr, msg32Ptr) =>
     (instance.exports as any)._secp256k1_ecdsa_recover(

@@ -290,9 +290,11 @@ export const opCheckMultiSig =
                       remainingSignatures &&
                     approvingPublicKeys !== requiredApprovingPublicKeys
                   ) {
-                    const publicKey = publicKeys[remainingPublicKeys - 1];
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    const publicKey = publicKeys[remainingPublicKeys - 1]!;
                     const bitcoinEncodedSignature =
-                      signatures[remainingSignatures - 1];
+                      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                      signatures[remainingSignatures - 1]!;
 
                     if (!isValidPublicKeyEncoding(publicKey)) {
                       return applyError(

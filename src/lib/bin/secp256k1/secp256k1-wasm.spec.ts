@@ -263,8 +263,8 @@ const testSecp256k1Wasm = (
     rawRSigPtr
   );
   const compactRSig = secp256k1Wasm.readHeapU8(compactRSigPtr, 64);
-  // eslint-disable-next-line no-bitwise
-  const rID = secp256k1Wasm.heapU32[rIDPtr >> 2];
+  // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+  const rID = secp256k1Wasm.heapU32[rIDPtr >> 2]!;
 
   t.deepEqual(compactRSig, sigCompact);
   t.is(rID, 1);

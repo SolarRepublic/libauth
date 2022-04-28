@@ -99,10 +99,15 @@ export type AuthenticationInstructionMaybeMalformed =
   | AuthenticationInstruction
   | AuthenticationInstructionMalformed;
 
+export type AuthenticationInstructionsMalformed = [
+  ...AuthenticationInstruction[],
+  AuthenticationInstructionMalformed
+];
+
 /**
  * An array of authentication instructions that may end with a malformed
  * instruction.
  */
 export type AuthenticationInstructionsMaybeMalformed =
-  | [...AuthenticationInstruction[], AuthenticationInstructionMaybeMalformed]
-  | [];
+  | AuthenticationInstructions
+  | AuthenticationInstructionsMalformed;

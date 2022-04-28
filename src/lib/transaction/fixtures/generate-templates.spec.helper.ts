@@ -32,4 +32,5 @@ const printTemplate = (template: string) => {
 };
 
 const [, , arg] = process.argv;
-printTemplate(arg);
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+printTemplate(arg!);

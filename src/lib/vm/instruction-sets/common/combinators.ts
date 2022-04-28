@@ -34,19 +34,21 @@ export const conditionallyEvaluate =
 /**
  * Map a function over each operation in an {@link InstructionSet.operations}
  * object, assigning the result to the same `opcode` in the resulting object.
- * @param operations - an operations map from an {@link InstructionSet}
- * @param combinator - a function to apply to each operation
+ * @param operationMap - an operations map from an {@link InstructionSet}
+ * @param combinators - a list of functions to apply (in order) to
+ * each operation
  */
 export const mapOverOperations = <State>(
   combinators: ((operation: Operation<State>) => Operation<State>)[],
-  operations: InstructionSetOperationMapping<State>
+  operationMap: InstructionSetOperationMapping<State>
 ) =>
-  Object.keys(operations).reduce<{ [opcode: number]: Operation<State> }>(
-    (result, operation) => ({
+  Object.keys(operationMap).reduce<InstructionSetOperationMapping<State>>(
+    (result, opcode) => ({
       ...result,
-      [operation]: combinators.reduce(
+      [opcode]: combinators.reduce<Operation<State>>(
         (op, combinator) => combinator(op),
-        operations[parseInt(operation, 10)]
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        operationMap[Number(opcode)]!
       ),
     }),
     {}

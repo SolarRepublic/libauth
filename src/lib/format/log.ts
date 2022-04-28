@@ -72,7 +72,9 @@ export const sortObjectKeys = (
     return objectOrArray;
   }
   // eslint-disable-next-line functional/immutable-data
-  const keys = Object.keys(objectOrArray).sort((a, b) => a.localeCompare(b));
+  const keys = Object.keys(objectOrArray).sort((a, b) =>
+    a.localeCompare(b, 'en')
+  );
   return keys.reduce(
     (all, key) => ({
       ...all,

@@ -270,7 +270,7 @@ export const compilerOperationHelperKeySignatureBCH = ({
         const { secp256k1, sha256, unlockingScripts, sourceScriptIds } =
           configuration;
         const { privateKeys } = keys;
-        const [variableId] = identifier.split('.');
+        const [variableId] = identifier.split('.') as [string];
 
         const privateKey =
           privateKeys === undefined ? undefined : privateKeys[variableId];
@@ -405,7 +405,7 @@ export const compilerOperationHelperKeyDataSignatureBCH = ({
         const { keys } = data;
         const { secp256k1, sha256 } = configuration;
         const { privateKeys } = keys;
-        const [variableId] = identifier.split('.');
+        const [variableId] = identifier.split('.') as [string];
 
         const privateKey =
           privateKeys === undefined ? undefined : privateKeys[variableId];

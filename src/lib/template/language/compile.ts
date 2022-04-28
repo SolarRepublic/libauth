@@ -37,7 +37,8 @@ export const describeExpectedInput = (expectedArray: string[]) => {
     newArray.push('the end of the script');
   }
   const withoutLastElement = newArray.slice(0, newArray.length - 1);
-  const lastElement = newArray[newArray.length - 1];
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const lastElement = newArray[newArray.length - 1]!;
   const arrayRequiresCommas = 3;
   const arrayRequiresOr = 2;
   return `Encountered unexpected input while parsing script. Expected ${
@@ -139,7 +140,7 @@ export const compileScriptRaw = <
   configuration: CompilerConfiguration<CompilationContext>;
   scriptId: string;
 }): CompilationResult<ProgramState> => {
-  const script = configuration.scripts[scriptId] as string | undefined;
+  const script = configuration.scripts[scriptId];
   if (script === undefined) {
     return {
       errorType: 'parse',
@@ -293,11 +294,12 @@ export const compileScript = <
   if (
     data.compilationContext?.transaction.inputs[
       data.compilationContext.inputIndex
-    ].sequenceNumber !== undefined &&
+    ]?.sequenceNumber !== undefined &&
     configuration.unlockingScriptTimeLockTypes?.[scriptId] !== undefined &&
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     data.compilationContext.transaction.inputs[
       data.compilationContext.inputIndex
-    ].sequenceNumber === locktimeDisablingSequenceNumber
+    ]!.sequenceNumber === locktimeDisablingSequenceNumber
   ) {
     return {
       errorType: 'parse',

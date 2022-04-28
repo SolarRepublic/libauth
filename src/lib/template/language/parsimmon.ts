@@ -2,7 +2,7 @@
  * This file is derived from https://github.com/jneen/parsimmon and
  * https://github.com/DefinitelyTyped/DefinitelyTyped.
  */
-/* eslint-disable prefer-destructuring, @typescript-eslint/unified-signatures, functional/no-method-signature, functional/no-throw-statement, functional/no-conditional-statement, @typescript-eslint/no-this-alias, consistent-this, @typescript-eslint/ban-ts-comment, prefer-spread, @typescript-eslint/restrict-template-expressions, func-names, @typescript-eslint/init-declarations, new-cap, @typescript-eslint/require-array-sort-compare, guard-for-in, no-plusplus, functional/no-let, functional/no-loop-statement, @typescript-eslint/prefer-for-of, @typescript-eslint/restrict-plus-operands, functional/immutable-data, @typescript-eslint/no-use-before-define, @typescript-eslint/strict-boolean-expressions, no-param-reassign, functional/no-expression-statement, functional/no-this-expression, @typescript-eslint/no-explicit-any, func-style, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/naming-convention, @typescript-eslint/method-signature-style, @typescript-eslint/no-confusing-void-expression, prefer-arrow-callback, functional/no-return-void, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/unified-signatures, functional/no-method-signature, functional/no-throw-statement, functional/no-conditional-statement, @typescript-eslint/no-this-alias, consistent-this, @typescript-eslint/ban-ts-comment, prefer-spread, @typescript-eslint/restrict-template-expressions, func-names, @typescript-eslint/init-declarations, new-cap, @typescript-eslint/require-array-sort-compare, guard-for-in, no-plusplus, functional/no-let, functional/no-loop-statement, @typescript-eslint/prefer-for-of, @typescript-eslint/restrict-plus-operands, functional/immutable-data, @typescript-eslint/no-use-before-define, @typescript-eslint/strict-boolean-expressions, no-param-reassign, functional/no-expression-statement, functional/no-this-expression, @typescript-eslint/no-explicit-any, func-style, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/naming-convention, @typescript-eslint/method-signature-style, @typescript-eslint/no-confusing-void-expression, prefer-arrow-callback, functional/no-return-void, @typescript-eslint/no-unsafe-argument */
 // cspell: ignore accum
 
 interface Index {
@@ -380,7 +380,8 @@ function regexp(re: RegExp, group = 0): Parser<string> {
   return Parsimmon(function (input: any, i: any) {
     const match = anchored.exec(input.slice(i));
     if (match) {
-      const fullMatch = match[0];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const fullMatch = match[0]!;
       const groupMatch = match[group];
       return makeSuccess(i + fullMatch.length, groupMatch);
     }

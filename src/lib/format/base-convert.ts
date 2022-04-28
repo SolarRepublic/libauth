@@ -76,8 +76,9 @@ export const createBaseConverter = (
       let remainingBytes = 0;
 
       // eslint-disable-next-line functional/no-loop-statement
-      while ((input[nextByte] as string | undefined) !== undefined) {
-        let carry = alphabetMap[input.charCodeAt(nextByte)];
+      while (input[nextByte] !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        let carry = alphabetMap[input.charCodeAt(nextByte)]!;
         if (carry === undefinedValue)
           return BaseConversionError.unknownCharacter;
 
@@ -89,7 +90,8 @@ export const createBaseConverter = (
           // eslint-disable-next-line no-plusplus
           steps--, digit++
         ) {
-          carry += Math.floor(base * decoded[steps]);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          carry += Math.floor(base * decoded[steps]!);
           // eslint-disable-next-line functional/immutable-data
           decoded[steps] = Math.floor(carry % uint8ArrayBase);
           carry = Math.floor(carry / uint8ArrayBase);
@@ -129,7 +131,8 @@ export const createBaseConverter = (
       let remainingBytes = 0;
       // eslint-disable-next-line functional/no-loop-statement
       while (nextByte !== input.length) {
-        let carry = input[nextByte];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        let carry = input[nextByte]!;
         let digit = 0;
         // eslint-disable-next-line functional/no-loop-statement
         for (
@@ -138,7 +141,8 @@ export const createBaseConverter = (
           // eslint-disable-next-line no-plusplus
           steps--, digit++
         ) {
-          carry += Math.floor(uint8ArrayBase * encoded[steps]);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          carry += Math.floor(uint8ArrayBase * encoded[steps]!);
           // eslint-disable-next-line functional/immutable-data
           encoded[steps] = Math.floor(carry % base);
           carry = Math.floor(carry / base);

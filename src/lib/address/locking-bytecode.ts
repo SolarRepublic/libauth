@@ -1,6 +1,11 @@
 import { sha256 as internalSha256 } from '../crypto/default-crypto-instances.js';
 import type { Sha256 } from '../lib';
-import { Opcodes } from '../lib.js';
+import {
+  isPayToPublicKeyCompressed,
+  isPayToPublicKeyHash,
+  isPayToPublicKeyUncompressed,
+  isPayToScriptHash20,
+} from '../lib.js';
 
 import type { Base58AddressNetwork, CashAddressNetworkPrefix } from './address';
 import {
@@ -64,6 +69,31 @@ export interface AddressContents {
   payload: Uint8Array;
 }
 
+const enum Opcodes {
+  OP_PUSHBYTES_20 = 0x14,
+  OP_PUSHBYTES_33 = 0x21,
+  OP_PUSHBYTES_65 = 0x41,
+  OP_16 = 0x60,
+  OP_RETURN = 0x6a,
+  OP_DUP = 0x76,
+  OP_EQUAL = 0x87,
+  OP_EQUALVERIFY = 0x88,
+  OP_SHA256 = 0xa8,
+  OP_HASH160 = 0xa9,
+  OP_CHECKSIG = 0xac,
+}
+
+const enum AddressPayload {
+  p2pkhStart = 3,
+  p2pkhEnd = 23,
+  p2sh20Start = 2,
+  p2sh20End = 22,
+  p2pkUncompressedStart = 1,
+  p2pkUncompressedEnd = 66,
+  p2pkCompressedStart = 1,
+  p2pkCompressedEnd = 34,
+}
+
 /**
  * Attempt to match a lockingBytecode to a standard address type for use in
  * address encoding. (See {@link AddressType} for details.)
@@ -85,62 +115,51 @@ export interface AddressContents {
  *
  * @param bytecode - the locking bytecode to match
  */
-// eslint-disable-next-line complexity
+
 export const lockingBytecodeToAddressContents = (
   bytecode: Uint8Array
 ): AddressContents => {
-  const p2pkhLength = 25;
-  if (
-    bytecode.length === p2pkhLength &&
-    bytecode[0] === Opcodes.OP_DUP &&
-    bytecode[1] === Opcodes.OP_HASH160 &&
-    bytecode[2] === Opcodes.OP_PUSHBYTES_20 &&
-    bytecode[23] === Opcodes.OP_EQUALVERIFY &&
-    bytecode[24] === Opcodes.OP_CHECKSIG
-  ) {
-    const start = 3;
-    const end = 23;
-    return { payload: bytecode.slice(start, end), type: AddressType.p2pkh };
+  if (isPayToPublicKeyHash(bytecode)) {
+    return {
+      payload: bytecode.slice(
+        AddressPayload.p2pkhStart,
+        AddressPayload.p2pkhEnd
+      ),
+      type: AddressType.p2pkh,
+    };
   }
 
-  const p2sh20TotalLength = 23;
-  if (
-    bytecode.length === p2sh20TotalLength &&
-    bytecode[0] === Opcodes.OP_HASH160 &&
-    bytecode[1] === Opcodes.OP_PUSHBYTES_20 &&
-    bytecode[22] === Opcodes.OP_EQUAL
-  ) {
-    const start = 2;
-    const end = 22;
-    return { payload: bytecode.slice(start, end), type: AddressType.p2sh20 };
+  if (isPayToScriptHash20(bytecode)) {
+    return {
+      payload: bytecode.slice(
+        AddressPayload.p2sh20Start,
+        AddressPayload.p2sh20End
+      ),
+      type: AddressType.p2sh20,
+    };
   }
 
-  const p2pkUncompressedLength = 67;
-  if (
-    bytecode.length === p2pkUncompressedLength &&
-    bytecode[0] === Opcodes.OP_PUSHBYTES_65 &&
-    bytecode[66] === Opcodes.OP_CHECKSIG
-  ) {
-    const start = 1;
-    const end = 66;
-    return { payload: bytecode.slice(start, end), type: AddressType.p2pk };
+  if (isPayToPublicKeyUncompressed(bytecode)) {
+    return {
+      payload: bytecode.slice(
+        AddressPayload.p2pkUncompressedStart,
+        AddressPayload.p2pkUncompressedEnd
+      ),
+      type: AddressType.p2pk,
+    };
   }
 
-  const p2pkCompressedLength = 35;
-  if (
-    bytecode.length === p2pkCompressedLength &&
-    bytecode[0] === Opcodes.OP_PUSHBYTES_33 &&
-    bytecode[34] === Opcodes.OP_CHECKSIG
-  ) {
-    const start = 1;
-    const end = 34;
-    return { payload: bytecode.slice(start, end), type: AddressType.p2pk };
+  if (isPayToPublicKeyCompressed(bytecode)) {
+    return {
+      payload: bytecode.slice(
+        AddressPayload.p2pkCompressedStart,
+        AddressPayload.p2pkCompressedEnd
+      ),
+      type: AddressType.p2pk,
+    };
   }
 
-  return {
-    payload: bytecode.slice(),
-    type: AddressType.unknown,
-  };
+  return { payload: bytecode.slice(), type: AddressType.unknown };
 };
 
 /**

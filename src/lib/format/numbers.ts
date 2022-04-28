@@ -433,6 +433,10 @@ const enum VarInt {
   uint32Prefix = 0xfe,
   uint32MaxValue = 0xffffffff,
   uint64Prefix = 0xff,
+  uint8 = 1,
+  uint16 = 2,
+  uint32 = 4,
+  uint64 = 8,
 }
 
 /**
@@ -441,19 +445,15 @@ const enum VarInt {
  * @param firstByte - the first byte of the VarInt
  */
 export const varIntPrefixToSize = (firstByte: number) => {
-  const uint8 = 1;
-  const uint16 = 2;
-  const uint32 = 4;
-  const uint64 = 8;
   switch (firstByte) {
     case VarInt.uint16Prefix:
-      return uint16 + 1;
+      return VarInt.uint16 + 1;
     case VarInt.uint32Prefix:
-      return uint32 + 1;
+      return VarInt.uint32 + 1;
     case VarInt.uint64Prefix:
-      return uint64 + 1;
+      return VarInt.uint64 + 1;
     default:
-      return uint8;
+      return VarInt.uint8;
   }
 };
 
@@ -461,11 +461,14 @@ export const varIntPrefixToSize = (firstByte: number) => {
  * Decode a VarInt (Satoshi's Variable-length integer format) from a Uint8Array,
  * returning the `nextIndex` after the VarInt and the value as a BigInt.
  *
+ * Note: throws a runtime error if `bin` has a length of `0`.
+ *
  * @param bin - the Uint8Array from which to read the VarInt
  * @param index - the index at which the VarInt begins
  */
 export const decodeVarInt = (bin: Uint8Array, index = 0) => {
-  const bytes = varIntPrefixToSize(bin[index]);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const bytes = varIntPrefixToSize(bin[index]!);
   const hasPrefix = bytes !== 1;
   return {
     nextIndex: index + bytes,

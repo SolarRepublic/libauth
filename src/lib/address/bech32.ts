@@ -64,7 +64,8 @@ export const regroupBits = ({
   const maxResultInt = (1 << resultWordLength) - 1;
   // eslint-disable-next-line functional/no-loop-statement, @typescript-eslint/prefer-for-of, no-plusplus
   for (let p = 0; p < bin.length; ++p) {
-    const value = bin[p];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const value = bin[p]!;
     if (value < 0 || value >> sourceWordLength !== 0) {
       return BitRegroupingError.integerOutOfRange;
     }
@@ -96,7 +97,8 @@ export const regroupBits = ({
  * Encode an array of numbers as a base32 string using the Bech32 character set.
  *
  * Note, this method always completes. For a valid result, all items in
- * `base32IntegerArray` must be between `0` and `32`.
+ * `base32IntegerArray` must be between `0` and `32`. To prepare another array
+ * type for encoding, see {@link regroupBits}.
  *
  * @param base32IntegerArray - the array of 5-bit integers to encode
  */
@@ -105,8 +107,8 @@ export const encodeBech32 = (base32IntegerArray: readonly number[]) => {
   let result = '';
   // eslint-disable-next-line @typescript-eslint/prefer-for-of, functional/no-let, functional/no-loop-statement, no-plusplus
   for (let i = 0; i < base32IntegerArray.length; i++) {
-    // eslint-disable-next-line functional/no-expression-statement
-    result += bech32CharacterSet[base32IntegerArray[i]];
+    // eslint-disable-next-line functional/no-expression-statement, @typescript-eslint/no-non-null-assertion
+    result += bech32CharacterSet[base32IntegerArray[i]!];
   }
   return result;
 };

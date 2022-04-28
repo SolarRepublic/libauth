@@ -104,7 +104,7 @@ export const generateDefaultScenarioDefinition = <
         );
 
   const valueMap = [...keyVariableIds, ...entityIds]
-    .sort(([idA], [idB]) => idA.localeCompare(idB))
+    .sort((idA, idB) => idA.localeCompare(idB, 'en'))
     .reduce<{ [variableOrEntityId: string]: Uint8Array }>(
       (all, id, index) => ({
         ...all,
@@ -121,7 +121,8 @@ export const generateDefaultScenarioDefinition = <
             variable.type === 'Key'
               ? {
                   ...all,
-                  [variableId]: binToHex(valueMap[variableId]),
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  [variableId]: binToHex(valueMap[variableId]!),
                 }
               : all,
           {}
@@ -173,7 +174,8 @@ export const generateDefaultScenarioDefinition = <
      */
     const assumeValid = true;
     const masterNode = deriveHdPrivateNodeFromSeed(
-      valueMap[entityId],
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      valueMap[entityId]!,
       assumeValid,
       crypto
     );
@@ -732,7 +734,7 @@ export const generateScenarioBCH = <
 
   if (
     !Array.isArray(
-      extendedScenario.sourceOutputs[testedInputIndex].lockingBytecode
+      extendedScenario.sourceOutputs[testedInputIndex]?.lockingBytecode
     )
   ) {
     return `Cannot generate ${scenarioName}: the source output unlocked by the input under test in this scenario is ambiguous – the ["slot"] in "transaction.inputs" and "sourceOutputs" must be at the same index.`;

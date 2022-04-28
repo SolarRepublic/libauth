@@ -148,8 +148,9 @@ export const compilerOperationAttemptBytecodeResolution =
     dataProperties: ['bytecode'],
     operation: (identifier, data) => {
       const { bytecode } = data;
-      if ((bytecode[identifier] as Uint8Array | undefined) !== undefined) {
-        return { bytecode: bytecode[identifier], status: 'success' };
+      if (bytecode[identifier] !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return { bytecode: bytecode[identifier]!, status: 'success' };
       }
       return { status: 'skip' };
     },
@@ -249,11 +250,9 @@ export const compilerOperationHelperDeriveHdKeyPrivate = ({
   identifier: string;
 }): CompilerOperationResult => {
   const { addressIndex, hdPrivateKeys } = hdKeys;
-  const [variableId] = identifier.split('.');
+  const [variableId] = identifier.split('.') as [string];
 
-  const entityId = configuration.entityOwnership[variableId] as
-    | string
-    | undefined;
+  const entityId = configuration.entityOwnership[variableId];
   if (entityId === undefined) {
     return compilerOperationHelperUnknownEntity(identifier, variableId);
   }
@@ -309,9 +308,7 @@ export const compilerOperationHelperCompileScript = <CompilationContext>({
   data: CompilationData<CompilationContext>;
   configuration: AnyCompilerConfiguration<CompilationContext>;
 }) => {
-  const signingTarget = configuration.scripts[targetScriptId] as
-    | string
-    | undefined;
+  const signingTarget = configuration.scripts[targetScriptId];
 
   const compiledTarget = resolveScriptIdentifier({
     configuration,
@@ -349,9 +346,7 @@ export const compilerOperationHelperGenerateCoveredBytecode = <
   sourceScriptIds: string[];
   unlockingScripts: { [unlockingScriptId: string]: string };
 }): CompilerOperationErrorFatal | Uint8Array => {
-  const currentScriptId = sourceScriptIds[sourceScriptIds.length - 1] as
-    | string
-    | undefined;
+  const currentScriptId = sourceScriptIds[sourceScriptIds.length - 1];
   if (currentScriptId === undefined) {
     return {
       error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because the compiler configuration's "sourceScriptIds" is empty.`,
@@ -359,9 +354,7 @@ export const compilerOperationHelperGenerateCoveredBytecode = <
     };
   }
 
-  const targetLockingScriptId = unlockingScripts[currentScriptId] as
-    | string
-    | undefined;
+  const targetLockingScriptId = unlockingScripts[currentScriptId];
   if (targetLockingScriptId === undefined) {
     return {
       error: `Identifier "${identifier}" requires a signing serialization, but "coveredBytecode" cannot be determined because "${currentScriptId}" is not present in the compiler configuration's "unlockingScripts".`,

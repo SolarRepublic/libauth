@@ -87,13 +87,12 @@ test('generatePrivateKey: tries until success', (t) => {
   let calls = 0;
   const entropy = [
     Uint8Array.from(Array(privateKeyLength).fill(maximumUint8Value)),
-
     Uint8Array.from(Array(privateKeyLength).fill(1)),
   ];
   const mockEntropy = () => {
-    // eslint-disable-next-line no-plusplus
-    calls++;
-    return entropy[calls];
+    calls += 1;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return entropy[calls]!;
   };
 
   const key = generatePrivateKey(mockEntropy);

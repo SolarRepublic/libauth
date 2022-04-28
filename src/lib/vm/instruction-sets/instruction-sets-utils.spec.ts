@@ -69,7 +69,7 @@ type CommonScriptParseAndAsmTests = Readonly<{
 const defToFixtures = (tests: CommonScriptParseAndAsmTests) =>
   Object.entries(tests).map((entry) => {
     const [fullHex, { asm }] = entry;
-    const [, hex] = fullHex.split('0x');
+    const hex = fullHex.replace('0x', '');
     const script = hexToBin(hex);
     // eslint-disable-next-line complexity
     const object = entry[1].parse.map((set) => ({

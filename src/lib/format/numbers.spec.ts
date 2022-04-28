@@ -496,7 +496,8 @@ testProp(
   [fc.bigUintN(64)],
   (t, uint64) => {
     const varInt = bigIntToVarInt(uint64);
-    const expectedIndex = varIntPrefixToSize(varInt[0]);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const expectedIndex = varIntPrefixToSize(varInt[0]!);
     const result = decodeVarInt(varInt);
     t.deepEqual(result, { nextIndex: expectedIndex, value: uint64 });
   }

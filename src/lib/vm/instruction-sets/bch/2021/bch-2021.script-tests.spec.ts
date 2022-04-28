@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import test from 'ava';
 
 import type { AuthenticationProgramStateBCH } from '../../../../lib';
@@ -22,7 +23,7 @@ const tests = Object.values(scriptTests)
     const valueSatoshis =
       typeof expectation[0] === 'string'
         ? 0
-        : (expectation.shift() as number[])[0] * 1e8;
+        : (expectation.shift() as number[])[0]! * 1e8;
     return {
       expectedError:
         expectation[3] === 'OK' ? (false as const) : (expectation[3] as string),
@@ -50,38 +51,39 @@ const expectedFailureTests = scriptTestsAddendum.fail
 const minimalIfTests = scriptTestsAddendum.minimalIf;
 const expectedPassTests = scriptTestsAddendum.pass.concat(minimalIfTests);
 invalidUnlockTests.map((index) => {
-  tests[
-    index
-  ].lockingBytecodeText = `${tests[index].unlockingBytecodeText} ${tests[index].lockingBytecodeText}`;
-  tests[index].unlockingBytecodeText = '';
+  tests[index]!.lockingBytecodeText = `${tests[index]!.unlockingBytecodeText} ${
+    tests[index]!.lockingBytecodeText
+  }`;
+  tests[index]!.unlockingBytecodeText = '';
   return undefined;
 });
 failRequiresReviewTests.forEach((index) => {
-  tests[index].flags.failRequiresReview = true;
+  tests[index]!.flags.failRequiresReview = true;
 });
 dirtyStackTests.forEach((index) => {
-  tests[index].flags.dirtyStack = true;
+  tests[index]!.flags.dirtyStack = true;
 });
 strictTests.forEach((index) => {
-  tests[index].flags.useStrict = true;
+  tests[index]!.flags.useStrict = true;
 });
 expectedFailureTests.forEach((index) => {
-  tests[index].expectedError = 'OVERRIDDEN_FAIL';
+  tests[index]!.expectedError = 'OVERRIDDEN_FAIL';
 });
 expectedPassTests.forEach((index) => {
-  tests[index].expectedError = false;
+  tests[index]!.expectedError = false;
 });
 const { overrides } = scriptTestsAddendum;
 Object.entries(overrides.unlocking).forEach(([index, script]) => {
-  tests[Number(index)].unlockingBytecodeText = script;
+  tests[Number(index)]!.unlockingBytecodeText = script;
 });
 Object.entries(overrides.locking).forEach(([index, script]) => {
-  tests[Number(index)].lockingBytecodeText = script;
+  tests[Number(index)]!.lockingBytecodeText = script;
 });
 
 const validateDirtyStackState = (state: AuthenticationProgramStateBCH) =>
   state.error === undefined &&
-  stackItemIsTruthy(state.stack[state.stack.length - 1]);
+  state.stack.length > 0 &&
+  stackItemIsTruthy(state.stack[state.stack.length - 1]!);
 
 /**
  * Isolate a single test for debugging

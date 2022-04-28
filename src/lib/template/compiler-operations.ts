@@ -30,7 +30,8 @@ export const compilerOperationAddressData = compilerOperationRequires({
   operation: (identifier, data) => {
     const { bytecode } = data;
     if (identifier in bytecode) {
-      return { bytecode: bytecode[identifier], status: 'success' };
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return { bytecode: bytecode[identifier]!, status: 'success' };
     }
     return {
       error: `Identifier "${identifier}" refers to an AddressData, but "${identifier}" was not provided in the CompilationData "bytecode".`,
@@ -47,7 +48,8 @@ export const compilerOperationWalletData = compilerOperationRequires({
   operation: (identifier, data) => {
     const { bytecode } = data;
     if (identifier in bytecode) {
-      return { bytecode: bytecode[identifier], status: 'success' };
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return { bytecode: bytecode[identifier]!, status: 'success' };
     }
     return {
       error: `Identifier "${identifier}" refers to a WalletData, but "${identifier}" was not provided in the CompilationData "bytecode".`,
@@ -168,9 +170,10 @@ export const compilerOperationSigningSerializationOutpointIndex =
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
       bytecode: numberToBinUint32LE(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         data.compilationContext.transaction.inputs[
           data.compilationContext.inputIndex
-        ].outpointIndex
+        ]!.outpointIndex
       ),
       status: 'success',
     }),
@@ -183,9 +186,10 @@ export const compilerOperationSigningSerializationOutpointTransactionHash =
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
       bytecode:
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         data.compilationContext.transaction.inputs[
           data.compilationContext.inputIndex
-        ].outpointTransactionHash,
+        ]!.outpointTransactionHash,
       status: 'success',
     }),
   });
@@ -197,9 +201,10 @@ export const compilerOperationSigningSerializationOutputValue =
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
       bytecode:
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         data.compilationContext.sourceOutputs[
           data.compilationContext.inputIndex
-        ].valueSatoshis,
+        ]!.valueSatoshis,
       status: 'success',
     }),
   });
@@ -211,9 +216,10 @@ export const compilerOperationSigningSerializationSequenceNumber =
     dataProperties: ['compilationContext'],
     operation: (_, data) => ({
       bytecode: numberToBinUint32LE(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         data.compilationContext.transaction.inputs[
           data.compilationContext.inputIndex
-        ].sequenceNumber
+        ]!.sequenceNumber
       ),
       status: 'success',
     }),
@@ -330,15 +336,13 @@ export const compilerOperationKeyPublicKeyCommon = attemptCompilerOperations(
       const { keys } = data;
       const { secp256k1 } = configuration;
       const { privateKeys } = keys;
-      const [variableId] = identifier.split('.');
+      const [variableId] = identifier.split('.') as [string];
 
-      if (
-        privateKeys !== undefined &&
-        (privateKeys[variableId] as Uint8Array | undefined) !== undefined
-      ) {
+      if (privateKeys?.[variableId] !== undefined) {
         return {
           bytecode: secp256k1.derivePublicKeyCompressed(
-            privateKeys[variableId]
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            privateKeys[variableId]!
           ) as Uint8Array,
           status: 'success',
         };
@@ -370,11 +374,9 @@ export const compilerOperationHdKeyPublicKeyCommon = attemptCompilerOperations(
       (identifier, data, configuration): CompilerOperationResult => {
         const { hdKeys } = data;
         const { hdPrivateKeys, addressIndex, hdPublicKeys } = hdKeys;
-        const [variableId] = identifier.split('.');
+        const [variableId] = identifier.split('.') as [string];
 
-        const entityId = configuration.entityOwnership[variableId] as
-          | string
-          | undefined;
+        const entityId = configuration.entityOwnership[variableId];
         if (entityId === undefined) {
           return compilerOperationHelperUnknownEntity(identifier, variableId);
         }

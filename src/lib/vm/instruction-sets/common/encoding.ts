@@ -57,15 +57,16 @@ const enum Mask {
   negative = 0x80,
 }
 
-const isNegative = (value: number) =>
-  // eslint-disable-next-line no-bitwise
-  (value & Mask.negative) !== 0;
+const isNegative = (value: number | undefined) =>
+  // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+  (value! & Mask.negative) !== 0;
 
 const hasUnnecessaryPadding = (
-  length: number,
-  firstByte: number,
-  secondByte: number
-) => length > 1 && firstByte === 0 && !isNegative(secondByte);
+  length: number | undefined,
+  firstByte: number | undefined,
+  secondByte: number | undefined
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+) => length! > 1 && firstByte === 0 && !isNegative(secondByte);
 
 const isValidInteger = (
   signature: Uint8Array,
@@ -117,7 +118,7 @@ export const isValidSignatureEncodingDER = (signature: Uint8Array) => {
   const correctSequenceLength =
     signature[DER.sequenceLengthIndex] ===
     signature.length - DER.sequenceMetadataBytes;
-  const rLength = signature[DER.rLengthIndex] as number | undefined;
+  const rLength = signature[DER.rLengthIndex];
   if (rLength === undefined) {
     return false;
   }
@@ -131,7 +132,7 @@ export const isValidSignatureEncodingDER = (signature: Uint8Array) => {
   );
   const sTagIndex = DER.rValueIndex + rLength; // eslint-disable-line @typescript-eslint/restrict-plus-operands
   const sLengthIndex = sTagIndex + 1;
-  const sLength = signature[sLengthIndex] as number | undefined;
+  const sLength = signature[sLengthIndex];
   if (sLength === undefined) {
     return false;
   }
@@ -180,8 +181,6 @@ export const isValidSignatureEncodingBCHTransaction = (
  * {@link isValidSignatureEncodingBCHTransaction}
  */
 export const decodeBitcoinSignature = (encodedSignature: Uint8Array) => ({
-  signature: encodedSignature.slice(0, encodedSignature.length - 1),
-  signingSerializationType: new Uint8Array([
-    encodedSignature[encodedSignature.length - 1],
-  ]),
+  signature: encodedSignature.slice(0, -1),
+  signingSerializationType: encodedSignature.slice(-1),
 });

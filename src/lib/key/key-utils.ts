@@ -33,7 +33,8 @@ export const validateSecp256k1PrivateKey = (privateKey: Uint8Array) => {
 
   if (
     firstDifference === -1 ||
-    privateKey[firstDifference] < maximumSecp256k1PrivateKey[firstDifference]
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    privateKey[firstDifference]! < maximumSecp256k1PrivateKey[firstDifference]!
   ) {
     return true;
   }

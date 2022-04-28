@@ -52,7 +52,8 @@ export const mergeRanges = (
   const unsortedMerged =
     ranges.length < minimumRangesToMerge
       ? ranges.length === 1
-        ? ranges[0]
+        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          ranges[0]!
         : parentRange
       : ranges.reduce<Range>(
           // eslint-disable-next-line complexity
@@ -70,7 +71,8 @@ export const mergeRanges = (
               ? pluckStartPosition(range)
               : pluckStartPosition(merged)),
           }),
-          ranges[0]
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          ranges[0]!
         );
   return {
     ...pluckEndPosition(unsortedMerged),
@@ -476,7 +478,8 @@ export const extractEvaluationSamples = <ProgramState>({
         startColumn: evaluationRange.startColumn,
         startLineNumber: evaluationRange.startLineNumber,
       },
-      state: traceWithoutFinalState[0],
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      state: traceWithoutFinalState[0]!,
     },
   ];
 
@@ -488,7 +491,8 @@ export const extractEvaluationSamples = <ProgramState>({
   let incomplete: { bytecode: Uint8Array; range: Range } | undefined;
   // eslint-disable-next-line functional/no-loop-statement
   while (nextState < traceWithoutFinalState.length && nextNode < nodes.length) {
-    const currentNode = nodes[nextNode];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const currentNode = nodes[nextNode]!;
     const { mergedBytecode, mergedRange } =
       incomplete === undefined
         ? {
@@ -510,12 +514,12 @@ export const extractEvaluationSamples = <ProgramState>({
       zeroth !== undefined && !('malformed' in zeroth);
 
     if (hasNonMalformedInstructions) {
-      const lastInstruction = decoded[decoded.length - 1];
-      const validInstructions = (
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const lastInstruction = decoded[decoded.length - 1]!;
+      const validInstructions: AuthenticationInstruction[] =
         authenticationInstructionIsMalformed(lastInstruction)
           ? decoded.slice(0, decoded.length - 1)
-          : decoded
-      ) as AuthenticationInstruction[];
+          : decoded;
       const firstUnmatchedStateIndex = nextState + validInstructions.length;
       const matchingStates = traceWithoutFinalState.slice(
         nextState,
@@ -523,7 +527,7 @@ export const extractEvaluationSamples = <ProgramState>({
       );
       const pairedStates = validInstructions.map((instruction, index) => ({
         instruction,
-        state: matchingStates[index] as ProgramState | undefined,
+        state: matchingStates[index],
       }));
 
       /**
@@ -773,7 +777,8 @@ export const extractUnexecutedRanges = <
       const { precedingStateSkipsByEvaluation, unexecutedRanges } = all;
       const currentEvaluationStartLineAndColumn = `${sample.evaluationRange.startLineNumber},${sample.evaluationRange.startColumn}`;
       const precedingStateSkips =
-        precedingStateSkipsByEvaluation[currentEvaluationStartLineAndColumn];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        precedingStateSkipsByEvaluation[currentEvaluationStartLineAndColumn]!;
       const endsWithSkip = !stateIsExecuting(sample.state);
       const sampleHasNoExecutedInstructions =
         endsWithSkip &&
@@ -809,12 +814,14 @@ export const extractUnexecutedRanges = <
       ? reduced.unexecutedRanges
       : reduced.unexecutedRanges.slice(0, -1).reduceRight<Range[]>(
           (all, range) => {
-            if (containsRange(all[0], range)) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            if (containsRange(all[0]!, range)) {
               return all;
             }
             return [range, ...all];
           },
-          [reduced.unexecutedRanges[reduced.unexecutedRanges.length - 1]]
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          [reduced.unexecutedRanges[reduced.unexecutedRanges.length - 1]!]
         );
   return containedRangesExcluded;
 };

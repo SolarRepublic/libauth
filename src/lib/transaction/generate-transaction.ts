@@ -332,13 +332,11 @@ export const safelyExtendCompilationData = <
   const selectedResolutions = Object.entries(missing).reduce<{
     [fullIdentifier: string]: Uint8Array;
   }>((all, [identifier, entityId]) => {
-    const entityResolution = untrustedResolutions[entityId] as
-      | { [fullIdentifier: string]: Uint8Array }
-      | undefined;
+    const entityResolution = untrustedResolutions[entityId];
     if (entityResolution === undefined) {
       return all;
     }
-    const resolution = entityResolution[identifier] as Uint8Array | undefined;
+    const resolution = entityResolution[identifier];
     if (resolution === undefined) {
       return all;
     }

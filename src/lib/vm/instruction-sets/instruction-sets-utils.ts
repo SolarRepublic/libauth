@@ -13,6 +13,8 @@ import type {
   AuthenticationInstructionMaybeMalformed,
   AuthenticationInstructionPush,
   AuthenticationInstructionPushMalformedLength,
+  AuthenticationInstructions,
+  AuthenticationInstructionsMalformed,
   AuthenticationInstructionsMaybeMalformed,
 } from './instruction-sets';
 import { OpcodesBCH, OpcodesBTC } from './instruction-sets.js';
@@ -33,27 +35,17 @@ export const authenticationInstructionIsMalformed = (
  */
 export const authenticationInstructionsAreMalformed = (
   instructions: AuthenticationInstructionsMaybeMalformed
-): instructions is [
-  ...AuthenticationInstruction[],
-  AuthenticationInstructionMalformed
-] =>
+): instructions is AuthenticationInstructionsMalformed =>
   instructions.length > 0 &&
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   authenticationInstructionIsMalformed(instructions[instructions.length - 1]!);
 
-/**
- * A type-guard that confirms that the final instruction in the provided array
- * is not malformed. (Only the final instruction can be malformed.)
- * @param instructions - the array of instructions to check
- */
-export const authenticationInstructionsAreNotMalformed = (
-  instructions: AuthenticationInstructionsMaybeMalformed
-): instructions is [
-  ...AuthenticationInstruction[],
-  AuthenticationInstruction
-] => !authenticationInstructionsAreMalformed(instructions);
+export const authenticationInstructionsArePushInstructions = (
+  instructions: AuthenticationInstructions
+): instructions is AuthenticationInstructionPush[] =>
+  instructions.every((instruction) => 'data' in instruction);
 
-enum CommonPushOpcodes {
+const enum CommonPushOpcodes {
   OP_0 = 0x00,
   OP_PUSHDATA_1 = 0x4c,
   OP_PUSHDATA_2 = 0x4d,
@@ -234,7 +226,7 @@ export const disassembleAuthenticationInstructionMalformed = (
   opcodes: Readonly<{ [opcode: number]: string }>,
   instruction: AuthenticationInstructionMalformed
 ): string =>
-  `${opcodes[instruction.opcode]} ${
+  `${opcodes[instruction.opcode] ?? 'OP_UNKNOWN'} ${
     hasMalformedLength(instruction)
       ? `${formatAsmPushHex(instruction.length)}${formatMissingBytesAsm(
           instruction.expectedLengthBytes - instruction.length.length
@@ -258,7 +250,7 @@ export const disassembleAuthenticationInstruction = (
   opcodes: Readonly<{ [opcode: number]: string }>,
   instruction: AuthenticationInstruction
 ): string =>
-  `${opcodes[instruction.opcode]}${
+  `${opcodes[instruction.opcode] ?? 'OP_UNKNOWN'}${
     'data' in instruction && isMultiWordPush(instruction.opcode)
       ? ` ${
           isPushData(instruction.opcode) ? `${instruction.data.length} ` : ''

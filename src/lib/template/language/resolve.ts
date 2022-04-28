@@ -337,7 +337,7 @@ export const resolveScriptIdentifier = <CompilationContext, ProgramState>({
    */
   configuration: CompilerConfiguration<CompilationContext>;
 }): CompilationResultSuccess<ProgramState> | string | false => {
-  if ((configuration.scripts[identifier] as string | undefined) === undefined) {
+  if (configuration.scripts[identifier] === undefined) {
     return false;
   }
 
@@ -405,7 +405,8 @@ export const createIdentifierResolver =
               ? {}
               : {
                   entityOwnership:
-                    configuration.entityOwnership[identifier.split('.')[0]],
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    configuration.entityOwnership[identifier.split('.')[0]!],
                 }),
             recoverable: 'recoverable' in variableResult,
             status: false,

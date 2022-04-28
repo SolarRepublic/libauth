@@ -23,15 +23,15 @@ export const instantiateHmacFunction =
 
     const innerPaddingFill = 0x36;
     const innerPadding = new Uint8Array(blockByteLength).fill(innerPaddingFill);
-    // eslint-disable-next-line no-bitwise
-    const innerPrefix = innerPadding.map((pad, index) => pad ^ key[index]);
+    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+    const innerPrefix = innerPadding.map((pad, index) => pad ^ key[index]!);
     const innerContent = flattenBinArray([innerPrefix, message]);
     const innerResult = hashFunction(innerContent);
 
     const outerPaddingFill = 0x5c;
     const outerPadding = new Uint8Array(blockByteLength).fill(outerPaddingFill);
-    // eslint-disable-next-line no-bitwise
-    const outerPrefix = outerPadding.map((pad, index) => pad ^ key[index]);
+    // eslint-disable-next-line no-bitwise, @typescript-eslint/no-non-null-assertion
+    const outerPrefix = outerPadding.map((pad, index) => pad ^ key[index]!);
     return hashFunction(flattenBinArray([outerPrefix, innerResult]));
   };
 

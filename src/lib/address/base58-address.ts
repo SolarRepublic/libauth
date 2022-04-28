@@ -206,7 +206,8 @@ export const decodeBase58AddressFormat = (
 
   return {
     payload: content.slice(1),
-    version: content[0],
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    version: content[0]!,
   };
 };
 
