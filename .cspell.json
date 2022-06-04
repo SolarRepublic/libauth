@@ -101,6 +101,7 @@
     "satoshi",
     "satoshis",
     "schnorr",
+    "schnorrsig",
     "seckey",
     "secp",
     "secp256k1",

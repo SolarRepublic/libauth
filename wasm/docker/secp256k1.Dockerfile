@@ -1,5 +1,4 @@
-# FROM trzeci/emscripten-slim:latest
-FROM trzeci/emscripten-slim@sha256:e3cd9edf81c5d9cd78d2edf034ce6fcb2dccb35f1f5451e8ce75e5210bbbf036
+FROM emscripten/emsdk:3.1.12
 
 RUN apt-get update \
   && apt-get install -y \
@@ -12,11 +11,12 @@ COPY wasm /libauth/wasm
 WORKDIR /libauth/wasm/secp256k1
 
 RUN ./autogen.sh
-RUN emconfigure ./configure --enable-module-recovery \
+RUN emconfigure ./configure --enable-module-recovery --enable-module-schnorrsig --enable-module-extrakeys --enable-module-ecdh --enable-experimental \
   # uncomment next line for debug build:
   # CFLAGS="-g -O0" 
   # uncomment next line for production build:
-  CFLAGS="-O3" 
+  CFLAGS="-O3"
+
 RUN emmake make FORMAT=wasm
 RUN mkdir -p out/secp256k1
 
@@ -42,6 +42,7 @@ RUN emcc src/libsecp256k1_la-secp256k1.o \
   "_secp256k1_ec_pubkey_serialize", \
   "_secp256k1_ec_pubkey_tweak_add", \
   "_secp256k1_ec_pubkey_tweak_mul", \
+  "_secp256k1_ecdh", \
   "_secp256k1_ecdsa_recover", \
   "_secp256k1_ecdsa_recoverable_signature_serialize_compact", \
   "_secp256k1_ecdsa_recoverable_signature_parse_compact", \
@@ -54,8 +55,8 @@ RUN emcc src/libsecp256k1_la-secp256k1.o \
   "_secp256k1_ecdsa_signature_serialize_compact", \
   "_secp256k1_ecdsa_sign_recoverable", \
   "_secp256k1_ecdsa_verify", \
-  "_secp256k1_schnorr_sign", \
-  "_secp256k1_schnorr_verify" \
+  "_secp256k1_schnorrsig_sign", \
+  "_secp256k1_schnorrsig_verify" \
   ]' \
   -o out/secp256k1/secp256k1.js
 

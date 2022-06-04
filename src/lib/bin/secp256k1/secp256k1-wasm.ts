@@ -131,14 +131,14 @@ const wrapSecp256k1Wasm = (
       rSigPtr
     ),
   schnorrSign: (contextPtr, outputSigPtr, msg32Ptr, secretKeyPtr) =>
-    (instance.exports as any)._secp256k1_schnorr_sign(
+    (instance.exports as any)._secp256k1_schnorrsig_sign(
       contextPtr,
       outputSigPtr,
       msg32Ptr,
       secretKeyPtr
     ),
   schnorrVerify: (contextPtr, sigPtr, msg32Ptr, publicKeyPtr) =>
-    (instance.exports as any)._secp256k1_schnorr_verify(
+    (instance.exports as any)._secp256k1_schnorrsig_verify(
       contextPtr,
       sigPtr,
       msg32Ptr,
@@ -289,8 +289,8 @@ export const instantiateSecp256k1WasmBytes = async (
   const heapU32 = new Uint32Array(wasmMemory.buffer);
   heap32[DYNAMICTOP_PTR >> 2] = DYNAMIC_BASE;
 
-  const TABLE_SIZE = 6;
-  const MAX_TABLE_SIZE = 6;
+  const TABLE_SIZE = 14;
+  const MAX_TABLE_SIZE = 14;
 
   // eslint-disable-next-line functional/no-let, @typescript-eslint/init-declarations
   let getErrNoLocation: (() => number) | undefined;
@@ -310,6 +310,15 @@ export const instantiateSecp256k1WasmBytes = async (
         heap32[getErrNoLocation() >> 2] = value;
       }
       return value;
+    },
+    ___syscall140: /* istanbul ignore next */ () => {
+      throw new Error('___syscall140');
+    },
+    ___syscall146: /* istanbul ignore next */ () => {
+      throw new Error('___syscall146');
+    },
+    ___syscall6: /* istanbul ignore next */ () => {
+      throw new Error('___syscall6');
     },
     _abort: /* istanbul ignore next */ (err = 'Secp256k1 Error') => {
       throw new Error(err);
