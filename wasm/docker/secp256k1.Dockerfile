@@ -1,4 +1,4 @@
-FROM emscripten/emsdk:3.1.12
+FROM emscripten/emsdk:3.1.13
 
 RUN apt-get update \
   && apt-get install -y \
@@ -11,23 +11,29 @@ COPY wasm /libauth/wasm
 WORKDIR /libauth/wasm/secp256k1
 
 RUN ./autogen.sh
-RUN emconfigure ./configure --enable-module-recovery --enable-module-schnorrsig --enable-module-extrakeys --enable-module-ecdh --enable-experimental \
+RUN emconfigure ./configure  \
+  --enable-module-ecdh  \
+  --enable-module-recovery  \
+  --enable-module-extrakeys  \
+  --enable-module-schnorrsig  \
   # uncomment next line for debug build:
-  # CFLAGS="-g -O0" 
-  # uncomment next line for production build:
+#   CFLAGS="-g -O0"
+  # uncomment next line for production build: \
   CFLAGS="-O3"
 
 RUN emmake make FORMAT=wasm
 RUN mkdir -p out/secp256k1
 
-RUN emcc src/libsecp256k1_la-secp256k1.o \
+RUN emcc src/libsecp256k1_la-secp256k1.o  \
+    src/libsecp256k1_precomputed_la-precomputed_ecmult.o \
+    src/libsecp256k1_precomputed_la-precomputed_ecmult_gen.o \
   # uncomment next line for debug build:
-  # -O0 -g4 -s ASSERTIONS=2 --source-map-base ../../../wasm/secp256k1 \
+#   -O0 -g4 -s ASSERTIONS=2 --source-map-base ../../../wasm/secp256k1 \
   # uncomment next line for production build:
   -O3 \
   -s WASM=1 \
   -s "BINARYEN_METHOD='native-wasm'" \
-  -s NO_EXIT_RUNTIME=1 \
+  -s STANDALONE_WASM --no-entry \
   -s DETERMINISTIC=1 \
   -s EXPORTED_FUNCTIONS='[ \
   "_malloc", \
@@ -47,7 +53,6 @@ RUN emcc src/libsecp256k1_la-secp256k1.o \
   "_secp256k1_ecdsa_recoverable_signature_serialize_compact", \
   "_secp256k1_ecdsa_recoverable_signature_parse_compact", \
   "_secp256k1_ecdsa_sign", \
-  "_secp256k1_ecdsa_signature_malleate", \
   "_secp256k1_ecdsa_signature_normalize", \
   "_secp256k1_ecdsa_signature_parse_der", \
   "_secp256k1_ecdsa_signature_parse_compact", \

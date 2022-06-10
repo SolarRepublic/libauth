@@ -202,31 +202,10 @@ const testSecp256k1Wasm = (
     1
   );
 
-  // malleate, verify and fail
-  const malleatedSigPtr = secp256k1Wasm.malloc(64);
-  const malleatedTwicePtr = secp256k1Wasm.malloc(64);
-  secp256k1Wasm.signatureMalleate(contextPtr, malleatedSigPtr, rawSig3Ptr);
-  secp256k1Wasm.signatureMalleate(
-    contextPtr,
-    malleatedTwicePtr,
-    malleatedSigPtr
-  );
-  t.is(
-    secp256k1Wasm.verify(contextPtr, malleatedSigPtr, sigHashPtr, rawPubkeyPtr),
-    0
-  );
-  const rawSig3 = secp256k1Wasm.readHeapU8(rawSig3Ptr, 64);
-  const malleatedTwiceSig = secp256k1Wasm.readHeapU8(malleatedTwicePtr, 64);
-  t.deepEqual(rawSig3, malleatedTwiceSig);
-
   // normalize, verify and pass
   const normalizedSigPtr = secp256k1Wasm.malloc(64);
   t.is(
-    secp256k1Wasm.signatureNormalize(
-      contextPtr,
-      normalizedSigPtr,
-      malleatedSigPtr
-    ),
+    secp256k1Wasm.signatureNormalize(contextPtr, normalizedSigPtr, rawSig3Ptr),
     1
   );
   t.is(
