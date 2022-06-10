@@ -163,12 +163,6 @@ const wrapSecp256k1Wasm = (
       msg32Ptr,
       secretKeyPtr
     ),
-  signatureMalleate: (contextPtr, outputSigPtr, inputSigPtr) =>
-    (instance.exports as any)._secp256k1_ecdsa_signature_malleate(
-      contextPtr,
-      outputSigPtr,
-      inputSigPtr
-    ),
   signatureNormalize: (contextPtr, outputSigPtr, inputSigPtr) =>
     (instance.exports as any)._secp256k1_ecdsa_signature_normalize(
       contextPtr,

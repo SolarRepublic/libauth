@@ -237,12 +237,6 @@ const wrapSecp256k1Wasm = (
     parseOrThrow(signature, isDer);
     if (normalize) {
       normalizeSignature();
-    } else {
-      secp256k1Wasm.signatureMalleate(
-        contextPtr,
-        internalSigPtr,
-        internalSigPtr
-      );
     }
     return isDer ? getDERSig() : getCompactSig();
   };

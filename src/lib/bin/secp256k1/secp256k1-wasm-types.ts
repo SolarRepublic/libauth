@@ -424,27 +424,6 @@ export interface Secp256k1Wasm {
   ) => 1 | 0;
 
   /**
-   * Malleate an ECDSA signature.
-   *
-   * This is done by negating the S value modulo the order of the curve,
-   * "flipping" the sign of the random point R which is not included in the
-   * signature.
-   *
-   * This method is added by Libauth to make testing of `signatureNormalize`
-   * easier.
-   *
-   * @param contextPtr - pointer to a context object
-   * @param outputSigPtr - pointer to a 64 byte space where the malleated
-   * signature will be written (internal format)
-   * @param inputSigPtr - pointer to a signature to malleate
-   */
-  readonly signatureMalleate: (
-    contextPtr: number,
-    outputSigPtr: number,
-    inputSigPtr: number
-  ) => 1;
-
-  /**
    * Convert a signature to a normalized lower-S form.
    *
    * Returns 1 if inputSigPtr was not normalized, 0 if inputSigPtr was already
