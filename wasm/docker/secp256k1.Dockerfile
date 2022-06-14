@@ -1,4 +1,3 @@
-# FROM trzeci/emscripten-slim:latest
 FROM trzeci/emscripten-slim@sha256:e3cd9edf81c5d9cd78d2edf034ce6fcb2dccb35f1f5451e8ce75e5210bbbf036
 
 RUN apt-get update \
@@ -56,7 +55,6 @@ RUN emcc src/libsecp256k1_la-secp256k1.o \
   "_secp256k1_ecdsa_recoverable_signature_serialize_compact", \
   "_secp256k1_ecdsa_recoverable_signature_parse_compact", \
   "_secp256k1_ecdsa_sign", \
-  "_secp256k1_ecdsa_signature_malleate", \
   "_secp256k1_ecdsa_signature_normalize", \
   "_secp256k1_ecdsa_signature_parse_der", \
   "_secp256k1_ecdsa_signature_parse_compact", \
