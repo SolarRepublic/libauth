@@ -4,21 +4,21 @@
 .nyc_output
 .vscode
 build
-config
+# config
 coverage
 node_modules
-src/**.js
-.cspell.json
-.eslintrc.json
-.gitignore
-.gitmodules
+# src/**.js
+# .cspell.json
+# .eslintrc.json
+# .gitignore
+# .gitmodules
 .npmignore
 .prettierignore
-wasm/docker
+# wasm/docker
 CHANGELOG.md
 LICENSE
-package.json
+# package.json
 README.md
-tsconfig.json
-yarn.lock
+# tsconfig.json
+# yarn.lock
 *.log

@@ -31,6 +31,7 @@
   ],
   "scripts": {
     "info": "npm-scripts-info",
+    "compile:lib": "docker build -f Dockerfile . -t libauth && mkdir build && docker run -it --mount type=bind,src=$(pwd)/build,dst=/build,consistency=delegated libauth",
     "compile:secp256k1": "docker build -f wasm/docker/secp256k1.Dockerfile . -t libauth-secp256k1 && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/libauth/out,consistency=delegated libauth-secp256k1",
     "compile:hashes": "docker build -f wasm/docker/hashes.Dockerfile . -t libauth-hashes && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/libauth/out,consistency=delegated libauth-hashes",
     "build": "run-s clean && run-p build:*",
