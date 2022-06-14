@@ -15,6 +15,7 @@ RUN ./autogen.sh
 RUN emconfigure ./configure \
   --enable-module-recovery \
   --enable-experimental \
+  --enable-module-ecdh \
   --enable-module-schnorrsig \
   # otherwise memory use and size goes up
   --disable-ecmult-static-precomputation \
@@ -42,19 +43,15 @@ RUN emcc src/libsecp256k1_la-secp256k1.o \
   "_free", \
   "_secp256k1_context_create", \
   "_secp256k1_context_randomize", \
-  "_secp256k1_ec_seckey_negate", \
-  "_secp256k1_ec_seckey_tweak_add", \
-  "_secp256k1_ec_seckey_tweak_mul", \
   "_secp256k1_ec_seckey_verify", \
   "_secp256k1_ec_privkey_tweak_add", \
   "_secp256k1_ec_privkey_tweak_mul", \
-  "_secp256k1_ec_pubkey_combine", \
   "_secp256k1_ec_pubkey_create", \
-  "_secp256k1_ec_pubkey_negate", \
   "_secp256k1_ec_pubkey_parse", \
   "_secp256k1_ec_pubkey_serialize", \
   "_secp256k1_ec_pubkey_tweak_add", \
   "_secp256k1_ec_pubkey_tweak_mul", \
+  "_secp256k1_ecdh", \
   "_secp256k1_ecdsa_recover", \
   "_secp256k1_ecdsa_recoverable_signature_serialize_compact", \
   "_secp256k1_ecdsa_recoverable_signature_parse_compact", \

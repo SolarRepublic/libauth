@@ -1,15 +1,15 @@
 /* eslint-disable no-underscore-dangle, max-params, @typescript-eslint/naming-convention */
 // cSpell:ignore memcpy, anyfunc
-import { base64ToBin } from '../../format/format';
+import {base64ToBin} from '../../format/format';
 
 import {
   CompressionFlag,
   ContextFlag,
   Secp256k1Wasm,
 } from './secp256k1-wasm-types';
-import { secp256k1Base64Bytes } from './secp256k1.base64';
+import {secp256k1Base64Bytes} from './secp256k1.base64';
 
-export { ContextFlag, CompressionFlag, Secp256k1Wasm };
+export {ContextFlag, CompressionFlag, Secp256k1Wasm};
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 const wrapSecp256k1Wasm = (
@@ -21,7 +21,8 @@ const wrapSecp256k1Wasm = (
     (instance.exports as any)._secp256k1_context_create(context),
   contextRandomize: (contextPtr, seedPtr) =>
     (instance.exports as any)._secp256k1_context_randomize(contextPtr, seedPtr),
-
+  ecdh: (contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr) =>
+    (instance.exports as any)._secp256k1_ecdh(contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr),
   free: (pointer) => (instance.exports as any)._free(pointer),
   heapU32,
   heapU8,
@@ -283,8 +284,8 @@ export const instantiateSecp256k1WasmBytes = async (
   const heapU32 = new Uint32Array(wasmMemory.buffer);
   heap32[DYNAMICTOP_PTR >> 2] = DYNAMIC_BASE;
 
-  const TABLE_SIZE = 14;
-  const MAX_TABLE_SIZE = 14;
+  const TABLE_SIZE = 16;
+  const MAX_TABLE_SIZE = 16;
 
   // eslint-disable-next-line functional/no-let, @typescript-eslint/init-declarations
   let getErrNoLocation: (() => number) | undefined;
@@ -350,7 +351,7 @@ export const instantiateSecp256k1WasmBytes = async (
       }),
       tableBase: 0,
     },
-    global: { Infinity, NaN },
+    global: {Infinity, NaN},
   };
 
   return WebAssembly.instantiate(webassemblyBytes, info).then((result) => {

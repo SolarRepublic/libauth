@@ -109,6 +109,8 @@ export interface Secp256k1 {
    */
   readonly derivePublicKeyUncompressed: (privateKey: Uint8Array) => Uint8Array;
 
+  readonly ecdh: (privateKey: Uint8Array) => Uint8Array
+
   /**
    * Malleate a compact-encoded ECDSA signature.
    *
