@@ -103,6 +103,7 @@ export interface Secp256k1Wasm {
    */
   readonly contextRandomize: (contextPtr: number, seedPtr: number) => 1 | 0;
 
+  readonly ecdh: (contextPtr: number, outputSecretKeyPtr: number, publicKeyPtr: number, scalarPtr: number) => 1 | 0;
   /**
    * Frees a pointer allocated by the `malloc` method.
    * @param pointer - the pointer to be freed
@@ -422,27 +423,6 @@ export interface Secp256k1Wasm {
     msg32Ptr: number,
     secretKeyPtr: number
   ) => 1 | 0;
-
-  /**
-   * Malleate an ECDSA signature.
-   *
-   * This is done by negating the S value modulo the order of the curve,
-   * "flipping" the sign of the random point R which is not included in the
-   * signature.
-   *
-   * This method is added by Libauth to make testing of `signatureNormalize`
-   * easier.
-   *
-   * @param contextPtr - pointer to a context object
-   * @param outputSigPtr - pointer to a 64 byte space where the malleated
-   * signature will be written (internal format)
-   * @param inputSigPtr - pointer to a signature to malleate
-   */
-  readonly signatureMalleate: (
-    contextPtr: number,
-    outputSigPtr: number,
-    inputSigPtr: number
-  ) => 1;
 
   /**
    * Convert a signature to a normalized lower-S form.

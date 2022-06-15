@@ -1,15 +1,15 @@
 /* eslint-disable no-underscore-dangle, max-params, @typescript-eslint/naming-convention */
 // cSpell:ignore memcpy, anyfunc
-import { base64ToBin } from '../../format/format';
+import {base64ToBin} from '../../format/format';
 
 import {
   CompressionFlag,
   ContextFlag,
   Secp256k1Wasm,
 } from './secp256k1-wasm-types';
-import { secp256k1Base64Bytes } from './secp256k1.base64';
+import {secp256k1Base64Bytes} from './secp256k1.base64';
 
-export { ContextFlag, CompressionFlag, Secp256k1Wasm };
+export {ContextFlag, CompressionFlag, Secp256k1Wasm};
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 const wrapSecp256k1Wasm = (
@@ -21,7 +21,8 @@ const wrapSecp256k1Wasm = (
     (instance.exports as any)._secp256k1_context_create(context),
   contextRandomize: (contextPtr, seedPtr) =>
     (instance.exports as any)._secp256k1_context_randomize(contextPtr, seedPtr),
-
+  ecdh: (contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr) =>
+    (instance.exports as any)._secp256k1_ecdh(contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr),
   free: (pointer) => (instance.exports as any)._free(pointer),
   heapU32,
   heapU8,
@@ -131,14 +132,14 @@ const wrapSecp256k1Wasm = (
       rSigPtr
     ),
   schnorrSign: (contextPtr, outputSigPtr, msg32Ptr, secretKeyPtr) =>
-    (instance.exports as any)._secp256k1_schnorr_sign(
+    (instance.exports as any)._secp256k1_schnorrsig_sign(
       contextPtr,
       outputSigPtr,
       msg32Ptr,
       secretKeyPtr
     ),
   schnorrVerify: (contextPtr, sigPtr, msg32Ptr, publicKeyPtr) =>
-    (instance.exports as any)._secp256k1_schnorr_verify(
+    (instance.exports as any)._secp256k1_schnorrsig_verify(
       contextPtr,
       sigPtr,
       msg32Ptr,
@@ -162,12 +163,6 @@ const wrapSecp256k1Wasm = (
       outputRSigPtr,
       msg32Ptr,
       secretKeyPtr
-    ),
-  signatureMalleate: (contextPtr, outputSigPtr, inputSigPtr) =>
-    (instance.exports as any)._secp256k1_ecdsa_signature_malleate(
-      contextPtr,
-      outputSigPtr,
-      inputSigPtr
     ),
   signatureNormalize: (contextPtr, outputSigPtr, inputSigPtr) =>
     (instance.exports as any)._secp256k1_ecdsa_signature_normalize(
@@ -289,8 +284,8 @@ export const instantiateSecp256k1WasmBytes = async (
   const heapU32 = new Uint32Array(wasmMemory.buffer);
   heap32[DYNAMICTOP_PTR >> 2] = DYNAMIC_BASE;
 
-  const TABLE_SIZE = 6;
-  const MAX_TABLE_SIZE = 6;
+  const TABLE_SIZE = 16;
+  const MAX_TABLE_SIZE = 16;
 
   // eslint-disable-next-line functional/no-let, @typescript-eslint/init-declarations
   let getErrNoLocation: (() => number) | undefined;
@@ -310,6 +305,15 @@ export const instantiateSecp256k1WasmBytes = async (
         heap32[getErrNoLocation() >> 2] = value;
       }
       return value;
+    },
+    ___syscall140: /* istanbul ignore next */ () => {
+      throw new Error('___syscall140');
+    },
+    ___syscall146: /* istanbul ignore next */ () => {
+      throw new Error('___syscall146');
+    },
+    ___syscall6: /* istanbul ignore next */ () => {
+      throw new Error('___syscall6');
     },
     _abort: /* istanbul ignore next */ (err = 'Secp256k1 Error') => {
       throw new Error(err);
@@ -347,7 +351,7 @@ export const instantiateSecp256k1WasmBytes = async (
       }),
       tableBase: 0,
     },
-    global: { Infinity, NaN },
+    global: {Infinity, NaN},
   };
 
   return WebAssembly.instantiate(webassemblyBytes, info).then((result) => {

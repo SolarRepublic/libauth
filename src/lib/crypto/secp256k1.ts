@@ -7,13 +7,14 @@ import {
   Secp256k1Wasm,
 } from '../bin/bin';
 
-import { RecoverableSignature, RecoveryId, Secp256k1 } from './secp256k1-types';
+import {RecoverableSignature, RecoveryId, Secp256k1} from './secp256k1-types';
 
-export { RecoverableSignature, RecoveryId, Secp256k1 };
+export {RecoverableSignature, RecoveryId, Secp256k1};
 
 const enum ByteLength {
   compactSig = 64,
   compressedPublicKey = 33,
+  ecdhSecretKey = 33,
   internalPublicKey = 64,
   internalSig = 64,
   maxPublicKey = 65,
@@ -59,6 +60,7 @@ const wrapSecp256k1Wasm = (
   const internalPublicKeyPtr = secp256k1Wasm.malloc(
     ByteLength.internalPublicKey
   );
+  const ecdhSecretKeyPtr = secp256k1Wasm.malloc(ByteLength.ecdhSecretKey);
   const internalSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
   const schnorrSigPtr = secp256k1Wasm.malloc(ByteLength.schnorrSig);
   const privateKeyPtr = secp256k1Wasm.malloc(ByteLength.privateKey);
@@ -117,13 +119,13 @@ const wrapSecp256k1Wasm = (
   const getSerializedPublicKey = (compressed: boolean) =>
     compressed
       ? serializePublicKey(
-          ByteLength.compressedPublicKey,
-          CompressionFlag.COMPRESSED
-        )
+        ByteLength.compressedPublicKey,
+        CompressionFlag.COMPRESSED
+      )
       : serializePublicKey(
-          ByteLength.uncompressedPublicKey,
-          CompressionFlag.UNCOMPRESSED
-        );
+        ByteLength.uncompressedPublicKey,
+        CompressionFlag.UNCOMPRESSED
+      );
 
   const convertPublicKey = (
     compressed: boolean
@@ -139,16 +141,16 @@ const wrapSecp256k1Wasm = (
     secp256k1Wasm.heapU8.set(paddedSignature, sigScratch);
     return isDer
       ? secp256k1Wasm.signatureParseDER(
-          contextPtr,
-          internalSigPtr,
-          sigScratch,
-          signature.length
-        ) === 1
+      contextPtr,
+      internalSigPtr,
+      sigScratch,
+      signature.length
+    ) === 1
       : secp256k1Wasm.signatureParseCompact(
-          contextPtr,
-          internalSigPtr,
-          sigScratch
-        ) === 1;
+      contextPtr,
+      internalSigPtr,
+      sigScratch
+    ) === 1;
   };
 
   const parseOrThrow = (signature: Uint8Array, isDer: boolean) => {
@@ -247,12 +249,6 @@ const wrapSecp256k1Wasm = (
     parseOrThrow(signature, isDer);
     if (normalize) {
       normalizeSignature();
-    } else {
-      secp256k1Wasm.signatureMalleate(
-        contextPtr,
-        internalSigPtr,
-        internalSigPtr
-      );
     }
     return isDer ? getDERSig() : getCompactSig();
   };
@@ -332,6 +328,35 @@ const wrapSecp256k1Wasm = (
 
       return secp256k1Wasm
         .readHeapU8(schnorrSigPtr, ByteLength.schnorrSig)
+        .slice();
+    });
+  };
+
+  const ecdh = () => (
+    privateKey: Uint8Array,
+    publicKey: Uint8Array
+  ) => {
+    if (!parsePublicKey(publicKey)) {
+      throw new Error('ECDH Key Exchange failed. Failed to parse public key.');
+    }
+
+    return withPrivateKey<Uint8Array>(privateKey, () => {
+      const failed =
+        secp256k1Wasm.ecdh(
+          contextPtr,
+          ecdhSecretKeyPtr,
+          internalPublicKeyPtr,
+          privateKeyPtr
+        ) !== 1;
+
+      if (failed) {
+        throw new Error(
+          'ECDH Key Exchange failed. The private key is not valid.'
+        );
+      }
+
+      return secp256k1Wasm
+        .readHeapU8(ecdhSecretKeyPtr, ByteLength.ecdhSecretKey)
         .slice();
     });
   };
@@ -567,6 +592,7 @@ const wrapSecp256k1Wasm = (
     compressPublicKey: convertPublicKey(true),
     derivePublicKeyCompressed: derivePublicKey(true),
     derivePublicKeyUncompressed: derivePublicKey(false),
+    ecdh: ecdh(),
     malleateSignatureCompact: modifySignature(false, false),
     malleateSignatureDER: modifySignature(true, false),
     mulTweakPrivateKey,

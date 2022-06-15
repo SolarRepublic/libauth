@@ -1,4 +1,4 @@
 [submodule "wasm/secp256k1"]
 	path = wasm/secp256k1
-	url = https://github.com/bitauth/libauth-secp256k1.git
-	branch = libauth
+	url = git@github.com:bitcoin-core/secp256k1.git
+	branch = master
