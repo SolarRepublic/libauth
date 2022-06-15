@@ -37,6 +37,9 @@ const pubkeyUncompressed = new Uint8Array([0x04, 0x76, 0xea, 0x9e, 0x36, 0xa7, 0
 const pubkeyCompressed = new Uint8Array([0x03, 0x76, 0xea, 0x9e, 0x36, 0xa7, 0x5d, 0x2e, 0xcf, 0x9c, 0x93, 0xa0, 0xbe, 0x76, 0x88, 0x5e, 0x36, 0xf8, 0x22, 0x52, 0x9d, 0xb2, 0x2a, 0xcf, 0xdc, 0x76, 0x1c, 0x9b, 0x5b, 0x45, 0x44, 0xf5, 0xc5]);
 
 // prettier-ignore
+const invalidPubkeyCompressed = new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+// prettier-ignore
 const privkeyTweakedAdd = new Uint8Array([0xf9, 0x5e, 0x4c, 0xd9, 0xa1, 0x3d, 0xa2, 0x07, 0xca, 0xdf, 0xb5, 0x7c, 0x7a, 0x19, 0x04, 0xdb, 0xc8, 0xf1, 0x34, 0x39, 0x0a, 0xe4, 0xf2, 0xde, 0x05, 0xd2, 0x83, 0xe1, 0xac, 0xa7, 0xe6, 0x54]);
 
 // prettier-ignore
@@ -657,6 +660,10 @@ test('[crypto] secp256k1.signMessageHashCompact', async (t) => {
     secp256k1.signMessageHashCompact(privkey, messageHash),
     sigCompact
   );
+  t.notDeepEqual(
+    secp256k1.signMessageHashCompact(privkey, Uint8Array.of()),
+    sigCompact
+  );
   t.throws(() =>
     secp256k1.signMessageHashCompact(secp256k1OrderN, messageHash)
   );
@@ -698,6 +705,10 @@ test('[fast-check] [crypto] secp256k1.signMessageHashCompact', async (t) => {
 test('[crypto] secp256k1.signMessageHashDER', async (t) => {
   const secp256k1 = await secp256k1Promise;
   t.deepEqual(secp256k1.signMessageHashDER(privkey, messageHash), sigDER);
+  t.notDeepEqual(
+    secp256k1.signMessageHashDER(privkey, Uint8Array.of()),
+    sigDER
+  );
   t.throws(() => secp256k1.signMessageHashDER(secp256k1OrderN, messageHash));
 });
 
@@ -882,11 +893,41 @@ test('[fast-check] [crypto] secp256k1.validatePrivateKey', async (t) => {
   });
 });
 
+test('[crypto] secp256k1.validatePublicKey', async (t) => {
+  const secp256k1 = await secp256k1Promise;
+  t.true(secp256k1.validatePublicKey(pubkeyUncompressed));
+  t.true(secp256k1.validatePublicKey(pubkeyCompressed));
+  t.false(secp256k1.validatePublicKey(invalidPubkeyCompressed));
+});
+
+test.todo('[fast-check] [crypto] secp256k1.validatePublicKey');
+
 test('[crypto] secp256k1.verifySignatureCompact', async (t) => {
   const secp256k1 = await secp256k1Promise;
   t.true(
     secp256k1.verifySignatureCompact(
       sigCompactHighS,
+      pubkeyCompressed,
+      messageHash
+    )
+  );
+  t.false(
+    secp256k1.verifySignatureCompact(
+      sigCompactHighS,
+      pubkeyCompressed,
+      Uint8Array.of()
+    )
+  );
+  t.true(
+    secp256k1.verifySignatureCompact(
+      sigCompactHighS,
+      pubkeyCompressed,
+      messageHash
+    )
+  );
+  t.false(
+    secp256k1.verifySignatureCompact(
+      Uint8Array.of(),
       pubkeyCompressed,
       messageHash
     )
@@ -947,6 +988,27 @@ test('[crypto] secp256k1.verifySignatureCompactLowS', async (t) => {
       messageHash
     )
   );
+  t.false(
+    secp256k1.verifySignatureCompactLowS(
+      Uint8Array.of(),
+      pubkeyCompressed,
+      messageHash
+    )
+  );
+  t.true(
+    secp256k1.verifySignatureCompactLowS(
+      sigCompact,
+      pubkeyCompressed,
+      messageHash
+    )
+  );
+  t.false(
+    secp256k1.verifySignatureCompactLowS(
+      sigCompact,
+      pubkeyCompressed,
+      Uint8Array.of()
+    )
+  );
 });
 
 test('[fast-check] [crypto] secp256k1.verifySignatureCompactLowS', async (t) => {
@@ -1000,12 +1062,34 @@ test('[crypto] secp256k1.verifySignatureDER', async (t) => {
   t.true(
     secp256k1.verifySignatureDER(sigDERHighS, pubkeyCompressed, messageHash)
   );
+  t.false(
+    secp256k1.verifySignatureDER(Uint8Array.of(), pubkeyCompressed, messageHash)
+  );
+  t.true(
+    secp256k1.verifySignatureDER(sigDERHighS, pubkeyCompressed, messageHash)
+  );
+  t.false(
+    secp256k1.verifySignatureDER(sigDERHighS, pubkeyCompressed, Uint8Array.of())
+  );
 });
 
 test('[crypto] secp256k1.verifySignatureDERLowS', async (t) => {
   const secp256k1 = await secp256k1Promise;
   t.true(
     secp256k1.verifySignatureDERLowS(sigDER, pubkeyCompressed, messageHash)
+  );
+  t.false(
+    secp256k1.verifySignatureDERLowS(
+      Uint8Array.of(),
+      pubkeyCompressed,
+      messageHash
+    )
+  );
+  t.true(
+    secp256k1.verifySignatureDERLowS(sigDER, pubkeyCompressed, messageHash)
+  );
+  t.false(
+    secp256k1.verifySignatureDERLowS(sigDER, pubkeyCompressed, Uint8Array.of())
   );
   const pubkeyWithBrokenEncoding = pubkeyCompressed.slice().fill(0, 0, 1);
   t.false(
@@ -1117,11 +1201,18 @@ test('[fast-check] [crypto] secp256k1.signMessageHashSchnorr', async (t) => {
   });
 });
 
-test('[crypto] secp256k1.verifySchnorr', async (t) => {
+test('[crypto] secp256k1.verifySignatureSchnorr', async (t) => {
   const secp256k1 = await secp256k1Promise;
   t.true(
     secp256k1.verifySignatureSchnorr(
       sigSchnorr,
+      pubkeyCompressed,
+      schnorrMsgHash
+    )
+  );
+  t.false(
+    secp256k1.verifySignatureSchnorr(
+      Uint8Array.of(),
       pubkeyCompressed,
       schnorrMsgHash
     )
