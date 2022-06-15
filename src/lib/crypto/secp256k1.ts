@@ -14,7 +14,7 @@ export {RecoverableSignature, RecoveryId, Secp256k1};
 const enum ByteLength {
   compactSig = 64,
   compressedPublicKey = 33,
-  ecdhSig = 64,
+  ecdhSecretKey = 33,
   internalPublicKey = 64,
   internalSig = 64,
   maxPublicKey = 65,
@@ -60,7 +60,7 @@ const wrapSecp256k1Wasm = (
   const internalPublicKeyPtr = secp256k1Wasm.malloc(
     ByteLength.internalPublicKey
   );
-  const ecdhSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
+  const ecdhSecretKeyPtr = secp256k1Wasm.malloc(ByteLength.ecdhSecretKey);
   const internalSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
   const schnorrSigPtr = secp256k1Wasm.malloc(ByteLength.schnorrSig);
   const privateKeyPtr = secp256k1Wasm.malloc(ByteLength.privateKey);
@@ -323,13 +323,18 @@ const wrapSecp256k1Wasm = (
   };
 
   const ecdh = () => (
-    privateKey: Uint8Array
+    privateKey: Uint8Array,
+    publicKey: Uint8Array
   ) => {
+    if (!parsePublicKey(publicKey)) {
+      throw new Error('ECDH Key Exchange failed. Failed to parse public key.');
+    }
+
     return withPrivateKey<Uint8Array>(privateKey, () => {
       const failed =
         secp256k1Wasm.ecdh(
           contextPtr,
-          ecdhSigPtr,
+          ecdhSecretKeyPtr,
           internalPublicKeyPtr,
           privateKeyPtr
         ) !== 1;
@@ -341,7 +346,7 @@ const wrapSecp256k1Wasm = (
       }
 
       return secp256k1Wasm
-        .readHeapU8(ecdhSigPtr, ByteLength.ecdhSig)
+        .readHeapU8(ecdhSecretKeyPtr, ByteLength.ecdhSecretKey)
         .slice();
     });
   };

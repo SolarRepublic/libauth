@@ -103,7 +103,7 @@ export interface Secp256k1Wasm {
    */
   readonly contextRandomize: (contextPtr: number, seedPtr: number) => 1 | 0;
 
-  readonly ecdh: (contextPtr: number, outputSigPtr: number, publicKeyPtr: number, scalarPtr: number) => 1 | 0;
+  readonly ecdh: (contextPtr: number, outputSecretKeyPtr: number, publicKeyPtr: number, scalarPtr: number) => 1 | 0;
   /**
    * Frees a pointer allocated by the `malloc` method.
    * @param pointer - the pointer to be freed
