@@ -1,9 +1,9 @@
 # https://circleci.com/docs/2.0/language-javascript/
 version: 2
 jobs:
-  'node-18':
+  'node-18.3':
     docker:
-      - image: circleci/node:18
+      - image: circleci/node:18.3
     working_directory: ~/libauth
     steps:
       - checkout

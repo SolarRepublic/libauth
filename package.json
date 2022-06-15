@@ -1,17 +1,16 @@
 {
-  "name": "@bitauth/libauth",
+  "name": "@solar-republic/secp256k1",
   "version": "1.18.1",
-  "description": "ultra-lightweight library for Bitcoin, Bitcoin Cash, and Bitauth",
+  "description": "TypeScript wrapper and Web Assembly module of the libsecp256k1 C library",
   "main": "build/main/index.js",
   "typings": "build/module/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/bitauth/libauth",
-  "homepage": "https://libauth.org/",
+  "repository": "https://github.com/SolarRepublic/secp256k1-ts",
+  "homepage": "https://starshell.net/",
   "license": "MIT",
   "keywords": [
     "authentication",
     "bitauth",
-    "Bitcoin Cash",
     "Bitcoin",
     "cryptocurrency",
     "wasm",
@@ -26,7 +25,6 @@
     "blockchain",
     "typescript",
     "webassembly",
-    "BCH",
     "BTC"
   ],
   "scripts": {
