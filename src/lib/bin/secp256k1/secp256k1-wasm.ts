@@ -21,8 +21,13 @@ const wrapSecp256k1Wasm = (
     (instance.exports as any)._secp256k1_context_create(context),
   contextRandomize: (contextPtr, seedPtr) =>
     (instance.exports as any)._secp256k1_context_randomize(contextPtr, seedPtr),
-  ecdh: (contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr) =>
-    (instance.exports as any)._secp256k1_ecdh(contextPtr, outputSigPtr, publicKeyPtr, secretKeyPtr),
+  ecdh: (contextPtr, outputSharedSecretPtr, publicKeyPtr, secretKeyPtr) =>
+    (instance.exports as any)._secp256k1_ecdh(
+      contextPtr,
+      outputSharedSecretPtr,
+      publicKeyPtr,
+      secretKeyPtr
+    ),
   free: (pointer) => (instance.exports as any)._free(pointer),
   heapU32,
   heapU8,

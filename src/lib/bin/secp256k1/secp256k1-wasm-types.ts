@@ -103,7 +103,19 @@ export interface Secp256k1Wasm {
    */
   readonly contextRandomize: (contextPtr: number, seedPtr: number) => 1 | 0;
 
-  readonly ecdh: (contextPtr: number, outputSecretKeyPtr: number, publicKeyPtr: number, scalarPtr: number) => 1 | 0;
+  /**
+   * Perform ECDH to derive a shared secret for a given private key and public key.
+   *
+   *  Returns 1 if the operation succeeded, otherwise 0.
+   *
+   * @param contextPtr - pointer to a context object, initialized for signing
+   * @param outputSharedSecretPtr - pointer to the output shared secret
+   * @param publicKeyPtr - pointer to the created public key (note, this is an
+   * internal representation, and must be serialized for outside use)
+   * @param secretKeyPtr - pointer to a 32-byte private key
+   */
+  readonly ecdh: (contextPtr: number, outputSharedSecretPtr: number, publicKeyPtr: number, secretKeyPtr: number) => 1 | 0;
+
   /**
    * Frees a pointer allocated by the `malloc` method.
    * @param pointer - the pointer to be freed

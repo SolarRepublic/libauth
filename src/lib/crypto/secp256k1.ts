@@ -14,7 +14,7 @@ export {RecoverableSignature, RecoveryId, Secp256k1};
 const enum ByteLength {
   compactSig = 64,
   compressedPublicKey = 33,
-  ecdhSecretKey = 33,
+  ecdhSharedSecret = 32,
   internalPublicKey = 64,
   internalSig = 64,
   maxPublicKey = 65,
@@ -60,7 +60,7 @@ const wrapSecp256k1Wasm = (
   const internalPublicKeyPtr = secp256k1Wasm.malloc(
     ByteLength.internalPublicKey
   );
-  const ecdhSecretKeyPtr = secp256k1Wasm.malloc(ByteLength.ecdhSecretKey);
+  const ecdhSharedSecretPtr = secp256k1Wasm.malloc(ByteLength.ecdhSharedSecret);
   const internalSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
   const schnorrSigPtr = secp256k1Wasm.malloc(ByteLength.schnorrSig);
   const privateKeyPtr = secp256k1Wasm.malloc(ByteLength.privateKey);
@@ -344,7 +344,7 @@ const wrapSecp256k1Wasm = (
       const failed =
         secp256k1Wasm.ecdh(
           contextPtr,
-          ecdhSecretKeyPtr,
+          ecdhSharedSecretPtr,
           internalPublicKeyPtr,
           privateKeyPtr
         ) !== 1;
@@ -356,7 +356,7 @@ const wrapSecp256k1Wasm = (
       }
 
       return secp256k1Wasm
-        .readHeapU8(ecdhSecretKeyPtr, ByteLength.ecdhSecretKey)
+        .readHeapU8(ecdhSharedSecretPtr, ByteLength.ecdhSharedSecret)
         .slice();
     });
   };

@@ -109,6 +109,12 @@ export interface Secp256k1 {
    */
   readonly derivePublicKeyUncompressed: (privateKey: Uint8Array) => Uint8Array;
 
+  /**
+   * Derive a shared secret using ECDH.
+   *
+   * @param privateKey - a valid secp256k1, 32-byte private key
+   * @param publicKey - a public key
+   */
   readonly ecdh: (privateKey: Uint8Array, publicKey: Uint8Array) => Uint8Array
 
   /**
