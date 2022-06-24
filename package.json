@@ -1,11 +1,11 @@
 {
-  "name": "@solar-republic/secp256k1",
-  "version": "1.18.1",
+  "name": "@solar-republic/wasm-secp256k1",
+  "version": "0.0.1-beta",
   "description": "TypeScript wrapper and Web Assembly module of the libsecp256k1 C library",
   "main": "build/main/index.js",
   "typings": "build/module/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/SolarRepublic/secp256k1-ts",
+  "repository": "https://github.com/SolarRepublic/wasm-secp256k1",
   "homepage": "https://starshell.net/",
   "license": "MIT",
   "keywords": [
@@ -29,8 +29,8 @@
   ],
   "scripts": {
     "info": "npm-scripts-info",
-    "compile:secp256k1": "docker build -f wasm/docker/secp256k1.Dockerfile . -t libauth-secp256k1 && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/libauth/out,consistency=delegated libauth-secp256k1",
-    "compile:hashes": "docker build -f wasm/docker/hashes.Dockerfile . -t libauth-hashes && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/libauth/out,consistency=delegated libauth-hashes",
+    "compile:secp256k1": "docker build -f wasm/docker/secp256k1.Dockerfile . -t wasm-secp256k1 && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/wasm/out,consistency=delegated wasm-secp256k1",
+    "compile:hashes": "docker build -f wasm/docker/hashes.Dockerfile . -t wasm-hashes && docker run -it --mount type=bind,src=$(pwd)/src/lib,dst=/wasm/out,consistency=delegated wasm-hashes",
     "build": "run-s clean && run-p build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p config/tsconfig.module.json",
@@ -40,8 +40,8 @@
     "copy:wasm:sha256": "cpy src/lib/bin/sha256/sha256.wasm build/main/lib/bin/sha256 && cpy src/lib/bin/sha256/sha256.wasm build/module/lib/bin/sha256",
     "copy:wasm:sha512": "cpy src/lib/bin/sha512/sha512.wasm build/main/lib/bin/sha512 && cpy src/lib/bin/sha512/sha512.wasm build/module/lib/bin/sha512",
     "copy:wasm:ripemd160": "cpy src/lib/bin/ripemd160/ripemd160.wasm build/main/lib/bin/ripemd160 && cpy src/lib/bin/ripemd160/ripemd160.wasm build/module/lib/bin/ripemd160",
-    "compile:debug:secp256k1": "docker run -it libauth-secp256k1 bash",
-    "compile:debug:hashes": "docker run -it libauth-hashes bash",
+    "compile:debug:secp256k1": "docker run -it wasm-secp256k1 bash",
+    "compile:debug:hashes": "docker run -it wasm-hashes bash",
     "fix": "run-s fix:*",
     "fix:prettier": "prettier \"src/**/*.ts\" --write",
     "fix:lint": "eslint . --ext .ts --fix",
@@ -68,8 +68,7 @@
     "cov:send": "run-s cov:lcov && codecov",
     "cov:check": "nyc report && nyc check-coverage --lines 85 --functions 80 --branches 65",
     "doc": "run-s doc:html && open-cli build/docs/index.html",
-    "doc:logo": "cpy assets/libauth.svg build/docs",
-    "doc:cname": "node -e \"console.log('libauth.org')\" > build/docs/CNAME",
+    "doc:cname": "node -e \"console.log('wasm.org')\" > build/docs/CNAME",
     "doc:html": "typedoc src/index.ts --target ES6 --mode file --excludeNotExported --out build/docs",
     "doc:json": "typedoc src/index.ts --target ES6 --mode file --excludeNotExported --json build/docs/typedoc.json",
     "doc:next": "run-s build doc:extract doc:generate",
@@ -82,7 +81,7 @@
     "version": "standard-version",
     "reset": "git clean -dfx && git reset --hard && yarn",
     "clean": "trash build test",
-    "prepare-release": "run-s reset test cov:check doc:html doc:logo doc:cname version doc:publish"
+    "prepare-release": "run-s reset test cov:check doc:html doc:cname version doc:publish"
   },
   "scripts-info": {
     "info": "Display information about the package scripts",
