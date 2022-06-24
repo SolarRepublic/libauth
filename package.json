@@ -201,5 +201,9 @@
       "**/*.spec.debug.js"
     ]
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "sideEffects": false
 }
