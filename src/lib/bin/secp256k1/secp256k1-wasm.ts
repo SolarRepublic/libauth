@@ -155,12 +155,13 @@ const wrapSecp256k1Wasm = (
       contextPtr,
       secretKeyPtr
     ),
-  sign: (contextPtr, outputSigPtr, msg32Ptr, secretKeyPtr) =>
+  sign: (contextPtr, outputSigPtr, msg32Ptr, secretKeyPtr, extraEntropyPtr) =>
     (instance.exports as any)._secp256k1_ecdsa_sign(
       contextPtr,
       outputSigPtr,
       msg32Ptr,
-      secretKeyPtr
+      secretKeyPtr,
+      extraEntropyPtr
     ),
   signRecoverable: (contextPtr, outputRSigPtr, msg32Ptr, secretKeyPtr) =>
     (instance.exports as any)._secp256k1_ecdsa_sign_recoverable(

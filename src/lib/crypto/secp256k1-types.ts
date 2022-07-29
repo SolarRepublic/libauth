@@ -270,7 +270,8 @@ export interface Secp256k1 {
    */
   readonly signMessageHashCompact: (
     privateKey: Uint8Array,
-    messageHash: Uint8Array
+    messageHash: Uint8Array,
+    extraEntropy?: Uint8Array
   ) => Uint8Array;
 
   /**
@@ -284,7 +285,8 @@ export interface Secp256k1 {
    */
   readonly signMessageHashDER: (
     privateKey: Uint8Array,
-    messageHash: Uint8Array
+    messageHash: Uint8Array,
+    extraEntropy?: Uint8Array
   ) => Uint8Array;
 
   /**

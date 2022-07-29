@@ -20,6 +20,7 @@ const enum ByteLength {
   maxPublicKey = 65,
   maxECDSASig = 72,
   messageHash = 32,
+  extraEntropy = 32,
   privateKey = 32,
   randomSeed = 32,
   recoverableSig = 65,
@@ -57,6 +58,7 @@ const wrapSecp256k1Wasm = (
   const sigScratch = secp256k1Wasm.malloc(ByteLength.maxECDSASig);
   const publicKeyScratch = secp256k1Wasm.malloc(ByteLength.maxPublicKey);
   const messageHashScratch = secp256k1Wasm.malloc(ByteLength.messageHash);
+  const extraEntropyScratch = secp256k1Wasm.malloc(ByteLength.extraEntropy);
   const internalPublicKeyPtr = secp256k1Wasm.malloc(
     ByteLength.internalPublicKey
   );
@@ -64,6 +66,7 @@ const wrapSecp256k1Wasm = (
   const internalSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
   const schnorrSigPtr = secp256k1Wasm.malloc(ByteLength.schnorrSig);
   const privateKeyPtr = secp256k1Wasm.malloc(ByteLength.privateKey);
+  const extraEntropyPtr = secp256k1Wasm.malloc(ByteLength.extraEntropy);
 
   const internalRSigPtr = secp256k1Wasm.malloc(ByteLength.recoverableSig);
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
@@ -234,6 +237,11 @@ const wrapSecp256k1Wasm = (
     secp256k1Wasm.heapU8.set(paddedMessageHash, messageHashScratch);
   };
 
+  const fillExtraEntropyScratch = (extraEntropy: Uint8Array) => {
+    const paddedExtraEntropy = cloneAndPad(extraEntropy, ByteLength.extraEntropy);
+    secp256k1Wasm.heapU8.set(paddedExtraEntropy, extraEntropyScratch);
+  };
+
   const normalizeSignature = () => {
     secp256k1Wasm.signatureNormalize(
       contextPtr,
@@ -267,16 +275,19 @@ const wrapSecp256k1Wasm = (
 
   const signMessageHash = (isDer: boolean) => (
     privateKey: Uint8Array,
-    messageHash: Uint8Array
+    messageHash: Uint8Array,
+    extraEntropy?: Uint8Array
   ) => {
     fillMessageHashScratch(messageHash);
+    if(extraEntropy) fillExtraEntropyScratch(extraEntropy);
     return withPrivateKey<Uint8Array>(privateKey, () => {
       const failed =
         secp256k1Wasm.sign(
           contextPtr,
           internalSigPtr,
           messageHashScratch,
-          privateKeyPtr
+          privateKeyPtr,
+          extraEntropy? extraEntropyPtr: 0,
         ) !== 1;
 
       if (failed) {

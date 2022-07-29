@@ -428,12 +428,14 @@ export interface Secp256k1Wasm {
    * written (internal format)
    * @param msg32Ptr - pointer to the 32-byte message hash being signed
    * @param secretKeyPtr - pointer to a 32-byte secret key
+   * @param extraEntropyPtr - pointer to extra entropy bytes
    */
   readonly sign: (
     contextPtr: number,
     outputSigPtr: number,
     msg32Ptr: number,
-    secretKeyPtr: number
+    secretKeyPtr: number,
+    extraEntropyPtr?: number,
   ) => 1 | 0;
 
   /**
