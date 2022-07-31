@@ -25,6 +25,9 @@ const keyTweakVal = new Uint8Array([0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x
 const messageHash = new Uint8Array([0xda, 0xde, 0x12, 0xe0, 0x6a, 0x5b, 0xbf, 0x5e, 0x11, 0x16, 0xf9, 0xbc, 0x44, 0x99, 0x8b, 0x87, 0x68, 0x13, 0xe9, 0x48, 0xe1, 0x07, 0x07, 0xdc, 0xb4, 0x80, 0x08, 0xa1, 0xda, 0xf3, 0x51, 0x2d]);
 
 // prettier-ignore
+const extraEntropy = Uint8Array.from(new Array(32).fill(0x01));
+
+// prettier-ignore
 const privkey = new Uint8Array([0xf8, 0x5d, 0x4b, 0xd8, 0xa0, 0x3c, 0xa1, 0x06, 0xc9, 0xde, 0xb4, 0x7b, 0x79, 0x18, 0x03, 0xda, 0xc7, 0xf0, 0x33, 0x38, 0x09, 0xe3, 0xf1, 0xdd, 0x04, 0xd1, 0x82, 0xe0, 0xab, 0xa6, 0xe5, 0x53]);
 
 // prettier-ignore
@@ -689,6 +692,48 @@ test('[fast-check] [crypto] secp256k1.signMessageHashCompact', async (t) => {
       const { key } = setupElliptic(privateKey);
       t.deepEqual(
         secp256k1.signMessageHashCompact(privateKey, hash),
+        secp256k1.signatureDERToCompact(
+          secp256k1.normalizeSignatureDER(ellipticSignMessageDER(key, hash))
+        )
+      );
+    }
+  );
+
+  t.notThrows(() => {
+    fc.assert(equivalentToSecp256k1Node);
+    fc.assert(equivalentToElliptic);
+  });
+});
+
+test('[crypto] secp256k1.signMessageHashCompact with extra entropy', async (t) => {
+  const secp256k1 = await secp256k1Promise;
+  t.notDeepEqual(
+    secp256k1.signMessageHashCompact(privkey, messageHash, extraEntropy),
+    sigCompact
+  );
+});
+
+test('[fast-check] [crypto] secp256k1.signMessageHashCompact with extra entropy', async (t) => {
+  const secp256k1 = await secp256k1Promise;
+  const equivalentToSecp256k1Node = fc.property(
+    fcValidPrivateKey(secp256k1),
+    fcUint8Array32(),
+    (privateKey, hash) => {
+      debugger;
+      t.deepEqual(
+        secp256k1.signMessageHashCompact(privateKey, hash, extraEntropy),
+        new Uint8Array(secp256k1Node.ecdsaSign(hash, privateKey, {data:extraEntropy}).signature)
+      );
+    }
+  );
+
+  const equivalentToElliptic = fc.property(
+    fcValidPrivateKey(secp256k1),
+    fcUint8Array32(),
+    (privateKey, hash) => {
+      const { key } = setupElliptic(privateKey);
+      t.deepEqual(
+        secp256k1.signMessageHashCompact(privateKey, hash, extraEntropy),
         secp256k1.signatureDERToCompact(
           secp256k1.normalizeSignatureDER(ellipticSignMessageDER(key, hash))
         )

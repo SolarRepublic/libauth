@@ -66,7 +66,6 @@ const wrapSecp256k1Wasm = (
   const internalSigPtr = secp256k1Wasm.malloc(ByteLength.internalSig);
   const schnorrSigPtr = secp256k1Wasm.malloc(ByteLength.schnorrSig);
   const privateKeyPtr = secp256k1Wasm.malloc(ByteLength.privateKey);
-  const extraEntropyPtr = secp256k1Wasm.malloc(ByteLength.extraEntropy);
 
   const internalRSigPtr = secp256k1Wasm.malloc(ByteLength.recoverableSig);
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
@@ -287,7 +286,7 @@ const wrapSecp256k1Wasm = (
           internalSigPtr,
           messageHashScratch,
           privateKeyPtr,
-          extraEntropy? extraEntropyPtr: 0,
+          extraEntropy? extraEntropyScratch: 0,
         ) !== 1;
 
       if (failed) {

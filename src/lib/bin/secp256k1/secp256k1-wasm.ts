@@ -161,6 +161,7 @@ const wrapSecp256k1Wasm = (
       outputSigPtr,
       msg32Ptr,
       secretKeyPtr,
+      0,
       extraEntropyPtr
     ),
   signRecoverable: (contextPtr, outputRSigPtr, msg32Ptr, secretKeyPtr) =>
