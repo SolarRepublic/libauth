@@ -1,4 +1,4 @@
-import { AuthenticationTemplate } from '../template-types';
+import type { AuthenticationTemplate } from '../template-types';
 
 /**
  * A standard single-factor authentication template which uses

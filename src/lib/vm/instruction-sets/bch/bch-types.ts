@@ -4,12 +4,12 @@ import {
   encodeTransaction,
   getTransactionHashBE,
 } from '../../../transaction/transaction-serialization';
-import {
+import type {
   Input,
   Output,
   Transaction,
 } from '../../../transaction/transaction-types';
-import {
+import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateCommon,
 } from '../../vm-types';
@@ -22,14 +22,14 @@ export enum ConsensusBCH {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AuthenticationProgramBCH extends AuthenticationProgramCommon {}
+export interface AuthenticationProgramBCH extends AuthenticationProgramCommon { }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface AuthenticationProgramStateBCH
   extends AuthenticationProgramStateCommon<
     OpcodesBCH,
     AuthenticationErrorBCH
-  > {}
+  > { }
 
 export const createTestAuthenticationProgramBCH = ({
   lockingBytecode,

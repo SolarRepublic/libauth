@@ -1,4 +1,4 @@
-import { AuthenticationProgramStateError } from '../../vm-types';
+import type { AuthenticationProgramStateError } from '../../vm-types';
 
 import { applyError, AuthenticationErrorCommon } from './errors';
 import { OpcodesCommon } from './opcodes';
@@ -32,7 +32,7 @@ export const disabledOperation = <
   State extends AuthenticationProgramStateError<Errors>,
   Errors
 >() => (state: State) =>
-  applyError<State, Errors>(AuthenticationErrorCommon.unknownOpcode, state);
+    applyError<State, Errors>(AuthenticationErrorCommon.unknownOpcode, state);
 
 export const disabledOperations = <
   State extends AuthenticationProgramStateError<Errors>,

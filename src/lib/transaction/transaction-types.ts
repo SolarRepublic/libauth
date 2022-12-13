@@ -1,5 +1,5 @@
-import { CompilationData } from '../template/compiler-types';
-import {
+import type { CompilationData } from '../template/compiler-types';
+import type {
   CompilationError,
   ResolvedScript,
 } from '../template/language/language-types';
@@ -358,8 +358,8 @@ export type InputTemplate<
   CompilationDataType = CompilationData<never>
 > = Input<
   | (RequireEstimate extends true
-      ? CompilationDirectiveUnlockingEstimate<CompilerType, CompilationDataType>
-      : CompilationDirectiveUnlocking<CompilerType, CompilationDataType>)
+    ? CompilationDirectiveUnlockingEstimate<CompilerType, CompilationDataType>
+    : CompilationDirectiveUnlocking<CompilerType, CompilationDataType>)
   | Uint8Array
 >;
 
@@ -521,25 +521,25 @@ export interface TransactionGenerationSuccess {
 
 export type TransactionGenerationError =
   | {
-      success: false;
-      completions: BytecodeGenerationCompletionOutput[];
-      errors: BytecodeGenerationErrorLocking[];
-      /**
-       * Error(s) occurred at the `output` stage of compilation, so the `input`
-       * stage never began.
-       */
-      stage: 'outputs';
-    }
+    success: false;
+    completions: BytecodeGenerationCompletionOutput[];
+    errors: BytecodeGenerationErrorLocking[];
+    /**
+     * Error(s) occurred at the `output` stage of compilation, so the `input`
+     * stage never began.
+     */
+    stage: 'outputs';
+  }
   | {
-      success: false;
-      completions: BytecodeGenerationCompletionInput[];
-      errors: BytecodeGenerationErrorUnlocking[];
-      /**
-       * Error(s) occurred at the `input` stage of compilation, meaning the
-       * `output` stage completed successfully.
-       */
-      stage: 'inputs';
-    };
+    success: false;
+    completions: BytecodeGenerationCompletionInput[];
+    errors: BytecodeGenerationErrorUnlocking[];
+    /**
+     * Error(s) occurred at the `input` stage of compilation, meaning the
+     * `output` stage completed successfully.
+     */
+    stage: 'inputs';
+  };
 
 export type TransactionGenerationAttempt =
   | TransactionGenerationSuccess

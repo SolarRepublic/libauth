@@ -12,8 +12,8 @@ import {
   compilerOperationHelperUnknownEntity,
   compilerOperationRequires,
 } from './compiler-operation-helpers';
-import { CompilerOperationResult } from './compiler-types';
-import { AuthenticationTemplateHdKey } from './template-types';
+import type { CompilerOperationResult } from './compiler-types';
+import type { AuthenticationTemplateHdKey } from './template-types';
 
 export const compilerOperationAddressData = compilerOperationRequires({
   canBeSkipped: false,
@@ -80,9 +80,9 @@ export const compilerOperationSigningSerializationCorrespondingOutput = compiler
       data.transactionContext.correspondingOutput === undefined
         ? { bytecode: Uint8Array.of(), status: 'success' }
         : {
-            bytecode: data.transactionContext.correspondingOutput,
-            status: 'success',
-          },
+          bytecode: data.transactionContext.correspondingOutput,
+          status: 'success',
+        },
   }
 );
 
@@ -95,13 +95,13 @@ export const compilerOperationSigningSerializationCorrespondingOutputHash = comp
       data.transactionContext.correspondingOutput === undefined
         ? { bytecode: Uint8Array.of(), status: 'success' }
         : {
-            bytecode: environment.sha256.hash(
-              environment.sha256.hash(
-                data.transactionContext.correspondingOutput
-              )
-            ),
-            status: 'success',
-          },
+          bytecode: environment.sha256.hash(
+            environment.sha256.hash(
+              data.transactionContext.correspondingOutput
+            )
+          ),
+          status: 'success',
+        },
   }
 );
 

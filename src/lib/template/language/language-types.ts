@@ -1,5 +1,5 @@
-import { AuthenticationInstruction } from '../../vm/instruction-sets/instruction-sets-types';
-import {
+import type { AuthenticationInstruction } from '../../vm/instruction-sets/instruction-sets-types';
+import type {
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
 } from '../../vm/vm-types';
@@ -72,8 +72,8 @@ export interface ResolvedSegmentEvaluation<T> extends ResolvedSegmentBase {
 
 export interface ResolvedSegmentVariableBytecode
   extends ResolvedSegmentBase,
-    ResolutionDebug,
-    ResolutionSignature {
+  ResolutionDebug,
+  ResolutionSignature {
   type: 'bytecode';
   value: Uint8Array;
   /**
@@ -156,7 +156,7 @@ export type ResolvedSegment =
   | ResolvedSegmentError;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ResolvedScript extends Array<ResolvedSegment> {}
+export interface ResolvedScript extends Array<ResolvedSegment> { }
 
 export enum IdentifierResolutionType {
   opcode = 'opcode',
@@ -181,21 +181,21 @@ export interface ResolutionDebug {
 
 export interface ResolutionSignature {
   signature?:
-    | {
-        /**
-         * The transaction signing serialization signed by a signature. This
-         * signing serialization is hashed twice with `sha256`, and the
-         * digest is signed.
-         */
-        serialization: Uint8Array;
-      }
-    | {
-        /**
-         * The raw message signed by a data signature. This message is
-         * hashed once with `sha256`, and the digest is signed.
-         */
-        message: Uint8Array;
-      };
+  | {
+    /**
+     * The transaction signing serialization signed by a signature. This
+     * signing serialization is hashed twice with `sha256`, and the
+     * digest is signed.
+     */
+    serialization: Uint8Array;
+  }
+  | {
+    /**
+     * The raw message signed by a data signature. This message is
+     * hashed once with `sha256`, and the digest is signed.
+     */
+    message: Uint8Array;
+  };
 }
 
 /**
@@ -207,44 +207,44 @@ export type IdentifierResolutionFunction = (
   identifier: string
 ) =>
   | {
-      bytecode: Uint8Array;
-      status: true;
-      type: IdentifierResolutionType.opcode;
-    }
+    bytecode: Uint8Array;
+    status: true;
+    type: IdentifierResolutionType.opcode;
+  }
   | ({
-      bytecode: Uint8Array;
-      status: true;
-      type: IdentifierResolutionType.variable;
-    } & ResolutionDebug &
-      ResolutionSignature)
+    bytecode: Uint8Array;
+    status: true;
+    type: IdentifierResolutionType.variable;
+  } & ResolutionDebug &
+    ResolutionSignature)
   | {
-      bytecode: Uint8Array;
-      source: ResolvedScript;
-      status: true;
-      type: IdentifierResolutionType.script;
-    }
+    bytecode: Uint8Array;
+    source: ResolvedScript;
+    status: true;
+    type: IdentifierResolutionType.script;
+  }
   | ({
-      error: string;
-      type: IdentifierResolutionErrorType.variable;
-      status: false;
-      recoverable: boolean;
-      /**
-       * Only available if this variable is present in the environment's
-       * `entityOwnership`.
-       */
-      entityOwnership?: string;
-    } & ResolutionDebug)
+    error: string;
+    type: IdentifierResolutionErrorType.variable;
+    status: false;
+    recoverable: boolean;
+    /**
+     * Only available if this variable is present in the environment's
+     * `entityOwnership`.
+     */
+    entityOwnership?: string;
+  } & ResolutionDebug)
   | {
-      error: string;
-      type: IdentifierResolutionErrorType.script;
-      scriptId: string;
-      status: false;
-    }
+    error: string;
+    type: IdentifierResolutionErrorType.script;
+    scriptId: string;
+    status: false;
+  }
   | {
-      error: string;
-      type: IdentifierResolutionErrorType.unknown;
-      status: false;
-    };
+    error: string;
+    type: IdentifierResolutionErrorType.unknown;
+    status: false;
+  };
 
 /**
  * The result of reducing a single BTL script node.
@@ -430,13 +430,13 @@ export interface CompilationResultParseError
 }
 export interface CompilationResultResolveError
   extends CompilationResultResolve,
-    CompilationResultErrorBase {
+  CompilationResultErrorBase {
   errorType: 'resolve';
 }
 
 export interface CompilationResultReduceError<ProgramState>
   extends CompilationResultReduce<ProgramState>,
-    CompilationResultErrorBase {
+  CompilationResultErrorBase {
   errorType: 'reduce';
 }
 
@@ -465,7 +465,7 @@ export interface CompilationResultSuccess<ProgramState>
 
 export type CompilationResult<
   ProgramState = AuthenticationProgramStateStack &
-    AuthenticationProgramStateMinimum
+  AuthenticationProgramStateMinimum
 > =
   | CompilationResultSuccess<ProgramState>
   | CompilationResultError<ProgramState>;

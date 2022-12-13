@@ -7,9 +7,9 @@ import {
   Secp256k1Wasm,
 } from '../bin/bin';
 
-import {RecoverableSignature, RecoveryId, Secp256k1} from './secp256k1-types';
+import type { RecoverableSignature, RecoveryId, Secp256k1 } from './secp256k1-types';
 
-export {RecoverableSignature, RecoveryId, Secp256k1};
+export { RecoverableSignature, RecoveryId, Secp256k1 };
 
 const enum ByteLength {
   compactSig = 64,
@@ -143,16 +143,16 @@ const wrapSecp256k1Wasm = (
     secp256k1Wasm.heapU8.set(paddedSignature, sigScratch);
     return isDer
       ? secp256k1Wasm.signatureParseDER(
-      contextPtr,
-      internalSigPtr,
-      sigScratch,
-      signature.length
-    ) === 1
+        contextPtr,
+        internalSigPtr,
+        sigScratch,
+        signature.length
+      ) === 1
       : secp256k1Wasm.signatureParseCompact(
-      contextPtr,
-      internalSigPtr,
-      sigScratch
-    ) === 1;
+        contextPtr,
+        internalSigPtr,
+        sigScratch
+      ) === 1;
   };
 
   const parseOrThrow = (signature: Uint8Array, isDer: boolean) => {
@@ -278,7 +278,7 @@ const wrapSecp256k1Wasm = (
     extraEntropy?: Uint8Array
   ) => {
     fillMessageHashScratch(messageHash);
-    if(extraEntropy) fillExtraEntropyScratch(extraEntropy);
+    if (extraEntropy) fillExtraEntropyScratch(extraEntropy);
     return withPrivateKey<Uint8Array>(privateKey, () => {
       const failed =
         secp256k1Wasm.sign(
@@ -286,7 +286,7 @@ const wrapSecp256k1Wasm = (
           internalSigPtr,
           messageHashScratch,
           privateKeyPtr,
-          extraEntropy? extraEntropyScratch: 0,
+          extraEntropy ? extraEntropyScratch : 0,
         ) !== 1;
 
       if (failed) {

@@ -1,6 +1,6 @@
 import { Secp256k1, Sha256 } from '../../../crypto/crypto';
 import { flattenBinArray } from '../../../format/hex';
-import {
+import type {
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateError,
   AuthenticationProgramStateSignatureAnalysis,
@@ -30,40 +30,40 @@ import { ConsensusBCH } from './bch-types';
 
 export const opCat = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >() => (state: State) =>
-  useTwoStackItems(state, (nextState, [a, b]) =>
-    a.length + b.length > ConsensusCommon.maximumStackItemLength
-      ? applyError<State, AuthenticationErrorBCH>(
+    useTwoStackItems(state, (nextState, [a, b]) =>
+      a.length + b.length > ConsensusCommon.maximumStackItemLength
+        ? applyError<State, AuthenticationErrorBCH>(
           AuthenticationErrorBCH.exceededMaximumStackItemLength,
           nextState
         )
-      : pushToStack(nextState, flattenBinArray([a, b]))
-  );
+        : pushToStack(nextState, flattenBinArray([a, b]))
+    );
 
 export const opSplit = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >({
   requireMinimalEncoding,
 }: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, value) => {
-      const index = Number(value);
-      return useOneStackItem(nextState, (finalState, [item]) =>
-        index < 0 || index > item.length
-          ? applyError<State, AuthenticationErrorBCH>(
+    useOneScriptNumber(
+      state,
+      (nextState, value) => {
+        const index = Number(value);
+        return useOneStackItem(nextState, (finalState, [item]) =>
+          index < 0 || index > item.length
+            ? applyError<State, AuthenticationErrorBCH>(
               AuthenticationErrorBCH.invalidSplitIndex,
               finalState
             )
-          : pushToStack(finalState, item.slice(0, index), item.slice(index))
-      );
-    },
-    { requireMinimalEncoding }
-  );
+            : pushToStack(finalState, item.slice(0, index), item.slice(index))
+        );
+      },
+      { requireMinimalEncoding }
+    );
 
 enum Constants {
   positiveSign = 0x00,
@@ -96,29 +96,29 @@ export const padMinimallyEncodedScriptNumber = (
 
 export const opNum2Bin = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >() => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, value) => {
-      const targetLength = Number(value);
-      return targetLength > ConsensusCommon.maximumStackItemLength
-        ? applyError<State, AuthenticationErrorBCH>(
+    useOneScriptNumber(
+      state,
+      (nextState, value) => {
+        const targetLength = Number(value);
+        return targetLength > ConsensusCommon.maximumStackItemLength
+          ? applyError<State, AuthenticationErrorBCH>(
             AuthenticationErrorBCH.exceededMaximumStackItemLength,
             nextState
           )
-        : useOneScriptNumber(
+          : useOneScriptNumber(
             nextState,
             (finalState, [target]) => {
               const minimallyEncoded = bigIntToScriptNumber(target);
               return minimallyEncoded.length > targetLength
                 ? applyError<State, AuthenticationErrorBCH>(
-                    AuthenticationErrorBCH.insufficientLength,
-                    finalState
-                  )
+                  AuthenticationErrorBCH.insufficientLength,
+                  finalState
+                )
                 : minimallyEncoded.length === targetLength
-                ? pushToStack(finalState, minimallyEncoded)
-                : pushToStack(
+                  ? pushToStack(finalState, minimallyEncoded)
+                  : pushToStack(
                     finalState,
                     padMinimallyEncodedScriptNumber(
                       minimallyEncoded,
@@ -133,104 +133,104 @@ export const opNum2Bin = <
               requireMinimalEncoding: false,
             }
           );
-    },
-    { requireMinimalEncoding: true }
-  );
+      },
+      { requireMinimalEncoding: true }
+    );
 
 export const opBin2Num = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >() => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, [target]) => {
-      const minimallyEncoded = bigIntToScriptNumber(target);
-      return minimallyEncoded.length > ConsensusCommon.maximumScriptNumberLength
-        ? applyError<State, AuthenticationErrorBCH>(
+    useOneScriptNumber(
+      state,
+      (nextState, [target]) => {
+        const minimallyEncoded = bigIntToScriptNumber(target);
+        return minimallyEncoded.length > ConsensusCommon.maximumScriptNumberLength
+          ? applyError<State, AuthenticationErrorBCH>(
             AuthenticationErrorBCH.exceededMaximumScriptNumberLength,
             nextState
           )
-        : pushToStack(nextState, minimallyEncoded);
-    },
-    {
-      // TODO: is this right?
-      maximumScriptNumberByteLength: ConsensusCommon.maximumStackItemLength,
-      requireMinimalEncoding: false,
-    }
-  );
+          : pushToStack(nextState, minimallyEncoded);
+      },
+      {
+        // TODO: is this right?
+        maximumScriptNumberByteLength: ConsensusCommon.maximumStackItemLength,
+        requireMinimalEncoding: false,
+      }
+    );
 
 export const bitwiseOperation = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >(
   combine: (a: Uint8Array, b: Uint8Array) => Uint8Array
 ) => (state: State) =>
-  useTwoStackItems(state, (nextState, [a, b]) =>
-    a.length === b.length
-      ? pushToStack(nextState, combine(a, b))
-      : applyError<State, AuthenticationErrorBCH>(
+    useTwoStackItems(state, (nextState, [a, b]) =>
+      a.length === b.length
+        ? pushToStack(nextState, combine(a, b))
+        : applyError<State, AuthenticationErrorBCH>(
           AuthenticationErrorBCH.mismatchedBitwiseOperandLength,
           nextState
         )
-  );
+    );
 
 export const opAnd = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
-  // eslint-disable-next-line no-bitwise
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
+// eslint-disable-next-line no-bitwise
 >() => bitwiseOperation<State>((a, b) => a.map((v, i) => v & b[i]));
 
 export const opOr = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
-  // eslint-disable-next-line no-bitwise
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
+// eslint-disable-next-line no-bitwise
 >() => bitwiseOperation<State>((a, b) => a.map((v, i) => v | b[i]));
 
 export const opXor = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
-  // eslint-disable-next-line no-bitwise
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
+// eslint-disable-next-line no-bitwise
 >() => bitwiseOperation<State>((a, b) => a.map((v, i) => v ^ b[i]));
 
 export const opDiv = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >({
   requireMinimalEncoding,
 }: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [a, b]) =>
-      b === BigInt(0)
-        ? applyError<State, AuthenticationErrorBCH>(
+    useTwoScriptNumbers(
+      state,
+      (nextState, [a, b]) =>
+        b === BigInt(0)
+          ? applyError<State, AuthenticationErrorBCH>(
             AuthenticationErrorBCH.divisionByZero,
             nextState
           )
-        : pushToStack(nextState, bigIntToScriptNumber(a / b)),
-    { requireMinimalEncoding }
-  );
+          : pushToStack(nextState, bigIntToScriptNumber(a / b)),
+      { requireMinimalEncoding }
+    );
 
 export const opMod = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<AuthenticationErrorBCH>
+  AuthenticationProgramStateError<AuthenticationErrorBCH>
 >({
   requireMinimalEncoding,
 }: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  useTwoScriptNumbers(
-    state,
-    (nextState, [a, b]) =>
-      b === BigInt(0)
-        ? applyError<State, AuthenticationErrorBCH>(
+    useTwoScriptNumbers(
+      state,
+      (nextState, [a, b]) =>
+        b === BigInt(0)
+          ? applyError<State, AuthenticationErrorBCH>(
             AuthenticationErrorBCH.divisionByZero,
             nextState
           )
-        : pushToStack(nextState, bigIntToScriptNumber(a % b)),
-    { requireMinimalEncoding }
-  );
+          : pushToStack(nextState, bigIntToScriptNumber(a % b)),
+      { requireMinimalEncoding }
+    );
 
 /**
  * Validate the encoding of a raw signature – a signature without a signing
@@ -245,8 +245,8 @@ export const isValidSignatureEncodingBCHRaw = (signature: Uint8Array) =>
 
 export const opCheckDataSig = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors> &
-    AuthenticationProgramStateSignatureAnalysis,
+  AuthenticationProgramStateError<Errors> &
+  AuthenticationProgramStateSignatureAnalysis,
   Errors
 >({
   secp256k1,
@@ -258,42 +258,42 @@ export const opCheckDataSig = <
     verifySignatureDERLowS: Secp256k1['verifySignatureDERLowS'];
   };
 }) => (state: State) =>
-  // eslint-disable-next-line complexity
-  useThreeStackItems(state, (nextState, [signature, message, publicKey]) => {
-    if (!isValidSignatureEncodingBCHRaw(signature)) {
-      return applyError<State, Errors>(
-        AuthenticationErrorCommon.invalidSignatureEncoding,
-        nextState
-      );
-    }
-    if (!isValidPublicKeyEncoding(publicKey)) {
-      return applyError<State, Errors>(
-        AuthenticationErrorCommon.invalidPublicKeyEncoding,
-        nextState
-      );
-    }
-    const digest = sha256.hash(message);
+    // eslint-disable-next-line complexity
+    useThreeStackItems(state, (nextState, [signature, message, publicKey]) => {
+      if (!isValidSignatureEncodingBCHRaw(signature)) {
+        return applyError<State, Errors>(
+          AuthenticationErrorCommon.invalidSignatureEncoding,
+          nextState
+        );
+      }
+      if (!isValidPublicKeyEncoding(publicKey)) {
+        return applyError<State, Errors>(
+          AuthenticationErrorCommon.invalidPublicKeyEncoding,
+          nextState
+        );
+      }
+      const digest = sha256.hash(message);
 
-    // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    nextState.signedMessages.push(message);
+      // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
+      nextState.signedMessages.push(message);
 
-    const useSchnorr = signature.length === ConsensusBCH.schnorrSignatureLength;
-    const success = useSchnorr
-      ? secp256k1.verifySignatureSchnorr(signature, publicKey, digest)
-      : secp256k1.verifySignatureDERLowS(signature, publicKey, digest);
+      const useSchnorr = signature.length === ConsensusBCH.schnorrSignatureLength;
+      const success = useSchnorr
+        ? secp256k1.verifySignatureSchnorr(signature, publicKey, digest)
+        : secp256k1.verifySignatureDERLowS(signature, publicKey, digest);
 
-    return !success && signature.length !== 0
-      ? applyError<State, Errors>(
+      return !success && signature.length !== 0
+        ? applyError<State, Errors>(
           AuthenticationErrorCommon.nonNullSignatureFailure,
           nextState
         )
-      : pushToStack(nextState, booleanToScriptNumber(success));
-  });
+        : pushToStack(nextState, booleanToScriptNumber(success));
+    });
 
 export const opCheckDataSigVerify = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors> &
-    AuthenticationProgramStateSignatureAnalysis,
+  AuthenticationProgramStateError<Errors> &
+  AuthenticationProgramStateSignatureAnalysis,
   Errors
 >({
   secp256k1,
@@ -313,9 +313,9 @@ export const opCheckDataSigVerify = <
 export const opReverseBytes = <
   State extends AuthenticationProgramStateStack
 >() => (state: State) =>
-  useOneStackItem(state, (nextState, [item]) =>
-    pushToStack(nextState, item.slice().reverse())
-  );
+    useOneStackItem(state, (nextState, [item]) =>
+      pushToStack(nextState, item.slice().reverse())
+    );
 
 export const bitcoinCashOperations = <
   Opcodes,

@@ -1,10 +1,10 @@
-import { TransactionContextCommon } from '../transaction/transaction-types';
+import type { TransactionContextCommon } from '../transaction/transaction-types';
 import {
   AuthenticationErrorCommon,
   generateBytecodeMap,
   OpcodesCommon,
 } from '../vm/instruction-sets/instruction-sets';
-import {
+import type {
   AuthenticationProgramCommon,
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateExecutionStack,
@@ -14,7 +14,7 @@ import {
 
 import { CompilerDefaults } from './compiler-defaults';
 import { compilerOperationsCommon } from './compiler-operations';
-import {
+import type {
   AnyCompilationEnvironment,
   BytecodeGenerationResult,
   CompilationData,
@@ -22,9 +22,9 @@ import {
   Compiler,
 } from './compiler-types';
 import { compileScript } from './language/compile';
-import { CompilationResult } from './language/language-types';
+import type { CompilationResult } from './language/language-types';
 import { generateScenarioCommon } from './scenarios';
-import { AuthenticationTemplate } from './template-types';
+import type { AuthenticationTemplate } from './template-types';
 
 /**
  * Create a `Compiler` from the provided compilation environment. This method
@@ -39,12 +39,12 @@ export const createCompiler = <
   Environment extends AnyCompilationEnvironment<TransactionContext>,
   Opcodes extends number = number,
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum<
-      Opcodes
-    > = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum<Opcodes>
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum<
+    Opcodes
+  > = AuthenticationProgramStateStack &
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum<Opcodes>
 >(
   compilationEnvironment: Environment
 ): Compiler<TransactionContext, Environment, ProgramState> => ({
@@ -62,8 +62,8 @@ export const createCompiler = <
     return (debug
       ? result
       : result.success
-      ? { bytecode: result.bytecode, success: true }
-      : {
+        ? { bytecode: result.bytecode, success: true }
+        : {
           errorType: result.errorType,
           errors: result.errors,
           success: false,
@@ -221,7 +221,7 @@ export const authenticationTemplateToCompilationEnvironment = (
   >(
     (all, [id, def]) =>
       'lockingType' in def &&
-      (def.lockingType as string | undefined) !== undefined
+        (def.lockingType as string | undefined) !== undefined
         ? { ...all, [id]: def.lockingType }
         : all,
     {}
@@ -230,8 +230,8 @@ export const authenticationTemplateToCompilationEnvironment = (
     template.scenarios === undefined
       ? undefined
       : Object.entries(template.scenarios).reduce<
-          CompilationEnvironment['scenarios']
-        >((all, [id, def]) => ({ ...all, [id]: def }), {});
+        CompilationEnvironment['scenarios']
+      >((all, [id, def]) => ({ ...all, [id]: def }), {});
   return {
     entityOwnership,
     lockingScriptTypes,

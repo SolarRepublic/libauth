@@ -1,5 +1,5 @@
 import { Ripemd160, Secp256k1, Sha1, Sha256 } from '../../../crypto/crypto';
-import { InstructionSet } from '../../virtual-machine';
+import type { InstructionSet } from '../../virtual-machine';
 import {
   conditionallyEvaluate,
   incrementOperationCount,
@@ -18,7 +18,7 @@ import {
   stackItemIsTruthy,
   undefinedOperation,
 } from '../common/common';
-import { AuthenticationInstruction } from '../instruction-sets-types';
+import type { AuthenticationInstruction } from '../instruction-sets-types';
 import {
   authenticationInstructionsAreMalformed,
   parseBytecode,
@@ -27,7 +27,7 @@ import {
 import { AuthenticationErrorBCH } from './bch-errors';
 import { OpcodesBCH } from './bch-opcodes';
 import { bitcoinCashOperations } from './bch-operations';
-import {
+import type {
   AuthenticationProgramBCH,
   AuthenticationProgramStateBCH,
 } from './bch-types';
@@ -44,9 +44,9 @@ export const isPayToScriptHash = <Opcodes>(
 ) =>
   verificationInstructions.length === PayToScriptHash.length &&
   ((verificationInstructions[0].opcode as unknown) as number) ===
-    OpcodesBCH.OP_HASH160 &&
+  OpcodesBCH.OP_HASH160 &&
   ((verificationInstructions[1].opcode as unknown) as number) ===
-    OpcodesBCH.OP_PUSHBYTES_20 &&
+  OpcodesBCH.OP_PUSHBYTES_20 &&
   ((verificationInstructions[PayToScriptHash.lastElement]
     .opcode as unknown) as number) === OpcodesBCH.OP_EQUAL;
 
@@ -256,32 +256,32 @@ export const createInstructionSetBCH = ({
     const unlockingResult =
       unlockingBytecode.length > ConsensusCommon.maximumBytecodeLength
         ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
-            AuthenticationErrorCommon.exceededMaximumBytecodeLengthUnlocking,
-            initialState
-          )
+          AuthenticationErrorCommon.exceededMaximumBytecodeLengthUnlocking,
+          initialState
+        )
         : authenticationInstructionsAreMalformed(unlockingInstructions)
-        ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
+          ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
             AuthenticationErrorCommon.malformedUnlockingBytecode,
             initialState
           )
-        : lockingBytecode.length > ConsensusCommon.maximumBytecodeLength
-        ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
-            AuthenticationErrorCommon.exceededMaximumBytecodeLengthLocking,
-            initialState
-          )
-        : authenticationInstructionsAreMalformed(lockingInstructions)
-        ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
-            AuthenticationErrorCommon.malformedLockingBytecode,
-            initialState
-          )
-        : initialState.instructions.every((instruction) =>
-            isPushOperation((instruction.opcode as unknown) as number)
-          )
-        ? stateEvaluate(initialState)
-        : applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
-            AuthenticationErrorBCH.requiresPushOnly,
-            initialState
-          );
+          : lockingBytecode.length > ConsensusCommon.maximumBytecodeLength
+            ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
+              AuthenticationErrorCommon.exceededMaximumBytecodeLengthLocking,
+              initialState
+            )
+            : authenticationInstructionsAreMalformed(lockingInstructions)
+              ? applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
+                AuthenticationErrorCommon.malformedLockingBytecode,
+                initialState
+              )
+              : initialState.instructions.every((instruction) =>
+                isPushOperation((instruction.opcode as unknown) as number)
+              )
+                ? stateEvaluate(initialState)
+                : applyError<AuthenticationProgramStateBCH, AuthenticationErrorBCH>(
+                  AuthenticationErrorBCH.requiresPushOnly,
+                  initialState
+                );
 
     if (unlockingResult.error !== undefined) {
       return unlockingResult;
@@ -311,19 +311,19 @@ export const createInstructionSetBCH = ({
     const p2shInstructions = parseBytecode<OpcodesBCH>(p2shScript);
     return authenticationInstructionsAreMalformed(p2shInstructions)
       ? {
-          ...lockingResult,
-          error: AuthenticationErrorBCH.malformedP2shBytecode,
-        }
+        ...lockingResult,
+        error: AuthenticationErrorBCH.malformedP2shBytecode,
+      }
       : stateEvaluate(
-          createAuthenticationProgramStateCommon<
-            OpcodesBCH,
-            AuthenticationErrorBCH
-          >({
-            instructions: p2shInstructions,
-            stack: p2shStack,
-            transactionContext: externalState,
-          })
-        );
+        createAuthenticationProgramStateCommon<
+          OpcodesBCH,
+          AuthenticationErrorBCH
+        >({
+          instructions: p2shInstructions,
+          stack: p2shStack,
+          transactionContext: externalState,
+        })
+      );
   },
   operations: {
     ...commonOperations<

@@ -3,14 +3,14 @@ import {
   AuthenticationErrorCommon,
   encodeDataPush,
 } from '../../vm/instruction-sets/instruction-sets';
-import { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
-import {
+import type { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
 } from '../../vm/vm-types';
 
-import {
+import type {
   CompilationError,
   Range,
   ResolvedScript,
@@ -42,8 +42,8 @@ const emptyReductionTraceNode = (range: Range) => ({
  */
 export const verifyBtlEvaluationState = <
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<unknown>
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateError<unknown>
 >(
   state: ProgramState
 ) => {
@@ -73,8 +73,8 @@ export const verifyBtlEvaluationState = <
  */
 export const reduceScript = <
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<unknown>,
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateError<unknown>,
   AuthenticationProgram
 >(
   resolvedScript: ResolvedScript,
@@ -83,7 +83,7 @@ export const reduceScript = <
 ): ScriptReductionTraceScriptNode<ProgramState> => {
   const script = resolvedScript.map<
     ScriptReductionTraceChildNode<ProgramState>
-    // eslint-disable-next-line complexity
+  // eslint-disable-next-line complexity
   >((segment) => {
     switch (segment.type) {
       case 'bytecode':
@@ -141,17 +141,17 @@ export const reduceScript = <
         return {
           ...(typeof result === 'string'
             ? {
-                bytecode: Uint8Array.of(),
-                errors: [
-                  {
-                    error: `Failed to reduce evaluation: ${result}`,
-                    range: segment.range,
-                  },
-                ],
-              }
+              bytecode: Uint8Array.of(),
+              errors: [
+                {
+                  error: `Failed to reduce evaluation: ${result}`,
+                  range: segment.range,
+                },
+              ],
+            }
             : {
-                bytecode,
-              }),
+              bytecode,
+            }),
           range: segment.range,
           source: reductionTrace,
           trace,
@@ -187,11 +187,11 @@ export const reduceScript = <
       ranges: [...all.ranges, segment.range],
       ...(all.errors !== undefined || segment.errors !== undefined
         ? {
-            errors: [
-              ...(all.errors === undefined ? [] : all.errors),
-              ...(segment.errors === undefined ? [] : segment.errors),
-            ],
-          }
+          errors: [
+            ...(all.errors === undefined ? [] : all.errors),
+            ...(segment.errors === undefined ? [] : segment.errors),
+          ],
+        }
         : undefined),
     }),
     { bytecode: [], ranges: [] }

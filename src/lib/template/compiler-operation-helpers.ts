@@ -1,8 +1,8 @@
 import { decodeHdPrivateKey, deriveHdPath } from '../key/hd-key';
-import { TransactionContextCommon } from '../transaction/transaction-types';
+import type { TransactionContextCommon } from '../transaction/transaction-types';
 
 import { CompilerDefaults } from './compiler-defaults';
-import {
+import type {
   AnyCompilationEnvironment,
   CompilationData,
   CompilationEnvironment,
@@ -12,7 +12,7 @@ import {
   CompilerOperationSkip,
 } from './compiler-types';
 import { resolveScriptIdentifier } from './language/resolve';
-import { AuthenticationTemplateHdKey } from './template-types';
+import type { AuthenticationTemplateHdKey } from './template-types';
 
 /**
  * Attempt a series of compiler operations, skipping to the next operation if
@@ -87,47 +87,47 @@ export const compilerOperationRequires = <
   data,
   environment
 ) => {
-  // eslint-disable-next-line functional/no-loop-statement
-  for (const property of environmentProperties) {
-    if (environment[property] === undefined)
-      return (canBeSkipped
-        ? { status: 'skip' }
-        : {
+    // eslint-disable-next-line functional/no-loop-statement
+    for (const property of environmentProperties) {
+      if (environment[property] === undefined)
+        return (canBeSkipped
+          ? { status: 'skip' }
+          : {
             error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compilation environment.`,
             status: 'error',
           }) as CanBeSkipped extends true
-        ? CompilerOperationSkip
-        : CompilerOperationErrorFatal;
-  }
-  // eslint-disable-next-line functional/no-loop-statement
-  for (const property of dataProperties) {
-    if (
-      (data[property] as typeof data[typeof property] | undefined) === undefined
-    )
-      return (canBeSkipped
-        ? { status: 'skip' }
-        : {
+          ? CompilerOperationSkip
+          : CompilerOperationErrorFatal;
+    }
+    // eslint-disable-next-line functional/no-loop-statement
+    for (const property of dataProperties) {
+      if (
+        (data[property] as typeof data[typeof property] | undefined) === undefined
+      )
+        return (canBeSkipped
+          ? { status: 'skip' }
+          : {
             error: `Cannot resolve "${identifier}" – the "${property}" property was not provided in the compilation data.`,
             status: 'error',
           }) as CanBeSkipped extends true
-        ? CompilerOperationSkip
-        : CompilerOperationErrorFatal;
-  }
+          ? CompilerOperationSkip
+          : CompilerOperationErrorFatal;
+    }
 
-  return operation(
-    identifier,
-    data as Required<
-      Pick<CompilationData<TransactionContext>, RequiredDataProperties>
-    >,
-    environment as Required<
-      Pick<
-        CompilationEnvironment<TransactionContext>,
-        RequiredEnvironmentProperties
-      >
-    > &
+    return operation(
+      identifier,
+      data as Required<
+        Pick<CompilationData<TransactionContext>, RequiredDataProperties>
+      >,
+      environment as Required<
+        Pick<
+          CompilationEnvironment<TransactionContext>,
+          RequiredEnvironmentProperties
+        >
+      > &
       CompilationEnvironment<TransactionContext>
-  );
-};
+    );
+  };
 
 export const compilerOperationAttemptBytecodeResolution = compilerOperationRequires(
   {

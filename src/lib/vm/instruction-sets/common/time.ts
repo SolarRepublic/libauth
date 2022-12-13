@@ -1,4 +1,4 @@
-import {
+import type {
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateError,
   AuthenticationProgramStateStack,
@@ -28,7 +28,7 @@ enum Constants {
 
 export const readLocktime = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -75,117 +75,117 @@ const locktimeTypesAreCompatible = (
 
 export const opCheckLockTimeVerify = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors> & {
-      readonly locktime: number;
-      readonly sequenceNumber: number;
-    },
+  AuthenticationProgramStateError<Errors> & {
+    readonly locktime: number;
+    readonly sequenceNumber: number;
+  },
   Errors
 >(flags: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  readLocktime(
-    state,
-    (nextState, requiredLocktime) => {
-      if (!locktimeTypesAreCompatible(nextState.locktime, requiredLocktime)) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.incompatibleLocktimeType,
-          nextState
-        );
-      }
-      if (requiredLocktime > nextState.locktime) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.unsatisfiedLocktime,
-          nextState
-        );
-      }
-      if (
-        nextState.sequenceNumber === Constants.locktimeDisablingSequenceNumber
-      ) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.locktimeDisabled,
-          nextState
-        );
-      }
-      return nextState;
-    },
-    flags
-  );
+    readLocktime(
+      state,
+      (nextState, requiredLocktime) => {
+        if (!locktimeTypesAreCompatible(nextState.locktime, requiredLocktime)) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.incompatibleLocktimeType,
+            nextState
+          );
+        }
+        if (requiredLocktime > nextState.locktime) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.unsatisfiedLocktime,
+            nextState
+          );
+        }
+        if (
+          nextState.sequenceNumber === Constants.locktimeDisablingSequenceNumber
+        ) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.locktimeDisabled,
+            nextState
+          );
+        }
+        return nextState;
+      },
+      flags
+    );
 
 // eslint-disable-next-line no-bitwise
 const includesFlag = (value: number, flag: number) => (value & flag) !== 0;
 
 export const opCheckSequenceVerify = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors> & {
-      readonly sequenceNumber: number;
-      readonly version: number;
-    },
+  AuthenticationProgramStateError<Errors> & {
+    readonly sequenceNumber: number;
+    readonly version: number;
+  },
   Errors
 >(flags: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  readLocktime(
-    state,
-    // eslint-disable-next-line complexity
-    (nextState, requiredSequence) => {
-      const sequenceLocktimeDisabled = includesFlag(
-        requiredSequence,
-        Constants.sequenceLocktimeDisableFlag
-      );
-      if (sequenceLocktimeDisabled) {
-        return nextState;
-      }
-
-      if (
-        nextState.version < Constants.sequenceLocktimeTransactionVersionMinimum
-      ) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.checkSequenceUnavailable,
-          nextState
-        );
-      }
-
-      if (
-        includesFlag(
-          nextState.sequenceNumber,
+    readLocktime(
+      state,
+      // eslint-disable-next-line complexity
+      (nextState, requiredSequence) => {
+        const sequenceLocktimeDisabled = includesFlag(
+          requiredSequence,
           Constants.sequenceLocktimeDisableFlag
-        )
-      ) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.unmatchedSequenceDisable,
-          nextState
         );
-      }
+        if (sequenceLocktimeDisabled) {
+          return nextState;
+        }
 
-      if (
-        includesFlag(requiredSequence, Constants.sequenceLocktimeTypeFlag) !==
-        includesFlag(
-          nextState.sequenceNumber,
-          Constants.sequenceLocktimeTypeFlag
-        )
-      ) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.incompatibleSequenceType,
-          nextState
-        );
-      }
+        if (
+          nextState.version < Constants.sequenceLocktimeTransactionVersionMinimum
+        ) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.checkSequenceUnavailable,
+            nextState
+          );
+        }
 
-      if (
-        // eslint-disable-next-line no-bitwise
-        (requiredSequence & Constants.sequenceLocktimeMask) >
-        // eslint-disable-next-line no-bitwise
-        (nextState.sequenceNumber & Constants.sequenceLocktimeMask)
-      ) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.unsatisfiedSequenceNumber,
-          nextState
-        );
-      }
+        if (
+          includesFlag(
+            nextState.sequenceNumber,
+            Constants.sequenceLocktimeDisableFlag
+          )
+        ) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.unmatchedSequenceDisable,
+            nextState
+          );
+        }
 
-      return nextState;
-    },
-    flags
-  );
+        if (
+          includesFlag(requiredSequence, Constants.sequenceLocktimeTypeFlag) !==
+          includesFlag(
+            nextState.sequenceNumber,
+            Constants.sequenceLocktimeTypeFlag
+          )
+        ) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.incompatibleSequenceType,
+            nextState
+          );
+        }
+
+        if (
+          // eslint-disable-next-line no-bitwise
+          (requiredSequence & Constants.sequenceLocktimeMask) >
+          // eslint-disable-next-line no-bitwise
+          (nextState.sequenceNumber & Constants.sequenceLocktimeMask)
+        ) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.unsatisfiedSequenceNumber,
+            nextState
+          );
+        }
+
+        return nextState;
+      },
+      flags
+    );
 
 export const timeOperations = <
   Opcodes,

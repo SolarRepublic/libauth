@@ -1,7 +1,7 @@
 import { range } from '../format/format';
 
-import { AuthenticationProgramStateBCH } from './instruction-sets/instruction-sets';
-import { AuthenticationProgramStateMinimum } from './vm-types';
+import type { AuthenticationProgramStateBCH } from './instruction-sets/instruction-sets';
+import type { AuthenticationProgramStateMinimum } from './vm-types';
 
 /**
  * Operations define the behavior of an opcode in an `InstructionSet`.

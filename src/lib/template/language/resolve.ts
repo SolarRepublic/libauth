@@ -1,13 +1,13 @@
 import { hexToBin, utf8ToBin } from '../../format/format';
 import { bigIntToScriptNumber } from '../../vm/instruction-sets/instruction-sets';
-import {
+import type {
   AnyCompilationEnvironment,
   CompilationData,
   CompilationEnvironment,
   CompilerOperation,
   CompilerOperationResult,
 } from '../compiler-types';
-import { AuthenticationTemplateVariable } from '../template-types';
+import type { AuthenticationTemplateVariable } from '../template-types';
 
 import { compileScriptRaw } from './compile';
 import {
@@ -46,38 +46,38 @@ export const resolveScriptSegment = (
         const result = resolveIdentifiers(identifier);
         const ret = result.status
           ? {
-              range,
-              type: 'bytecode' as const,
-              value: result.bytecode,
-              ...(result.type === IdentifierResolutionType.opcode
+            range,
+            type: 'bytecode' as const,
+            value: result.bytecode,
+            ...(result.type === IdentifierResolutionType.opcode
+              ? {
+                opcode: identifier,
+              }
+              : result.type === IdentifierResolutionType.variable
                 ? {
-                    opcode: identifier,
-                  }
-                : result.type === IdentifierResolutionType.variable
-                ? {
-                    ...('debug' in result ? { debug: result.debug } : {}),
-                    ...('signature' in result
-                      ? { signature: result.signature }
-                      : {}),
-                    variable: identifier,
-                  }
+                  ...('debug' in result ? { debug: result.debug } : {}),
+                  ...('signature' in result
+                    ? { signature: result.signature }
+                    : {}),
+                  variable: identifier,
+                }
                 : // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 result.type === IdentifierResolutionType.script
-                ? { script: identifier, source: result.source }
-                : ({ unknown: identifier } as never)),
-            }
+                  ? { script: identifier, source: result.source }
+                  : ({ unknown: identifier } as never)),
+          }
           : {
-              ...('debug' in result ? { debug: result.debug } : {}),
-              ...('recoverable' in result && result.recoverable
-                ? {
-                    missingIdentifier: identifier,
-                    owningEntity: result.entityOwnership,
-                  }
-                : {}),
-              range,
-              type: 'error' as const,
-              value: result.error,
-            };
+            ...('debug' in result ? { debug: result.debug } : {}),
+            ...('recoverable' in result && result.recoverable
+              ? {
+                missingIdentifier: identifier,
+                owningEntity: result.entityOwnership,
+              }
+              : {}),
+            range,
+            type: 'error' as const,
+            value: result.error,
+          };
         return ret;
       }
       case 'Push':
@@ -171,11 +171,11 @@ const attemptCompilerOperation = <
   environment: Environment;
   identifier: string;
   matchingOperations:
-    | {
-        [x: string]: CompilerOperation<TransactionContext> | undefined;
-      }
-    | CompilerOperation<TransactionContext>
-    | undefined;
+  | {
+    [x: string]: CompilerOperation<TransactionContext> | undefined;
+  }
+  | CompilerOperation<TransactionContext>
+  | undefined;
   operationId: string | undefined;
   variableId: string;
   variableType: string;
@@ -400,33 +400,33 @@ export const createIdentifierResolver = <TransactionContext>({
     if (variableResult.status !== 'skip') {
       return variableResult.status === 'error'
         ? {
-            ...('debug' in variableResult
-              ? { debug: variableResult.debug }
-              : {}),
-            error: variableResult.error,
-            ...(environment.entityOwnership === undefined
-              ? {}
-              : {
-                  entityOwnership:
-                    environment.entityOwnership[identifier.split('.')[0]],
-                }),
-            recoverable: 'recoverable' in variableResult,
-            status: false,
-            type: IdentifierResolutionErrorType.variable,
-          }
+          ...('debug' in variableResult
+            ? { debug: variableResult.debug }
+            : {}),
+          error: variableResult.error,
+          ...(environment.entityOwnership === undefined
+            ? {}
+            : {
+              entityOwnership:
+                environment.entityOwnership[identifier.split('.')[0]],
+            }),
+          recoverable: 'recoverable' in variableResult,
+          status: false,
+          type: IdentifierResolutionErrorType.variable,
+        }
         : {
-            ...('debug' in variableResult
-              ? { debug: variableResult.debug }
-              : {}),
-            bytecode: variableResult.bytecode,
-            ...('signature' in variableResult
-              ? {
-                  signature: variableResult.signature,
-                }
-              : {}),
-            status: true,
-            type: IdentifierResolutionType.variable,
-          };
+          ...('debug' in variableResult
+            ? { debug: variableResult.debug }
+            : {}),
+          bytecode: variableResult.bytecode,
+          ...('signature' in variableResult
+            ? {
+              signature: variableResult.signature,
+            }
+            : {}),
+          status: true,
+          type: IdentifierResolutionType.variable,
+        };
     }
     const scriptResult = resolveScriptIdentifier({
       data,
@@ -436,17 +436,17 @@ export const createIdentifierResolver = <TransactionContext>({
     if (scriptResult !== false) {
       return typeof scriptResult === 'string'
         ? {
-            error: scriptResult,
-            scriptId: identifier,
-            status: false,
-            type: IdentifierResolutionErrorType.script,
-          }
+          error: scriptResult,
+          scriptId: identifier,
+          status: false,
+          type: IdentifierResolutionErrorType.script,
+        }
         : {
-            bytecode: scriptResult.bytecode,
-            source: scriptResult.resolve,
-            status: true,
-            type: IdentifierResolutionType.script,
-          };
+          bytecode: scriptResult.bytecode,
+          source: scriptResult.resolve,
+          status: true,
+          type: IdentifierResolutionType.script,
+        };
     }
     return {
       error: `Unknown identifier "${identifier}".`,

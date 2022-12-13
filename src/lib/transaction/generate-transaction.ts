@@ -1,5 +1,5 @@
-import { CompilationData, Compiler } from '../template/compiler-types';
-import {
+import type { CompilationData, Compiler } from '../template/compiler-types';
+import type {
   CompilationError,
   CompilationResultParseError,
   CompilationResultReduceError,
@@ -16,7 +16,7 @@ import {
   encodeOutputsForSigning,
   encodeSequenceNumbersForSigning,
 } from './transaction-serialization';
-import {
+import type {
   BytecodeGenerationCompletionInput,
   BytecodeGenerationCompletionOutput,
   BytecodeGenerationErrorBase,
@@ -41,9 +41,9 @@ const returnFailedCompilationDirective = <
 }: {
   index: number;
   result:
-    | CompilationResultParseError
-    | CompilationResultResolveError
-    | CompilationResultReduceError<unknown>;
+  | CompilationResultParseError
+  | CompilationResultResolveError
+  | CompilationResultReduceError<unknown>;
   type: Type;
 }) => {
   return {
@@ -76,9 +76,9 @@ export const compileOutputTemplate = <
     );
     return result.success
       ? {
-          lockingBytecode: result.bytecode,
-          satoshis: outputTemplate.satoshis,
-        }
+        lockingBytecode: result.bytecode,
+        satoshis: outputTemplate.satoshis,
+      }
       : returnFailedCompilationDirective({ index, result, type: 'locking' });
   }
   return {
@@ -131,11 +131,11 @@ export const compileInputTemplate = <
     );
     return result.success
       ? {
-          outpointIndex: inputTemplate.outpointIndex,
-          outpointTransactionHash: inputTemplate.outpointTransactionHash.slice(),
-          sequenceNumber: inputTemplate.sequenceNumber,
-          unlockingBytecode: result.bytecode,
-        }
+        outpointIndex: inputTemplate.outpointIndex,
+        outpointTransactionHash: inputTemplate.outpointTransactionHash.slice(),
+        sequenceNumber: inputTemplate.sequenceNumber,
+        unlockingBytecode: result.bytecode,
+      }
       : returnFailedCompilationDirective({ index, result, type: 'unlocking' });
   }
   return {
@@ -348,8 +348,8 @@ export const safelyExtendCompilationData = <
   }>((all, [identifier, entityId]) => {
     const entityResolution = untrustedResolutions[entityId] as
       | {
-          [fullIdentifier: string]: Uint8Array;
-        }
+        [fullIdentifier: string]: Uint8Array;
+      }
       | undefined;
     if (entityResolution === undefined) {
       return all;

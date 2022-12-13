@@ -4,7 +4,7 @@ import { validateSecp256k1PrivateKey } from '../key/key-utils';
 
 import { CompilerDefaults } from './compiler-defaults';
 import { BuiltInVariables } from './language/resolve';
-import {
+import type {
   AuthenticationTemplate,
   AuthenticationTemplateAddressData,
   AuthenticationTemplateEntity,
@@ -880,8 +880,8 @@ export const parseAuthenticationTemplateScenarioData = (
     hdKeys === undefined
       ? undefined
       : isObject(hdKeys)
-      ? parseAuthenticationTemplateScenarioDataHdKeys(hdKeys, location)
-      : `If defined, the "data.hdKeys" property of ${location} must be an object.`;
+        ? parseAuthenticationTemplateScenarioDataHdKeys(hdKeys, location)
+        : `If defined, the "data.hdKeys" property of ${location} must be an object.`;
 
   if (typeof hdKeysResult === 'string') {
     return hdKeysResult;
@@ -891,8 +891,8 @@ export const parseAuthenticationTemplateScenarioData = (
     keys === undefined
       ? undefined
       : isObject(keys)
-      ? parseAuthenticationTemplateScenarioDataKeys(keys, location)
-      : `If defined, the "data.keys" property of ${location} must be an object.`;
+        ? parseAuthenticationTemplateScenarioDataKeys(keys, location)
+        : `If defined, the "data.keys" property of ${location} must be an object.`;
 
   if (typeof keysResult === 'string') {
     return keysResult;
@@ -1020,11 +1020,11 @@ export const parseAuthenticationTemplateScenarioTransactionOutputLockingBytecode
     overrides === undefined
       ? undefined
       : isObject(overrides)
-      ? parseAuthenticationTemplateScenarioData(
+        ? parseAuthenticationTemplateScenarioData(
           overrides,
           `'lockingBytecode.override' in ${location}`
         )
-      : `If defined, the "overrides" property of ${location} must be an object.`;
+        : `If defined, the "overrides" property of ${location} must be an object.`;
 
   if (typeof clonedOverrides === 'string') {
     return clonedOverrides;
@@ -1087,9 +1087,9 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
         lockingBytecode === undefined || typeof lockingBytecode === 'string'
           ? undefined
           : parseAuthenticationTemplateScenarioTransactionOutputLockingBytecode(
-              lockingBytecode,
-              newLocation
-            );
+            lockingBytecode,
+            newLocation
+          );
 
       if (typeof clonedLockingBytecode === 'string') {
         return clonedLockingBytecode;
@@ -1103,8 +1103,8 @@ export const parseAuthenticationTemplateScenarioTransactionOutputs = (
         ...(lockingBytecode === undefined
           ? {}
           : typeof lockingBytecode === 'string'
-          ? { lockingBytecode }
-          : { lockingBytecode: clonedLockingBytecode }),
+            ? { lockingBytecode }
+            : { lockingBytecode: clonedLockingBytecode }),
         ...(satoshis === undefined ? {} : { satoshis }),
       };
     });
@@ -1263,9 +1263,9 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
         transaction === undefined
           ? undefined
           : parseAuthenticationTemplateScenarioTransaction(
-              transaction,
-              location
-            );
+            transaction,
+            location
+          );
 
       if (typeof transactionResult === 'string') {
         return transactionResult;
@@ -1312,9 +1312,9 @@ export const parseAuthenticationTemplateScenarios = (scenarios: object) => {
   const unknownExtends = Object.values(clonedScenarios).reduce<string[]>(
     (all, scenario) =>
       scenario.extends !== undefined &&
-      (clonedScenarios[scenario.extends] as
-        | AuthenticationTemplateScenario
-        | undefined) === undefined
+        (clonedScenarios[scenario.extends] as
+          | AuthenticationTemplateScenario
+          | undefined) === undefined
         ? [...all, scenario.extends]
         : all,
     []
@@ -1596,32 +1596,32 @@ export const validateAuthenticationTemplate = (
     clonedScenarios === undefined
       ? []
       : Object.values(clonedScenarios)
-          .reduce<string[]>(
-            (all, scenario) => [
-              ...all,
-              ...entityIdsReferencedByScenarioData(scenario.data),
-              ...(scenario.transaction?.outputs ?? []).reduce<string[]>(
-                (fromOverrides, output) =>
-                  isObject(output.lockingBytecode)
-                    ? [
-                        ...fromOverrides,
-                        ...entityIdsReferencedByScenarioData(
-                          output.lockingBytecode.overrides
-                        ),
-                      ]
-                    : fromOverrides,
-                []
-              ),
-            ],
-            []
-          )
-          .reduce<string[]>(
-            (unique, id) =>
-              entityIds.includes(id) || unique.includes(id)
-                ? unique
-                : [...unique, id],
-            []
-          );
+        .reduce<string[]>(
+          (all, scenario) => [
+            ...all,
+            ...entityIdsReferencedByScenarioData(scenario.data),
+            ...(scenario.transaction?.outputs ?? []).reduce<string[]>(
+              (fromOverrides, output) =>
+                isObject(output.lockingBytecode)
+                  ? [
+                    ...fromOverrides,
+                    ...entityIdsReferencedByScenarioData(
+                      output.lockingBytecode.overrides
+                    ),
+                  ]
+                  : fromOverrides,
+              []
+            ),
+          ],
+          []
+        )
+        .reduce<string[]>(
+          (unique, id) =>
+            entityIds.includes(id) || unique.includes(id)
+              ? unique
+              : [...unique, id],
+          []
+        );
 
   if (unknownEntityIds.length > 0) {
     return `Only known entities may be referenced by hdKeys properties within scenarios. The following entity IDs are not provided in this template: ${listIds(

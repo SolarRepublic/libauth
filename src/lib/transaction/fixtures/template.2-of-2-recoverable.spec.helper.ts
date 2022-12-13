@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
 import { CompilerDefaults } from '../../template/compiler-defaults';
-import { AuthenticationTemplate } from '../../template/template-types';
+import type { AuthenticationTemplate } from '../../template/template-types';
 
 const secondsIn30Days = 2592000;
 

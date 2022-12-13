@@ -3,14 +3,14 @@ import {
   numberToBinUint32LE,
 } from '../../../format/format';
 import { range } from '../../../format/hex';
-import { Operation } from '../../virtual-machine';
-import {
+import type { Operation } from '../../virtual-machine';
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
 } from '../../vm-types';
-import { AuthenticationInstructionPush } from '../instruction-sets-types';
+import type { AuthenticationInstructionPush } from '../instruction-sets-types';
 
 import { pushToStack } from './combinators';
 import { applyError, AuthenticationErrorCommon } from './errors';
@@ -91,31 +91,31 @@ export const encodeDataPush = (data: Uint8Array) =>
     ? data.length === 0
       ? Uint8Array.of(0)
       : data.length === 1
-      ? data[0] !== 0 && data[0] <= PushOperationConstants.pushNumberOpcodes
-        ? Uint8Array.of(
+        ? data[0] !== 0 && data[0] <= PushOperationConstants.pushNumberOpcodes
+          ? Uint8Array.of(
             data[0] + PushOperationConstants.pushNumberOpcodesOffset
           )
-        : data[0] === PushOperationConstants.negativeOne
-        ? Uint8Array.of(PushOperationConstants.OP_1NEGATE)
-        : Uint8Array.from([1, ...data])
-      : Uint8Array.from([data.length, ...data])
+          : data[0] === PushOperationConstants.negativeOne
+            ? Uint8Array.of(PushOperationConstants.OP_1NEGATE)
+            : Uint8Array.from([1, ...data])
+        : Uint8Array.from([data.length, ...data])
     : data.length <= PushOperationConstants.maximumPushData1Size
-    ? Uint8Array.from([
+      ? Uint8Array.from([
         PushOperationConstants.OP_PUSHDATA_1,
         data.length,
         ...data,
       ])
-    : data.length <= PushOperationConstants.maximumPushData2Size
-    ? Uint8Array.from([
-        PushOperationConstants.OP_PUSHDATA_2,
-        ...numberToBinUint16LE(data.length),
-        ...data,
-      ])
-    : Uint8Array.from([
-        PushOperationConstants.OP_PUSHDATA_4,
-        ...numberToBinUint32LE(data.length),
-        ...data,
-      ]);
+      : data.length <= PushOperationConstants.maximumPushData2Size
+        ? Uint8Array.from([
+          PushOperationConstants.OP_PUSHDATA_2,
+          ...numberToBinUint16LE(data.length),
+          ...data,
+        ])
+        : Uint8Array.from([
+          PushOperationConstants.OP_PUSHDATA_4,
+          ...numberToBinUint32LE(data.length),
+          ...data,
+        ]);
 
 /**
  * Returns true if the provided `data` is minimally-encoded by the provided
@@ -128,18 +128,18 @@ export const isMinimalDataPush = (opcode: number, data: Uint8Array) =>
   data.length === 0
     ? opcode === PushOperationConstants.OP_0
     : data.length === 1
-    ? data[0] >= 1 && data[0] <= PushOperationConstants.pushNumberOpcodes
-      ? opcode === data[0] + PushOperationConstants.pushNumberOpcodesOffset
-      : data[0] === PushOperationConstants.negativeOne
-      ? opcode === PushOperationConstants.OP_1NEGATE
-      : true
-    : data.length <= PushOperationConstants.maximumPushByteOperationSize
-    ? opcode === data.length
-    : data.length <= PushOperationConstants.maximumPushData1Size
-    ? opcode === PushOperationConstants.OP_PUSHDATA_1
-    : data.length <= PushOperationConstants.maximumPushData2Size
-    ? opcode === PushOperationConstants.OP_PUSHDATA_2
-    : true;
+      ? data[0] >= 1 && data[0] <= PushOperationConstants.pushNumberOpcodes
+        ? opcode === data[0] + PushOperationConstants.pushNumberOpcodesOffset
+        : data[0] === PushOperationConstants.negativeOne
+          ? opcode === PushOperationConstants.OP_1NEGATE
+          : true
+      : data.length <= PushOperationConstants.maximumPushByteOperationSize
+        ? opcode === data.length
+        : data.length <= PushOperationConstants.maximumPushData1Size
+          ? opcode === PushOperationConstants.OP_PUSHDATA_1
+          : data.length <= PushOperationConstants.maximumPushData2Size
+            ? opcode === PushOperationConstants.OP_PUSHDATA_2
+            : true;
 
 export const pushByteOpcodes: readonly OpcodesCommon[] = [
   OpcodesCommon.OP_PUSHBYTES_1,
@@ -228,9 +228,9 @@ const executionIsActive = <
 export const pushOperation = <
   Opcodes,
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateMinimum<Opcodes> &
-    AuthenticationProgramStateError<Errors> &
-    AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateMinimum<Opcodes> &
+  AuthenticationProgramStateError<Errors> &
+  AuthenticationProgramStateExecutionStack,
   Errors
 >(
   flags: { requireMinimalEncoding: boolean },
@@ -241,29 +241,29 @@ export const pushOperation = <
   ] as AuthenticationInstructionPush<Opcodes>;
   return instruction.data.length > maximumPushSize
     ? applyError<State, Errors>(
-        AuthenticationErrorCommon.exceedsMaximumPush,
-        state
-      )
+      AuthenticationErrorCommon.exceedsMaximumPush,
+      state
+    )
     : executionIsActive(state)
-    ? flags.requireMinimalEncoding &&
-      !isMinimalDataPush(
-        (instruction.opcode as unknown) as number,
-        instruction.data
-      )
-      ? applyError<State, Errors>(
+      ? flags.requireMinimalEncoding &&
+        !isMinimalDataPush(
+          (instruction.opcode as unknown) as number,
+          instruction.data
+        )
+        ? applyError<State, Errors>(
           AuthenticationErrorCommon.nonMinimalPush,
           state
         )
-      : pushToStack(state, instruction.data)
-    : state;
+        : pushToStack(state, instruction.data)
+      : state;
 };
 
 export const pushOperations = <
   Opcodes,
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateMinimum<Opcodes> &
-    AuthenticationProgramStateError<Errors> &
-    AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateMinimum<Opcodes> &
+  AuthenticationProgramStateError<Errors> &
+  AuthenticationProgramStateExecutionStack,
   Errors
 >(
   flags: { requireMinimalEncoding: boolean },
@@ -300,7 +300,7 @@ const op1NegateValue = -1;
 export const pushNumberOperations = <
   Opcodes,
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateMinimum<Opcodes>
+  AuthenticationProgramStateMinimum<Opcodes>
 >() =>
   pushNumberOpcodes
     .map<[OpcodesCommon, Uint8Array]>((opcode, i) => [

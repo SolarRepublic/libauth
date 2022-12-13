@@ -1,5 +1,5 @@
-import { Operation } from '../../virtual-machine';
-import {
+import type { Operation } from '../../virtual-machine';
+import type {
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
@@ -14,29 +14,29 @@ import { OpcodesCommon } from './opcodes';
 
 export const opVerify = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(): Operation<State> => (state: State) =>
-  useOneStackItem(state, (nextState, [item]) =>
-    stackItemIsTruthy(item)
-      ? nextState
-      : applyError<State, Errors>(
+    useOneStackItem(state, (nextState, [item]) =>
+      stackItemIsTruthy(item)
+        ? nextState
+        : applyError<State, Errors>(
           AuthenticationErrorCommon.failedVerify,
           nextState
         )
-  );
+    );
 
 export const reservedOperation = <
   State extends AuthenticationProgramStateError<Errors>,
   Errors
 >() => (state: State) =>
-  applyError<State, Errors>(AuthenticationErrorCommon.calledReserved, state);
+    applyError<State, Errors>(AuthenticationErrorCommon.calledReserved, state);
 
 export const opReturn = <
   State extends AuthenticationProgramStateError<Errors>,
   Errors
 >() => (state: State) =>
-  applyError<State, Errors>(AuthenticationErrorCommon.calledReturn, state);
+    applyError<State, Errors>(AuthenticationErrorCommon.calledReturn, state);
 
 export const conditionalFlowControlOperations = <
   Opcodes,
@@ -53,8 +53,8 @@ export const conditionalFlowControlOperations = <
 
 export const opIf = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(): Operation<State> => (state: State) => {
   if (state.executionStack.every((item) => item)) {
@@ -77,8 +77,8 @@ export const opIf = <
 
 export const opNotIf = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(flags: {
   requireMinimalEncoding: boolean;
@@ -90,7 +90,7 @@ export const opNotIf = <
 
 export const opEndIf = <
   State extends AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(): Operation<State> => (state: State) => {
   // eslint-disable-next-line functional/immutable-data
@@ -106,7 +106,7 @@ export const opEndIf = <
 
 export const opElse = <
   State extends AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(): Operation<State> => (state: State) => {
   const top = state.executionStack[state.executionStack.length - 1] as

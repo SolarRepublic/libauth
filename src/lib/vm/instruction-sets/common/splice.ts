@@ -1,4 +1,4 @@
-import {
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateStack,
 } from '../../vm-types';
@@ -16,7 +16,7 @@ export const opSize = <State extends AuthenticationProgramStateStack>() => (
 
 export const spliceOperations = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >() => ({
   [OpcodesCommon.OP_SIZE]: opSize<State>(),

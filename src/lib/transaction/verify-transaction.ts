@@ -6,7 +6,7 @@ import {
   OpcodesBCH,
 } from '../vm/vm';
 
-import { Output, Transaction } from './transaction-types';
+import type { Output, Transaction } from './transaction-types';
 
 /**
  * Statelessly verify a transaction given an `AuthenticationVirtualMachine` and

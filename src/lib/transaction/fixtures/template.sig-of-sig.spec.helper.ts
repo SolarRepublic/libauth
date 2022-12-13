@@ -1,5 +1,5 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
-import { AuthenticationTemplate } from '../../template/template-types';
+import type { AuthenticationTemplate } from '../../template/template-types';
 
 export const sigOfSig: AuthenticationTemplate = {
   ...{

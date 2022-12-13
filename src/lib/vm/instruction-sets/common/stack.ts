@@ -1,4 +1,4 @@
-import {
+import type {
   AuthenticationProgramStateAlternateStack,
   AuthenticationProgramStateError,
   AuthenticationProgramStateStack,
@@ -19,18 +19,18 @@ import { bigIntToScriptNumber, stackItemIsTruthy } from './types';
 
 export const opToAltStack = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateAlternateStack
+  AuthenticationProgramStateAlternateStack
 >() => (state: State) =>
-  useOneStackItem(state, (nextState, [item]) => {
-    // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
-    nextState.alternateStack.push(item);
-    return nextState;
-  });
+    useOneStackItem(state, (nextState, [item]) => {
+      // eslint-disable-next-line functional/no-expression-statement, functional/immutable-data
+      nextState.alternateStack.push(item);
+      return nextState;
+    });
 
 export const opFromAltStack = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateAlternateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateAlternateStack &
+  AuthenticationProgramStateError<Errors>,
   Errors
 >() => (state: State) => {
   // eslint-disable-next-line functional/immutable-data
@@ -121,54 +121,54 @@ export const opOver = <State extends AuthenticationProgramStateStack>() => (
 
 export const opPick = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >({
   requireMinimalEncoding,
 }: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, depth) => {
-      const item = nextState.stack[
-        nextState.stack.length - 1 - Number(depth)
-      ] as Uint8Array | undefined;
-      if (item === undefined) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.invalidStackIndex,
-          state
-        );
-      }
-      return pushToStack(nextState, item.slice());
-    },
-    { requireMinimalEncoding }
-  );
+    useOneScriptNumber(
+      state,
+      (nextState, depth) => {
+        const item = nextState.stack[
+          nextState.stack.length - 1 - Number(depth)
+        ] as Uint8Array | undefined;
+        if (item === undefined) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.invalidStackIndex,
+            state
+          );
+        }
+        return pushToStack(nextState, item.slice());
+      },
+      { requireMinimalEncoding }
+    );
 
 export const opRoll = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >({
   requireMinimalEncoding,
 }: {
   requireMinimalEncoding: boolean;
 }) => (state: State) =>
-  useOneScriptNumber(
-    state,
-    (nextState, depth) => {
-      const index = nextState.stack.length - 1 - Number(depth);
-      if (index < 0 || index > nextState.stack.length - 1) {
-        return applyError<State, Errors>(
-          AuthenticationErrorCommon.invalidStackIndex,
-          state
-        );
-      }
-      // eslint-disable-next-line functional/immutable-data
-      return pushToStack(nextState, nextState.stack.splice(index, 1)[0]);
-    },
-    { requireMinimalEncoding }
-  );
+    useOneScriptNumber(
+      state,
+      (nextState, depth) => {
+        const index = nextState.stack.length - 1 - Number(depth);
+        if (index < 0 || index > nextState.stack.length - 1) {
+          return applyError<State, Errors>(
+            AuthenticationErrorCommon.invalidStackIndex,
+            state
+          );
+        }
+        // eslint-disable-next-line functional/immutable-data
+        return pushToStack(nextState, nextState.stack.splice(index, 1)[0]);
+      },
+      { requireMinimalEncoding }
+    );
 
 export const opRot = <State extends AuthenticationProgramStateStack>() => (
   state: State
@@ -191,8 +191,8 @@ export const opTuck = <State extends AuthenticationProgramStateStack>() => (
 
 export const stackOperations = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateAlternateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateAlternateStack &
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(flags: {
   requireMinimalEncoding: boolean;

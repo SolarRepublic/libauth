@@ -1,4 +1,4 @@
-import { AuthenticationProgramStateError } from '../../vm-types';
+import type { AuthenticationProgramStateError } from '../../vm-types';
 
 export enum AuthenticationErrorCommon {
   calledReserved = 'Program called an unassigned, reserved operation.',

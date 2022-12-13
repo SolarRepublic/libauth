@@ -6,7 +6,7 @@ import {
   instantiateSha512,
   Sha256,
 } from '../../crypto/crypto';
-import { TransactionContextCommon } from '../../transaction/transaction-types';
+import type { TransactionContextCommon } from '../../transaction/transaction-types';
 import {
   generateSigningSerializationBCH,
   SigningSerializationFlag,
@@ -34,13 +34,13 @@ import {
   compilerOperationRequires,
 } from '../compiler-operation-helpers';
 import { compilerOperationsCommon } from '../compiler-operations';
-import {
+import type {
   AnyCompilationEnvironment,
   CompilationData,
   CompilationEnvironment,
   CompilerOperationResult,
 } from '../compiler-types';
-import { AuthenticationTemplate } from '../template-types';
+import type { AuthenticationTemplate } from '../template-types';
 
 export type CompilerOperationsKeyBCH =
   | 'data_signature'
@@ -91,21 +91,21 @@ const getSigningSerializationType = (
       return Uint8Array.of(
         // eslint-disable-next-line no-bitwise
         SigningSerializationFlag.allOutputs |
-          SigningSerializationFlag.singleInput |
-          SigningSerializationFlag.forkId
+        SigningSerializationFlag.singleInput |
+        SigningSerializationFlag.forkId
       );
     case `${prefix}${SigningSerializationAlgorithmIdentifier.correspondingOutput}`:
       return Uint8Array.of(
         // eslint-disable-next-line no-bitwise
         SigningSerializationFlag.correspondingOutput |
-          SigningSerializationFlag.forkId
+        SigningSerializationFlag.forkId
       );
     case `${prefix}${SigningSerializationAlgorithmIdentifier.correspondingOutputSingleInput}`:
       return Uint8Array.of(
         // eslint-disable-next-line no-bitwise
         SigningSerializationFlag.correspondingOutput |
-          SigningSerializationFlag.singleInput |
-          SigningSerializationFlag.forkId
+        SigningSerializationFlag.singleInput |
+        SigningSerializationFlag.forkId
       );
     case `${prefix}${SigningSerializationAlgorithmIdentifier.noOutputs}`:
       return Uint8Array.of(
@@ -116,8 +116,8 @@ const getSigningSerializationType = (
       return Uint8Array.of(
         // eslint-disable-next-line no-bitwise
         SigningSerializationFlag.noOutputs |
-          SigningSerializationFlag.singleInput |
-          SigningSerializationFlag.forkId
+        SigningSerializationFlag.singleInput |
+        SigningSerializationFlag.forkId
       );
     default:
       return undefined;

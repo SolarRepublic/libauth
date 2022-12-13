@@ -8,7 +8,7 @@ import {
   readBitcoinVarInt,
 } from '../format/format';
 
-import { Input, Output, Transaction } from './transaction-types';
+import type { Input, Output, Transaction } from './transaction-types';
 
 /**
  * @param bin - the raw transaction from which to read the input

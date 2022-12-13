@@ -1,13 +1,13 @@
-import { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
-import {
+import type { AuthenticationVirtualMachine } from '../../vm/virtual-machine';
+import type {
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateMinimum,
   AuthenticationProgramStateStack,
 } from '../../vm/vm-types';
 import { createCompilerCommonSynchronous } from '../compiler';
-import { CompilationData, CompilationEnvironment } from '../compiler-types';
+import type { CompilationData, CompilationEnvironment } from '../compiler-types';
 
-import { CompilationResult, CompilationResultSuccess } from './language-types';
+import type { CompilationResult, CompilationResultSuccess } from './language-types';
 import { getResolutionErrors } from './language-utils';
 import { parseScript } from './parse';
 import { reduceScript } from './reduce';
@@ -35,13 +35,12 @@ export const describeExpectedInput = (expectedArray: string[]) => {
   const lastElement = newArray[newArray.length - 1];
   const arrayRequiresCommas = 3;
   const arrayRequiresOr = 2;
-  return `Encountered unexpected input while parsing script. Expected ${
-    newArray.length >= arrayRequiresCommas
-      ? withoutLastElement.join(', ').concat(`, or ${lastElement}`)
-      : newArray.length === arrayRequiresOr
+  return `Encountered unexpected input while parsing script. Expected ${newArray.length >= arrayRequiresCommas
+    ? withoutLastElement.join(', ').concat(`, or ${lastElement}`)
+    : newArray.length === arrayRequiresOr
       ? newArray.join(' or ')
       : lastElement
-  }.`;
+    }.`;
 };
 
 /**
@@ -50,8 +49,8 @@ export const describeExpectedInput = (expectedArray: string[]) => {
  */
 export const compileScriptContents = <
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateExecutionStack = AuthenticationProgramStateStack &
+  AuthenticationProgramStateExecutionStack,
   TransactionContext = unknown
 >({
   data,
@@ -120,10 +119,10 @@ const emptyRange = () => ({
  */
 export const compileScriptRaw = <
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum,
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum,
   TransactionContext = unknown
 >({
   data,
@@ -180,8 +179,8 @@ export const compileScriptP2shLocking = <AuthenticationProgram, ProgramState>({
 }: {
   lockingBytecode: Uint8Array;
   vm:
-    | AuthenticationVirtualMachine<AuthenticationProgram, ProgramState>
-    | undefined;
+  | AuthenticationVirtualMachine<AuthenticationProgram, ProgramState>
+  | undefined;
 }) => {
   const compiler = createCompilerCommonSynchronous({
     scripts: {
@@ -226,10 +225,10 @@ export const compileScriptP2shUnlocking = <ProgramState>({
 // eslint-disable-next-line complexity
 export const compileScript = <
   ProgramState extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
-    AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateMinimum,
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum = AuthenticationProgramStateStack &
+  AuthenticationProgramStateExecutionStack &
+  AuthenticationProgramStateMinimum,
   TransactionContext extends { locktime: number; sequenceNumber: number } = {
     locktime: number;
     sequenceNumber: number;

@@ -4,21 +4,21 @@ import {
   bigIntToBinUint64LE,
 } from '../format/numbers';
 import { deriveHdPrivateNodeFromSeed, encodeHdPrivateKey } from '../key/hd-key';
-import {
+import type {
   Output,
   TransactionContextCommon,
 } from '../transaction/transaction-types';
 
 import { CompilerDefaults } from './compiler-defaults';
-import {
+import type {
   AnyCompilationEnvironmentIgnoreOperations,
   CompilationData,
   Scenario,
 } from './compiler-types';
 import { compileScript, compileScriptRaw } from './language/compile';
-import { CompilationError } from './language/language-types';
+import type { CompilationError } from './language/language-types';
 import { stringifyErrors } from './language/language-utils';
-import {
+import type {
   AuthenticationTemplateKey,
   AuthenticationTemplateScenario,
   AuthenticationTemplateScenarioData,
@@ -80,21 +80,21 @@ export const generateDefaultScenarioDefinition = <
     variables === undefined
       ? []
       : Object.entries(variables)
-          .filter(
-            (entry): entry is [string, AuthenticationTemplateKey] =>
-              entry[1].type === 'Key'
-          )
-          .map(([id]) => id);
+        .filter(
+          (entry): entry is [string, AuthenticationTemplateKey] =>
+            entry[1].type === 'Key'
+        )
+        .map(([id]) => id);
 
   const entityIds =
     entityOwnership === undefined
       ? []
       : Object.keys(
-          Object.values(entityOwnership).reduce(
-            (all, entityId) => ({ ...all, [entityId]: true }),
-            {}
-          )
-        );
+        Object.values(entityOwnership).reduce(
+          (all, entityId) => ({ ...all, [entityId]: true }),
+          {}
+        )
+      );
 
   const valueMap = [...keyVariableIds, ...entityIds]
     .sort(([idA], [idB]) => idA.localeCompare(idB))
@@ -110,15 +110,15 @@ export const generateDefaultScenarioDefinition = <
     variables === undefined
       ? undefined
       : Object.entries(variables).reduce<{ [id: string]: string }>(
-          (all, [variableId, variable]) =>
-            variable.type === 'Key'
-              ? {
-                  ...all,
-                  [variableId]: binToHex(valueMap[variableId]),
-                }
-              : all,
-          {}
-        );
+        (all, [variableId, variable]) =>
+          variable.type === 'Key'
+            ? {
+              ...all,
+              [variableId]: binToHex(valueMap[variableId]),
+            }
+            : all,
+        {}
+      );
 
   const defaultScenario: ExtendedScenarioDefinition = {
     data: {
@@ -145,8 +145,8 @@ export const generateDefaultScenarioDefinition = <
     variables === undefined
       ? false
       : Object.values(variables).findIndex(
-          (variable) => variable.type === 'HdKey'
-        ) !== -1;
+        (variable) => variable.type === 'HdKey'
+      ) !== -1;
 
   if (!hasHdKeys) {
     return defaultScenario;
@@ -212,47 +212,47 @@ export const extendScenarioDefinitionData = (
     ...(parentData.bytecode === undefined && childData.bytecode === undefined
       ? {}
       : {
-          bytecode: {
-            ...parentData.bytecode,
-            ...childData.bytecode,
-          },
-        }),
+        bytecode: {
+          ...parentData.bytecode,
+          ...childData.bytecode,
+        },
+      }),
     ...(parentData.hdKeys === undefined && childData.hdKeys === undefined
       ? {}
       : {
-          hdKeys: {
-            ...parentData.hdKeys,
-            ...childData.hdKeys,
-            ...(parentData.hdKeys?.hdPrivateKeys === undefined &&
+        hdKeys: {
+          ...parentData.hdKeys,
+          ...childData.hdKeys,
+          ...(parentData.hdKeys?.hdPrivateKeys === undefined &&
             childData.hdKeys?.hdPrivateKeys === undefined
-              ? {}
-              : {
-                  hdPrivateKeys: {
-                    ...parentData.hdKeys?.hdPrivateKeys,
-                    ...childData.hdKeys?.hdPrivateKeys,
-                  },
-                }),
-            ...(parentData.hdKeys?.hdPublicKeys === undefined &&
+            ? {}
+            : {
+              hdPrivateKeys: {
+                ...parentData.hdKeys?.hdPrivateKeys,
+                ...childData.hdKeys?.hdPrivateKeys,
+              },
+            }),
+          ...(parentData.hdKeys?.hdPublicKeys === undefined &&
             childData.hdKeys?.hdPublicKeys === undefined
-              ? {}
-              : {
-                  hdPublicKeys: {
-                    ...parentData.hdKeys?.hdPublicKeys,
-                    ...childData.hdKeys?.hdPublicKeys,
-                  },
-                }),
-          },
-        }),
+            ? {}
+            : {
+              hdPublicKeys: {
+                ...parentData.hdKeys?.hdPublicKeys,
+                ...childData.hdKeys?.hdPublicKeys,
+              },
+            }),
+        },
+      }),
     ...(parentData.keys === undefined && childData.keys === undefined
       ? {}
       : {
-          keys: {
-            privateKeys: {
-              ...parentData.keys?.privateKeys,
-              ...childData.keys?.privateKeys,
-            },
+        keys: {
+          privateKeys: {
+            ...parentData.keys?.privateKeys,
+            ...childData.keys?.privateKeys,
           },
-        }),
+        },
+      }),
   };
 };
 
@@ -276,20 +276,20 @@ export const extendScenarioDefinition = <
     ...(parentScenario.data === undefined && childScenario.data === undefined
       ? {}
       : {
-          data: extendScenarioDefinitionData(
-            parentScenario.data ?? {},
-            childScenario.data ?? {}
-          ),
-        }),
+        data: extendScenarioDefinitionData(
+          parentScenario.data ?? {},
+          childScenario.data ?? {}
+        ),
+      }),
     ...(parentScenario.transaction === undefined &&
-    childScenario.transaction === undefined
+      childScenario.transaction === undefined
       ? {}
       : {
-          transaction: {
-            ...parentScenario.transaction,
-            ...childScenario.transaction,
-          },
-        }),
+        transaction: {
+          ...parentScenario.transaction,
+          ...childScenario.transaction,
+        },
+      }),
     ...(parentScenario.value === undefined && childScenario.value === undefined
       ? {}
       : { value: childScenario.value ?? parentScenario.value }),
@@ -344,13 +344,13 @@ export const generateExtendedScenario = <
   const parentScenario =
     scenario.extends === undefined
       ? generateDefaultScenarioDefinition<Environment, TransactionContext>(
-          environment
-        )
+        environment
+      )
       : generateExtendedScenario<Environment, TransactionContext>({
-          environment,
-          scenarioId: scenario.extends,
-          sourceScenarioIds: [...sourceScenarioIds, scenarioId],
-        });
+        environment,
+        scenarioId: scenario.extends,
+        sourceScenarioIds: [...sourceScenarioIds, scenarioId],
+      });
   if (typeof parentScenario === 'string') {
     return parentScenario;
   }
@@ -371,45 +371,45 @@ export const extendedScenarioDefinitionToCompilationData = (
   ...(definition.data.currentBlockHeight === undefined
     ? {}
     : {
-        currentBlockHeight: definition.data.currentBlockHeight,
-      }),
+      currentBlockHeight: definition.data.currentBlockHeight,
+    }),
   ...(definition.data.currentBlockTime === undefined
     ? {}
     : {
-        currentBlockTime: definition.data.currentBlockTime,
-      }),
+      currentBlockTime: definition.data.currentBlockTime,
+    }),
   ...(definition.data.hdKeys === undefined
     ? {}
     : {
-        hdKeys: {
-          ...(definition.data.hdKeys.addressIndex === undefined
-            ? {}
-            : {
-                addressIndex: definition.data.hdKeys.addressIndex,
-              }),
-          ...(definition.data.hdKeys.hdPrivateKeys !== undefined &&
+      hdKeys: {
+        ...(definition.data.hdKeys.addressIndex === undefined
+          ? {}
+          : {
+            addressIndex: definition.data.hdKeys.addressIndex,
+          }),
+        ...(definition.data.hdKeys.hdPrivateKeys !== undefined &&
           Object.keys(definition.data.hdKeys.hdPrivateKeys).length > 0
-            ? {
-                hdPrivateKeys: definition.data.hdKeys.hdPrivateKeys,
-              }
-            : {}),
-          ...(definition.data.hdKeys.hdPublicKeys === undefined
-            ? {}
-            : {
-                hdPublicKeys: definition.data.hdKeys.hdPublicKeys,
-              }),
-        },
-      }),
+          ? {
+            hdPrivateKeys: definition.data.hdKeys.hdPrivateKeys,
+          }
+          : {}),
+        ...(definition.data.hdKeys.hdPublicKeys === undefined
+          ? {}
+          : {
+            hdPublicKeys: definition.data.hdKeys.hdPublicKeys,
+          }),
+      },
+    }),
   ...(definition.data.keys?.privateKeys !== undefined &&
-  Object.keys(definition.data.keys.privateKeys).length > 0
+    Object.keys(definition.data.keys.privateKeys).length > 0
     ? {
-        keys: {
-          privateKeys: Object.entries(definition.data.keys.privateKeys).reduce(
-            (all, [id, hex]) => ({ ...all, [id]: hexToBin(hex) }),
-            {}
-          ),
-        },
-      }
+      keys: {
+        privateKeys: Object.entries(definition.data.keys.privateKeys).reduce(
+          (all, [id, hex]) => ({ ...all, [id]: hexToBin(hex) }),
+          {}
+        ),
+      },
+    }
     : {}),
 });
 
@@ -460,13 +460,13 @@ export const extendCompilationDataWithScenarioBytecode = <
 
   const bytecodeCompilations: (
     | {
-        bytecode: Uint8Array;
-        id: string;
-      }
+      bytecode: Uint8Array;
+      id: string;
+    }
     | {
-        errors: [CompilationError] | CompilationError[];
-        id: string;
-      }
+      errors: [CompilationError] | CompilationError[];
+      id: string;
+    }
   )[] = Object.keys(scenarioDataBytecodeScripts).map((id) => {
     const result = compileScriptRaw({
       data: compilationData,
@@ -497,8 +497,7 @@ export const extendCompilationDataWithScenarioBytecode = <
     return `${failedResults
       .map(
         (result) =>
-          `Compilation error while generating bytecode for "${
-            result.id
+          `Compilation error while generating bytecode for "${result.id
           }": ${stringifyErrors(result.errors)}`
       )
       .join('; ')}`;
@@ -557,14 +556,13 @@ export const generateScenarioCommon = <
     scenarioId === undefined
       ? { scenario: {}, scenarioName: `the default scenario` }
       : {
-          scenario: environment.scenarios?.[scenarioId],
-          scenarioName: `scenario "${scenarioId}"`,
-        };
+        scenario: environment.scenarios?.[scenarioId],
+        scenarioName: `scenario "${scenarioId}"`,
+      };
 
   if (scenario === undefined) {
-    return `Cannot generate ${scenarioName}: a scenario with the identifier ${
-      scenarioId as string
-    } is not included in this compilation environment.`;
+    return `Cannot generate ${scenarioName}: a scenario with the identifier ${scenarioId as string
+      } is not included in this compilation environment.`;
   }
 
   const parentScenario = generateExtendedScenario<
@@ -642,21 +640,21 @@ export const generateScenarioCommon = <
         output.lockingBytecode.overrides === undefined
           ? undefined
           : extendScenarioDefinitionData(
-              extendedScenario.data,
-              output.lockingBytecode.overrides
-            );
+            extendedScenario.data,
+            output.lockingBytecode.overrides
+          );
 
       const overriddenCompilationData =
         overriddenDataDefinition === undefined
           ? undefined
           : extendCompilationDataWithScenarioBytecode({
-              compilationData: extendedScenarioDefinitionToCompilationData({
-                data: overriddenDataDefinition,
-              }),
-              environment,
-              scenarioDataBytecodeScripts:
-                overriddenDataDefinition.bytecode ?? {},
-            });
+            compilationData: extendedScenarioDefinitionToCompilationData({
+              data: overriddenDataDefinition,
+            }),
+            environment,
+            scenarioDataBytecodeScripts:
+              overriddenDataDefinition.bytecode ?? {},
+          });
 
       if (typeof overriddenCompilationData === 'string') {
         return `Cannot generate locking bytecode for output ${index}: ${overriddenCompilationData}`;
@@ -708,7 +706,7 @@ export const generateScenarioCommon = <
             CompilerDefaults.defaultScenarioInputOutpointIndex,
           outpointTransactionHash: hexToBin(
             input.outpointTransactionHash ??
-              CompilerDefaults.defaultScenarioInputOutpointTransactionHash
+            CompilerDefaults.defaultScenarioInputOutpointTransactionHash
           ),
           sequenceNumber:
             input.sequenceNumber ??
@@ -717,10 +715,10 @@ export const generateScenarioCommon = <
             input.unlockingBytecode === null
               ? unlockingBytecodeUnderTest
               : hexToBin(
-                  typeof input.unlockingBytecode === 'string'
-                    ? input.unlockingBytecode
-                    : CompilerDefaults.defaultScenarioInputUnlockingBytecodeHex
-                ),
+                typeof input.unlockingBytecode === 'string'
+                  ? input.unlockingBytecode
+                  : CompilerDefaults.defaultScenarioInputUnlockingBytecodeHex
+              ),
         })),
         locktime: extendedScenario.transaction.locktime,
         outputs: compiledOutputs,

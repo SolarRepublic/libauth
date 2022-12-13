@@ -1,15 +1,15 @@
 /* eslint-disable no-underscore-dangle, max-params, @typescript-eslint/naming-convention */
 // cSpell:ignore memcpy, anyfunc
-import {base64ToBin} from '../../format/format';
+import { base64ToBin } from '../../format/format';
 
 import {
   CompressionFlag,
   ContextFlag,
   Secp256k1Wasm,
 } from './secp256k1-wasm-types';
-import {secp256k1Base64Bytes} from './secp256k1.base64';
+import { secp256k1Base64Bytes } from './secp256k1.base64';
 
-export {ContextFlag, CompressionFlag, Secp256k1Wasm};
+export { ContextFlag, CompressionFlag, Secp256k1Wasm };
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 const wrapSecp256k1Wasm = (
@@ -358,7 +358,7 @@ export const instantiateSecp256k1WasmBytes = async (
       }),
       tableBase: 0,
     },
-    global: {Infinity, NaN},
+    global: { Infinity, NaN },
   };
 
   return WebAssembly.instantiate(webassemblyBytes, info).then((result) => {

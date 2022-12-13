@@ -1,8 +1,8 @@
-import {
+import type {
   InstructionSetOperationMapping,
   Operation,
 } from '../../virtual-machine';
-import {
+import type {
   AuthenticationProgramStateError,
   AuthenticationProgramStateExecutionStack,
   AuthenticationProgramStateStack,
@@ -27,7 +27,7 @@ export const conditionallyEvaluate = <
 >(
   operation: Operation<State>
 ): Operation<State> => (state: State) =>
-  state.executionStack.every((item) => item) ? operation(state) : state;
+    state.executionStack.every((item) => item) ? operation(state) : state;
 
 /**
  * Map a function over each operation in an `InstructionSet.operations` object,
@@ -57,7 +57,7 @@ export const mapOverOperations = <State>(
  */
 export const useOneStackItem = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -76,7 +76,7 @@ export const useOneStackItem = <
 
 export const useTwoStackItems = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -93,7 +93,7 @@ export const useTwoStackItems = <
 
 export const useThreeStackItems = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -110,7 +110,7 @@ export const useThreeStackItems = <
 
 export const useFourStackItems = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -132,7 +132,7 @@ export const useFourStackItems = <
 
 export const useSixStackItems = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -167,7 +167,7 @@ const normalMaximumScriptNumberByteLength = 4;
 
 export const useOneScriptNumber = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -193,7 +193,7 @@ export const useOneScriptNumber = <
 
 export const useTwoScriptNumbers = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,
@@ -220,7 +220,7 @@ export const useTwoScriptNumbers = <
 
 export const useThreeScriptNumbers = <
   State extends AuthenticationProgramStateStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >(
   state: State,

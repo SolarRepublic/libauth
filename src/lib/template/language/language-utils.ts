@@ -1,5 +1,5 @@
 import { flattenBinArray } from '../../format/hex';
-import {
+import type {
   AuthenticationInstruction,
   ParsedAuthenticationInstruction,
   ParsedAuthenticationInstructionMalformed,
@@ -12,7 +12,7 @@ import {
 import { AuthenticationProgramStateExecutionStack } from '../../vm/vm';
 import { createCompilerCommonSynchronous } from '../compiler';
 
-import {
+import type {
   CompilationError,
   CompilationErrorRecoverable,
   EvaluationSample,
@@ -55,23 +55,23 @@ export const mergeRanges = (
         ? ranges[0]
         : parentRange
       : ranges.reduce<Range>(
-          // eslint-disable-next-line complexity
-          (merged, range) => ({
-            ...(range.endLineNumber > merged.endLineNumber
-              ? pluckEndPosition(range)
-              : range.endLineNumber === merged.endLineNumber &&
-                range.endColumn > merged.endColumn
+        // eslint-disable-next-line complexity
+        (merged, range) => ({
+          ...(range.endLineNumber > merged.endLineNumber
+            ? pluckEndPosition(range)
+            : range.endLineNumber === merged.endLineNumber &&
+              range.endColumn > merged.endColumn
               ? pluckEndPosition(range)
               : pluckEndPosition(merged)),
-            ...(range.startLineNumber < merged.startLineNumber
-              ? pluckStartPosition(range)
-              : range.startLineNumber === merged.startLineNumber &&
-                range.startColumn < merged.startColumn
+          ...(range.startLineNumber < merged.startLineNumber
+            ? pluckStartPosition(range)
+            : range.startLineNumber === merged.startLineNumber &&
+              range.startColumn < merged.startColumn
               ? pluckStartPosition(range)
               : pluckStartPosition(merged)),
-          }),
-          ranges[0]
-        );
+        }),
+        ranges[0]
+      );
   return {
     ...pluckEndPosition(unsortedMerged),
     ...pluckStartPosition(unsortedMerged),
@@ -98,18 +98,18 @@ export const containsRange = (
     outerRange.startLineNumber < innerRange.startLineNumber
       ? true
       : outerRange.startLineNumber === innerRange.startLineNumber
-      ? exclusive
-        ? outerRange.startColumn < innerRange.startColumn
-        : outerRange.startColumn <= innerRange.startColumn
-      : false;
+        ? exclusive
+          ? outerRange.startColumn < innerRange.startColumn
+          : outerRange.startColumn <= innerRange.startColumn
+        : false;
   const endsBefore =
     outerRange.endLineNumber > innerRange.endLineNumber
       ? true
       : outerRange.endLineNumber === innerRange.endLineNumber
-      ? exclusive
-        ? outerRange.endColumn > innerRange.endColumn
-        : outerRange.endColumn >= innerRange.endColumn
-      : false;
+        ? exclusive
+          ? outerRange.endColumn > innerRange.endColumn
+          : outerRange.endColumn >= innerRange.endColumn
+        : false;
   return startsAfter && endsBefore;
 };
 
@@ -159,9 +159,9 @@ export const getResolutionErrors = (
             ...(segment.missingIdentifier === undefined
               ? {}
               : {
-                  missingIdentifier: segment.missingIdentifier,
-                  owningEntity: segment.owningEntity,
-                }),
+                missingIdentifier: segment.missingIdentifier,
+                owningEntity: segment.owningEntity,
+              }),
             range: segment.range,
           },
         ];
@@ -485,16 +485,16 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
     const { mergedBytecode, mergedRange } =
       incomplete === undefined
         ? {
-            mergedBytecode: currentNode.bytecode,
-            mergedRange: currentNode.range,
-          }
+          mergedBytecode: currentNode.bytecode,
+          mergedRange: currentNode.range,
+        }
         : {
-            mergedBytecode: flattenBinArray([
-              incomplete.bytecode,
-              currentNode.bytecode,
-            ]),
-            mergedRange: mergeRanges([incomplete.range, currentNode.range]),
-          };
+          mergedBytecode: flattenBinArray([
+            incomplete.bytecode,
+            currentNode.bytecode,
+          ]),
+          mergedRange: mergeRanges([incomplete.range, currentNode.range]),
+        };
 
     const parsed = parseBytecode<Opcodes>(mergedBytecode);
 
@@ -600,11 +600,11 @@ export const extractEvaluationSamples = <ProgramState, Opcodes = number>({
         lastInstruction === undefined
           ? undefined
           : {
-              bytecode: serializeParsedAuthenticationInstructionMalformed(
-                lastInstruction
-              ),
-              range: mergedRange,
-            };
+            bytecode: serializeParsedAuthenticationInstructionMalformed(
+              lastInstruction
+            ),
+            range: mergedRange,
+          };
     }
     // eslint-disable-next-line functional/no-expression-statement
     nextNode += 1;
@@ -806,13 +806,13 @@ export const extractUnexecutedRanges = <
     reduced.unexecutedRanges.length < canHaveContainedRanges
       ? reduced.unexecutedRanges
       : reduced.unexecutedRanges.slice(0, -1).reduceRight<Range[]>(
-          (all, range) => {
-            if (containsRange(all[0], range)) {
-              return all;
-            }
-            return [range, ...all];
-          },
-          [reduced.unexecutedRanges[reduced.unexecutedRanges.length - 1]]
-        );
+        (all, range) => {
+          if (containsRange(all[0], range)) {
+            return all;
+          }
+          return [range, ...all];
+        },
+        [reduced.unexecutedRanges[reduced.unexecutedRanges.length - 1]]
+      );
   return containedRangesExcluded;
 };

@@ -1,5 +1,5 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention, @typescript-eslint/no-magic-numbers */
-import {
+import type {
   AuthenticationTemplate,
   AuthenticationTemplateHdKey,
 } from '../../template/template-types';

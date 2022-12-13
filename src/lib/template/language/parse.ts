@@ -1,4 +1,4 @@
-import { ParseResult } from './language-types';
+import type { ParseResult } from './language-types';
 import { P } from './parsimmon';
 
 /* eslint-disable sort-keys, @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */

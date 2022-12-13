@@ -4,9 +4,9 @@ import {
   encodeOutputsForSigning,
   encodeSequenceNumbersForSigning,
 } from '../../../transaction/transaction-serialization';
-import { TransactionContextCommon } from '../../../transaction/transaction-types';
-import { Operation } from '../../virtual-machine';
-import {
+import type { TransactionContextCommon } from '../../../transaction/transaction-types';
+import type { Operation } from '../../virtual-machine';
+import type {
   AuthenticationProgramStateAlternateStack,
   AuthenticationProgramStateCommon,
   AuthenticationProgramStateError,
@@ -15,7 +15,7 @@ import {
   AuthenticationProgramStateStack,
   AuthenticationProgramTransactionContextCommon,
 } from '../../vm-types';
-import { AuthenticationInstruction } from '../instruction-sets-types';
+import type { AuthenticationInstruction } from '../instruction-sets-types';
 
 import { arithmeticOperations } from './arithmetic';
 import { bitwiseOperations } from './bitwise';
@@ -77,7 +77,7 @@ export enum ConsensusCommon {
 
 export const undefinedOperation = <
   State extends AuthenticationProgramStateExecutionStack &
-    AuthenticationProgramStateError<Errors>,
+  AuthenticationProgramStateError<Errors>,
   Errors
 >() => ({
   undefined: conditionallyEvaluate((state: State) =>
@@ -87,8 +87,8 @@ export const undefinedOperation = <
 
 export const checkLimitsCommon = <
   State extends AuthenticationProgramStateError<Errors> &
-    AuthenticationProgramStateStack &
-    AuthenticationProgramStateAlternateStack & { operationCount: number },
+  AuthenticationProgramStateStack &
+  AuthenticationProgramStateAlternateStack & { operationCount: number },
   Errors
 >(
   operation: Operation<State>
@@ -97,15 +97,15 @@ export const checkLimitsCommon = <
   return nextState.stack.length + nextState.alternateStack.length >
     ConsensusCommon.maximumStackDepth
     ? applyError<State, Errors>(
-        AuthenticationErrorCommon.exceededMaximumStackDepth,
-        nextState
-      )
+      AuthenticationErrorCommon.exceededMaximumStackDepth,
+      nextState
+    )
     : nextState.operationCount > ConsensusCommon.maximumOperationCount
-    ? applyError<State, Errors>(
+      ? applyError<State, Errors>(
         AuthenticationErrorCommon.exceededMaximumOperationCount,
         nextState
       )
-    : nextState;
+      : nextState;
 };
 
 export const commonOperations = <

@@ -1,4 +1,4 @@
-import {
+import type {
   Input,
   Output,
   Transaction,
@@ -6,7 +6,7 @@ import {
 } from '../transaction/transaction-types';
 
 import { AuthenticationErrorCommon } from './instruction-sets/common/errors';
-import { AuthenticationInstruction } from './instruction-sets/instruction-sets-types';
+import type { AuthenticationInstruction } from './instruction-sets/instruction-sets-types';
 
 export interface AuthenticationProgramStateMinimum<Opcodes = number> {
   /**
@@ -110,11 +110,11 @@ export interface AuthenticationProgramStateInternalCommon<
   StackType = Uint8Array
 >
   extends AuthenticationProgramStateMinimum<Opcodes>,
-    AuthenticationProgramStateStack<StackType>,
-    AuthenticationProgramStateAlternateStack<StackType>,
-    AuthenticationProgramStateExecutionStack,
-    AuthenticationProgramStateError<InstructionSetError>,
-    AuthenticationProgramStateSignatureAnalysis {
+  AuthenticationProgramStateStack<StackType>,
+  AuthenticationProgramStateAlternateStack<StackType>,
+  AuthenticationProgramStateExecutionStack,
+  AuthenticationProgramStateError<InstructionSetError>,
+  AuthenticationProgramStateSignatureAnalysis {
   /**
    * The `lastCodeSeparator` indicates the index of the most recently executed
    * `OP_CODESEPARATOR` instruction. In each of the signing serialization
@@ -133,4 +133,4 @@ export interface AuthenticationProgramStateInternalCommon<
 
 export interface AuthenticationProgramStateCommon<Opcodes, Errors>
   extends AuthenticationProgramStateInternalCommon<Opcodes, Errors>,
-    TransactionContextCommon {}
+  TransactionContextCommon { }

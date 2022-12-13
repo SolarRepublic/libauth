@@ -1,6 +1,6 @@
-import { Compiler } from '../template/compiler-types';
+import type { Compiler } from '../template/compiler-types';
 
-import {
+import type {
   TransactionContextCommon,
   TransactionGenerationAttempt,
   TransactionTemplateEstimated,

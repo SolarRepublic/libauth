@@ -1,13 +1,13 @@
 import { Ripemd160, Secp256k1, Sha256, Sha512 } from '../crypto/crypto';
-import { TransactionContextCommon } from '../transaction/transaction-types';
-import { AuthenticationVirtualMachine } from '../vm/virtual-machine';
-import { AuthenticationProgramTransactionContextCommon } from '../vm/vm-types';
+import type { TransactionContextCommon } from '../transaction/transaction-types';
+import type { AuthenticationVirtualMachine } from '../vm/virtual-machine';
+import type { AuthenticationProgramTransactionContextCommon } from '../vm/vm-types';
 
-import {
+import type {
   CompilationResult,
   CompilationResultError,
 } from './language/language-types';
-import {
+import type {
   AuthenticationTemplateScenario,
   AuthenticationTemplateVariable,
 } from './template-types';
@@ -240,8 +240,8 @@ export interface CompilationEnvironment<
   TransactionContext = unknown,
   CompilerKeyOperations extends string | false = CompilerOperationsKeysCommon,
   CompilerSigningSerializationOperations extends
-    | string
-    | false = CompilerOperationsSigningSerializationCommon,
+  | string
+  | false = CompilerOperationsSigningSerializationCommon,
   CompilerAddressDataOperations extends string | false = false,
   CompilerWalletDataOperations extends string | false = false,
   CompilerCurrentBlockHeightOperations extends string | false = false,
@@ -315,54 +315,54 @@ export interface CompilationEnvironment<
    */
   operations?: {
     hdKey?: CompilerKeyOperations extends string
-      ? {
-          [operationId in CompilerKeyOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerKeyOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     key?: CompilerKeyOperations extends string
-      ? {
-          [operationId in CompilerKeyOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerKeyOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     addressData?: CompilerAddressDataOperations extends string
-      ? {
-          [operationId in CompilerAddressDataOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerAddressDataOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     walletData?: CompilerWalletDataOperations extends string
-      ? {
-          [operationId in CompilerWalletDataOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerWalletDataOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     currentBlockHeight?: CompilerCurrentBlockHeightOperations extends string
-      ? {
-          [operationId in CompilerCurrentBlockHeightOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerCurrentBlockHeightOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     currentBlockTime?: CompilerCurrentBlockTimeOperations extends string
-      ? {
-          [operationId in CompilerCurrentBlockTimeOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerCurrentBlockTimeOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
     signingSerialization?: CompilerSigningSerializationOperations extends string
-      ? {
-          [operationId in CompilerSigningSerializationOperations]?: CompilerOperation<
-            TransactionContext
-          >;
-        }
-      : CompilerOperation<TransactionContext>;
+    ? {
+      [operationId in CompilerSigningSerializationOperations]?: CompilerOperation<
+        TransactionContext
+      >;
+    }
+    : CompilerOperation<TransactionContext>;
   };
 
   /**
@@ -629,9 +629,9 @@ export type AnyCompilationEnvironmentIgnoreOperations<
 
 export type BytecodeGenerationResult<ProgramState> =
   | {
-      bytecode: Uint8Array;
-      success: true;
-    }
+    bytecode: Uint8Array;
+    success: true;
+  }
   | CompilationResultError<ProgramState>;
 
 /**

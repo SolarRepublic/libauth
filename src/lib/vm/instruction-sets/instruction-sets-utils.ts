@@ -5,11 +5,11 @@ import {
   numberToBinUint32LE,
 } from '../../format/format';
 import { createCompilerCommonSynchronous } from '../../template/compiler';
-import { AuthenticationProgramStateCommon } from '../vm-types';
+import type { AuthenticationProgramStateCommon } from '../vm-types';
 
 import { AuthenticationErrorBCH, OpcodesBCH } from './bch/bch';
 import { OpcodesBTC } from './btc/btc';
-import {
+import type {
   AuthenticationInstruction,
   AuthenticationInstructionPush,
   ParsedAuthenticationInstruction,
@@ -69,8 +69,8 @@ const readLittleEndianNumber = (
   return length === uint8Bytes
     ? view.getUint8(0)
     : length === uint16Bytes
-    ? view.getUint16(0, readAsLittleEndian)
-    : view.getUint32(0, readAsLittleEndian);
+      ? view.getUint16(0, readAsLittleEndian)
+      : view.getUint32(0, readAsLittleEndian);
 };
 
 /**
@@ -82,10 +82,10 @@ export const lengthBytesForPushOpcode = (opcode: number) =>
   opcode < CommonPushOpcodes.OP_PUSHDATA_1
     ? 0
     : opcode === CommonPushOpcodes.OP_PUSHDATA_1
-    ? uint8Bytes
-    : opcode === CommonPushOpcodes.OP_PUSHDATA_2
-    ? uint16Bytes
-    : uint32Bytes;
+      ? uint8Bytes
+      : opcode === CommonPushOpcodes.OP_PUSHDATA_2
+        ? uint16Bytes
+        : uint32Bytes;
 
 /**
  * Parse one instruction from the provided script.
@@ -146,9 +146,9 @@ export const readAuthenticationInstruction = <Opcodes = number>(
       data: script.slice(dataStart, dataEnd),
       ...(dataEnd > script.length
         ? {
-            expectedDataBytes: dataEnd - dataStart,
-            malformed: true,
-          }
+          expectedDataBytes: dataEnd - dataStart,
+          malformed: true,
+        }
         : undefined),
       opcode: (opcode as unknown) as Opcodes,
     },
@@ -218,18 +218,16 @@ export const disassembleParsedAuthenticationInstructionMalformed = <
   opcodes: { readonly [opcode: number]: string },
   instruction: ParsedAuthenticationInstructionMalformed<Opcodes>
 ): string =>
-  `${opcodes[(instruction.opcode as unknown) as number]} ${
-    hasMalformedLength(instruction)
-      ? `${formatAsmPushHex(instruction.length)}${formatMissingBytesAsm(
-          instruction.expectedLengthBytes - instruction.length.length
-        )}`
-      : `${
-          isPushData((instruction.opcode as unknown) as number)
-            ? `${instruction.expectedDataBytes} `
-            : ''
-        }${formatAsmPushHex(instruction.data)}${formatMissingBytesAsm(
-          instruction.expectedDataBytes - instruction.data.length
-        )}`
+  `${opcodes[(instruction.opcode as unknown) as number]} ${hasMalformedLength(instruction)
+    ? `${formatAsmPushHex(instruction.length)}${formatMissingBytesAsm(
+      instruction.expectedLengthBytes - instruction.length.length
+    )}`
+    : `${isPushData((instruction.opcode as unknown) as number)
+      ? `${instruction.expectedDataBytes} `
+      : ''
+    }${formatAsmPushHex(instruction.data)}${formatMissingBytesAsm(
+      instruction.expectedDataBytes - instruction.data.length
+    )}`
   }`;
 
 /**
@@ -242,15 +240,13 @@ export const disassembleAuthenticationInstruction = <Opcodes = number>(
   opcodes: { readonly [opcode: number]: string },
   instruction: AuthenticationInstruction<Opcodes>
 ): string =>
-  `${opcodes[(instruction.opcode as unknown) as number]}${
-    'data' in instruction &&
+  `${opcodes[(instruction.opcode as unknown) as number]}${'data' in instruction &&
     isMultiWordPush((instruction.opcode as unknown) as number)
-      ? ` ${
-          isPushData((instruction.opcode as unknown) as number)
-            ? `${instruction.data.length} `
-            : ''
-        }${formatAsmPushHex(instruction.data)}`
+    ? ` ${isPushData((instruction.opcode as unknown) as number)
+      ? `${instruction.data.length} `
       : ''
+    }${formatAsmPushHex(instruction.data)}`
+    : ''
   }`;
 
 /**
@@ -265,9 +261,9 @@ export const disassembleParsedAuthenticationInstruction = <Opcodes = number>(
 ): string =>
   authenticationInstructionIsMalformed(instruction)
     ? disassembleParsedAuthenticationInstructionMalformed<Opcodes>(
-        opcodes,
-        instruction
-      )
+      opcodes,
+      instruction
+    )
     : disassembleAuthenticationInstruction<Opcodes>(opcodes, instruction);
 
 /**
@@ -402,8 +398,8 @@ const getInstructionLengthBytes = <Opcodes>(
   return expectedLength === uint8Bytes
     ? Uint8Array.of(instruction.data.length)
     : expectedLength === uint16Bytes
-    ? numberToBinUint16LE(instruction.data.length)
-    : numberToBinUint32LE(instruction.data.length);
+      ? numberToBinUint16LE(instruction.data.length)
+      : numberToBinUint32LE(instruction.data.length);
 };
 
 /**
@@ -417,11 +413,11 @@ export const serializeAuthenticationInstruction = <Opcodes = number>(
     (instruction.opcode as unknown) as number,
     ...('data' in instruction
       ? [
-          ...(isPushData((instruction.opcode as unknown) as number)
-            ? getInstructionLengthBytes(instruction)
-            : []),
-          ...instruction.data,
-        ]
+        ...(isPushData((instruction.opcode as unknown) as number)
+          ? getInstructionLengthBytes(instruction)
+          : []),
+        ...instruction.data,
+      ]
       : []),
   ]);
 
@@ -446,8 +442,8 @@ export const serializeParsedAuthenticationInstructionMalformed = <
       ...(opcode === CommonPushOpcodes.OP_PUSHDATA_1
         ? Uint8Array.of(instruction.expectedDataBytes)
         : opcode === CommonPushOpcodes.OP_PUSHDATA_2
-        ? numberToBinUint16LE(instruction.expectedDataBytes)
-        : numberToBinUint32LE(instruction.expectedDataBytes)),
+          ? numberToBinUint16LE(instruction.expectedDataBytes)
+          : numberToBinUint32LE(instruction.expectedDataBytes)),
       ...instruction.data,
     ]);
   }

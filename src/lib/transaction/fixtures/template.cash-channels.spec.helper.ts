@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, @typescript-eslint/naming-convention */
 // cspell:ignore bitcoinvarint, IDE\'s
-import { AuthenticationTemplate } from '../../template/template-types';
+import type { AuthenticationTemplate } from '../../template/template-types';
 
 export const cashChannels: AuthenticationTemplate = {
   $schema: 'https://bitauth.com/schemas/authentication-template-v0.schema.json',
