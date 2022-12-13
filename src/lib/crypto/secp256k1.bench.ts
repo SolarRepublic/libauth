@@ -153,7 +153,7 @@ test('bench: secp256k1: create DER Low-S signature', async (t) => {
     let privKey: Uint8Array;
     let messageHash: Uint8Array;
     let sigDERExpected: Uint8Array;
-    let sigDERBenchmark: Uint8Array;
+    let sigDERBenchmark: Uint8Array | number[];
     const nextCycle = () => {
       privKey = generatePrivateKey(secureRandom);
       messageHash = randomBytes(privateKeyLength);

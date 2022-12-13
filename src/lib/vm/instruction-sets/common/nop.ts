@@ -7,6 +7,7 @@ export const opNop = <State>(flags: { disallowUpgradableNops: boolean }) => (
   state: State
 ) =>
   flags.disallowUpgradableNops
+    // @ts-expect-error ignore
     ? applyError(AuthenticationErrorCommon.calledUpgradableNop, state)
     : state;
 

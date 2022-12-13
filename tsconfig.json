@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "es2020",
     "outDir": "build/main",
     "rootDir": "src",
     "moduleResolution": "node",
@@ -14,6 +14,7 @@
     "strict": true /* Enable all strict type-checking options. */,
 
     /* Strict Type-Checking Options */
+    "skipLibCheck": true,
     // "noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
     // "strictNullChecks": true /* Enable strict null checks. */,
     // "strictFunctionTypes": true /* Enable strict checking of function types. */,
@@ -38,8 +39,7 @@
     // "emitDecoratorMetadata": true /* Enables experimental support for emitting type metadata for decorators. */,
 
     "lib": [
-      "es2017",
-      "esnext.bigint",
+      "es2020",
       // TODO: remove after https://github.com/DefinitelyTyped/DefinitelyTyped/issues/24419 is resolved
       "dom"
     ],

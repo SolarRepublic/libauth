@@ -149,6 +149,7 @@ export const commonOperations = <
     conditionallyEvaluate
   );
   const incrementingOperations = mapOverOperations<State>(
+    // @ts-expect-error ignore
     {
       ...arithmeticOperations<Opcodes, State, Errors>(flags),
       ...bitwiseOperations<Opcodes, State, Errors>(),
