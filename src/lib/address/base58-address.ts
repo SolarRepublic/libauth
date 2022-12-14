@@ -1,4 +1,4 @@
-import { Sha256 } from '../crypto/crypto';
+import type { Sha256 } from '../crypto/crypto';
 import {
   base58ToBin,
   BaseConversionError,

@@ -8,8 +8,8 @@ import type {
   AuthenticationProgramStateStack,
 } from '../../vm-types';
 
-import { isScriptNumberError, parseBytesAsScriptNumber } from './common';
 import { applyError, AuthenticationErrorCommon } from './errors';
+import { isScriptNumberError, parseBytesAsScriptNumber } from './types';
 
 export const incrementOperationCount = <
   State extends { operationCount: number }

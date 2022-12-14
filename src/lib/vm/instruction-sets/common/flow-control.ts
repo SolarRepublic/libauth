@@ -8,9 +8,9 @@ import type {
 
 import { opNot } from './arithmetic';
 import { conditionallyEvaluate, useOneStackItem } from './combinators';
-import { stackItemIsTruthy } from './common';
 import { applyError, AuthenticationErrorCommon } from './errors';
 import { OpcodesCommon } from './opcodes';
+import { stackItemIsTruthy } from './types';
 
 export const opVerify = <
   State extends AuthenticationProgramStateStack &

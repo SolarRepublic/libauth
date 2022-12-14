@@ -3,28 +3,44 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": { "project": "./tsconfig.json" },
   "env": { "es6": true },
-  "ignorePatterns": ["node_modules", "build", "coverage"],
+  "ignorePatterns": ["node_modules", "build", "coverage", "scratch"],
   "extends": ["bitauth"],
   "globals": { "BigInt": true, "console": true, "WebAssembly": true },
   "rules": {
+    "@typescript-eslint/sort-type-union-intersection-members": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/prefer-readonly-parameter-types": "off", // TODO: enable when Uint8Array can be made readonly, see `Immutable` type
     "@typescript-eslint/no-unused-expressions": "off", // TODO: bug causes crash in eslint 7.2.0 – re-enable later
-    "@typescript-eslint/naming-convention": [
-      "error",
-      {
-        "selector": "default",
-        "format": ["camelCase"],
-        "leadingUnderscore": "allow"
-      },
-      {
-        "selector": "variable",
-        "format": ["camelCase", "UPPER_CASE"],
-        "leadingUnderscore": "allow"
-      },
-      { "selector": "typeLike", "format": ["PascalCase"] },
-      { "selector": "enumMember", "format": ["camelCase", "UPPER_CASE"] } // Allow UPPER_CASE for opcodes
-    ]
+    "@typescript-eslint/consistent-type-imports": "warn",
+    "@typescript-eslint/no-unsafe-argument": "off",
+    "@typescript-eslint/non-nullable-type-assertion-style": "off",
+    "@typescript-eslint/no-confusing-void-expression": "off",
+    "import/no-restricted-path": "off",
+    "@typescript-eslint/prefer-literal-enum-member": "warn",
+    "functional/prefer-tacit": "warn",
+    "functional/no-mixed-type": "warn",
+    "@typescript-eslint/no-duplicate-enum-values": "warn",
+    "functional/no-return-void": "off",
+    "eslint-comments/no-unused-disable": "warn",
+    "@typescript-eslint/consistent-type-exports": "warn",
+    "@typescript-eslint/no-unnecessary-type-assertion": "off",
+    "no-debugger": "warn",
+    "@typescript-eslint/naming-convention": "off"
+    // "@typescript-eslint/naming-convention": [
+    //   "error",
+    //   {
+    //     "selector": "default",
+    //     "format": ["camelCase"],
+    //     "leadingUnderscore": "allow"
+    //   },
+    //   {
+    //     "selector": "variable",
+    //     "format": ["camelCase", "UPPER_CASE"],
+    //     "leadingUnderscore": "allow"
+    //   },
+    //   { "selector": "typeLike", "format": ["PascalCase"] },
+    //   { "selector": "enumMember", "format": ["camelCase", "UPPER_CASE"] } // Allow UPPER_CASE for opcodes
+    // ]
   },
   "overrides": [
     /*
@@ -35,7 +51,7 @@
       "files": ["**.spec.ts", "**.bench.ts"],
       "rules": {
         "import/no-restricted-paths": [
-          "error",
+          "warn",
           {
             "zones": [
               {

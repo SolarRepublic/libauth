@@ -1,6 +1,6 @@
 {
   "name": "@solar-republic/wasm-secp256k1",
-  "version": "0.0.3-beta.1",
+  "version": "0.0.3-beta.2",
   "description": "TypeScript wrapper and Web Assembly module of the libsecp256k1 C library",
   "main": "build/main/index.js",
   "typings": "build/module/index.d.ts",
@@ -35,11 +35,11 @@
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p config/tsconfig.module.json",
     "build:wasm": "run-p copy:wasm:secp256k1 copy:wasm:sha1 copy:wasm:sha256 copy:wasm:sha512 copy:wasm:ripemd160",
-    "copy:wasm:secp256k1": "cpy src/lib/bin/secp256k1/secp256k1.wasm build/main/lib/bin/secp256k1 && cpy src/lib/bin/secp256k1/secp256k1.wasm build/module/lib/bin/secp256k1",
-    "copy:wasm:sha1": "cpy src/lib/bin/sha1/sha1.wasm build/main/lib/bin/sha1 && cpy src/lib/bin/sha1/sha1.wasm build/module/lib/bin/sha1",
-    "copy:wasm:sha256": "cpy src/lib/bin/sha256/sha256.wasm build/main/lib/bin/sha256 && cpy src/lib/bin/sha256/sha256.wasm build/module/lib/bin/sha256",
-    "copy:wasm:sha512": "cpy src/lib/bin/sha512/sha512.wasm build/main/lib/bin/sha512 && cpy src/lib/bin/sha512/sha512.wasm build/module/lib/bin/sha512",
-    "copy:wasm:ripemd160": "cpy src/lib/bin/ripemd160/ripemd160.wasm build/main/lib/bin/ripemd160 && cpy src/lib/bin/ripemd160/ripemd160.wasm build/module/lib/bin/ripemd160",
+    "copy:wasm:secp256k1": "cpy --flat src/lib/bin/secp256k1/secp256k1.wasm build/main/lib/bin/secp256k1 && cpy --flat src/lib/bin/secp256k1/secp256k1.wasm build/module/lib/bin/secp256k1",
+    "copy:wasm:sha1": "cpy --flat src/lib/bin/sha1/sha1.wasm build/main/lib/bin/sha1 && cpy --flat src/lib/bin/sha1/sha1.wasm build/module/lib/bin/sha1",
+    "copy:wasm:sha256": "cpy --flat src/lib/bin/sha256/sha256.wasm build/main/lib/bin/sha256 && cpy --flat src/lib/bin/sha256/sha256.wasm build/module/lib/bin/sha256",
+    "copy:wasm:sha512": "cpy --flat src/lib/bin/sha512/sha512.wasm build/main/lib/bin/sha512 && cpy --flat src/lib/bin/sha512/sha512.wasm build/module/lib/bin/sha512",
+    "copy:wasm:ripemd160": "cpy --flat src/lib/bin/ripemd160/ripemd160.wasm build/main/lib/bin/ripemd160 && cpy --flat src/lib/bin/ripemd160/ripemd160.wasm build/module/lib/bin/ripemd160",
     "compile:debug:secp256k1": "docker run -it wasm-secp256k1 bash",
     "compile:debug:hashes": "docker run -it wasm-hashes bash",
     "fix": "run-s fix:*",
@@ -104,9 +104,7 @@
   "engines": {
     "node": ">=8.9"
   },
-  "dependencies": {
-    "ava": "^3.15.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@ava/typescript": "^3.0.1",
     "@bitjson/npm-scripts-info": "^1.0.0",
@@ -122,6 +120,7 @@
     "@types/puppeteer": "^5.4.7",
     "@typescript-eslint/parser": "^5.46.1",
     "asmcrypto.js": "^2.3.2",
+    "ava": "^3.15.0",
     "ava-fast-check": "^2.0.0",
     "bcrypto": "^5.4.0",
     "bitcore-lib-cash": "^8.25.40",
